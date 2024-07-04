@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "allowJs": false,
+    "target": "es2017",
+    "module": "commonjs",
+    "allowUnusedLabels": false,
+    "strict": true,
+    "sourceMap": true,
+    "types": ["@webgpu/types"]
+  },
+  "include": ["./src/**/*"]
+}

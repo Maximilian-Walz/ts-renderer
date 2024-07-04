@@ -1,0 +1,20 @@
+{
+  "name": "another-engine",
+  "version": "0.0.1",
+  "description": "A simple rendering engine to experiment with a few computer graphic concepts.",
+  "license": "MIT",
+  "author": "Maximilian Walz",
+  "scripts": {
+    "dev": "webpack serve",
+    "build": "webpack"
+  },
+  "devDependencies": {
+    "@webgpu/types": "latest",
+    "source-map-loader": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  }
+}
