@@ -3,6 +3,9 @@ import { AutoRotateComponent, CameraComponent, MeshComponent, MeshRendererCompon
 import { ComponentType, EntityComponentSystem } from "./engine/entity-component-system"
 import { Renderer } from "./engine/systems/renderer"
 import { Rotator } from "./engine/systems/rotator"
+import Stats from "stats.js"
+import { DebugGui } from "./engine/debug-gui"
+
 
 export class App {
   private canvas: HTMLCanvasElement
@@ -10,7 +13,13 @@ export class App {
   private ecs: EntityComponentSystem
   private rotator: Rotator
 
+  private stats : Stats = new Stats()
+  private debugGui : DebugGui = new DebugGui()
+  
   constructor() {
+    this.stats.showPanel(0)
+    document.body.appendChild(this.stats.dom);
+
     this.canvas = document.querySelector("canvas")!
     if (!this.canvas) {
       throw new Error("No canvas found to render to")
@@ -33,6 +42,8 @@ export class App {
   }
 
   loop() {
+    this.stats.begin()
+
     const rotatableModels = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE]) as [TransformComponent, AutoRotateComponent][]
     this.rotator.rotate(rotatableModels)
 
@@ -40,6 +51,7 @@ export class App {
     const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
     this.renderer.render(camera, models)
 
+    this.stats.end();
     requestAnimationFrame(() => this.loop())
   }
 
@@ -47,7 +59,9 @@ export class App {
     const camera = ecs.createEntity()
     const viewMatrix = mat4.translate(mat4.identity(), vec3.fromValues(0, 0, -4))
     const projectionMatrix  = mat4.perspective((2 * Math.PI) / 5, this.canvas.width / this.canvas.height, 1, 100.0)
-    ecs.addComponentToEntity(camera, new CameraComponent(viewMatrix, projectionMatrix))
+    const cameraComponent = new CameraComponent(viewMatrix, projectionMatrix)
+    this.debugGui.addCameraControls(cameraComponent)
+    ecs.addComponentToEntity(camera, cameraComponent)
 
     const cube = ecs.createEntity()
     const cubeTransform = new TransformComponent()

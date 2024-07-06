@@ -6,6 +6,7 @@
     "module": "ES2022",
     "moduleResolution": "node",
     "allowUnusedLabels": false,
+    "allowSyntheticDefaultImports": true,
     "strict": true,
     "sourceMap": true,
     "types": ["@webgpu/types"]
