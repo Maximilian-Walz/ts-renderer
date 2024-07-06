@@ -4,6 +4,7 @@
     "allowJs": false,
     "target": "es2017",
     "module": "ES2022",
+    "moduleResolution": "node",
     "allowUnusedLabels": false,
     "strict": true,
     "sourceMap": true,
