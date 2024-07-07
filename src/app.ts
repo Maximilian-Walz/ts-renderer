@@ -1,16 +1,17 @@
 import { mat4, vec3 } from "wgpu-matrix"
-import { AutoRotateComponent, CameraComponent, MeshComponent, MeshRendererComponent, TransformComponent } from "./engine/components"
+import { AutoRotateComponent, CameraComponent, MeshRendererComponent, TransformComponent } from "./engine/components"
 import { ComponentType, EntityComponentSystem } from "./engine/entity-component-system"
 import { Renderer } from "./engine/systems/renderer"
 import { Rotator } from "./engine/systems/rotator"
 import Stats from "stats.js"
 import { DebugGui } from "./engine/debug-gui"
-
+import { AssetManager } from "./engine/assets/asset-manager"
 
 export class App {
   private canvas: HTMLCanvasElement
   private renderer: Renderer
   private ecs: EntityComponentSystem
+  private assetManager: AssetManager
   private rotator: Rotator
 
   private stats : Stats = new Stats()
@@ -26,18 +27,19 @@ export class App {
     }
 
     this.ecs = new EntityComponentSystem()
-    this.createScene(this.ecs)
-
+    this.assetManager = new AssetManager(this.ecs)
+    this.renderer = new Renderer(this.assetManager)
     this.rotator = new Rotator()
+        
+    this.createScene().then(() => {
+      this.renderer.init(this.canvas).then(() => this.init())
+    })
 
-    this.renderer = new Renderer()
-    this.renderer.init(this.canvas).then(() => this.init())
   }
   
   init() {
     const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
     this.renderer.initMeshRenderers(models)
-
     requestAnimationFrame(() => this.loop())
   }
 
@@ -47,37 +49,28 @@ export class App {
     const rotatableModels = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE]) as [TransformComponent, AutoRotateComponent][]
     this.rotator.rotate(rotatableModels)
 
-    const camera = this.ecs.getComponentsAsTuple([ComponentType.CAMERA])[0][0] as CameraComponent
     const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
-    this.renderer.render(camera, models)
+    this.renderer.render(models)
 
     this.stats.end();
     requestAnimationFrame(() => this.loop())
   }
 
-  private createScene(ecs: EntityComponentSystem) {
-    const camera = ecs.createEntity()
-    const viewMatrix = mat4.translate(mat4.identity(), vec3.fromValues(0, 0, -4))
+  private async createScene() {
+    this.assetManager.loadSceneFromGltf("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf")
+    //this.assetManager.loadSceneFromGltf("/assets/gltf/Box.gltf")
+
+    const cameraEntity = this.ecs.createEntity()
     const projectionMatrix  = mat4.perspective((2 * Math.PI) / 5, this.canvas.width / this.canvas.height, 1, 100.0)
-    const cameraComponent = new CameraComponent(viewMatrix, projectionMatrix)
-    this.debugGui.addCameraControls(cameraComponent)
-    ecs.addComponentToEntity(camera, cameraComponent)
+    const cameraComponent = new CameraComponent(projectionMatrix)
+    const transformComponent = new TransformComponent()
+    transformComponent.transformationMatrix = mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37))
+    this.ecs.addComponentToEntity(cameraEntity, cameraComponent)
+    this.ecs.addComponentToEntity(cameraEntity, transformComponent)
 
-    const cube = ecs.createEntity()
-    const cubeTransform = new TransformComponent()
-    mat4.translate(cubeTransform.transformationMatrix, vec3.fromValues(1.5, 0, 0), cubeTransform.transformationMatrix)
-    ecs.addComponentToEntity(cube, cubeTransform)
-    ecs.addComponentToEntity(cube, new MeshComponent(""))
-    ecs.addComponentToEntity(cube, new MeshRendererComponent())
-    ecs.addComponentToEntity(cube, new AutoRotateComponent(vec3.fromValues(1, 0, 0), 1))
-
-    const cube2 = ecs.createEntity()
-    const cube2Transform = new TransformComponent()
-    mat4.translate(cube2Transform.transformationMatrix, vec3.fromValues(-1.5, 0, 0), cube2Transform.transformationMatrix)
-    ecs.addComponentToEntity(cube2, cube2Transform)
-    ecs.addComponentToEntity(cube2, new MeshComponent(""))
-    ecs.addComponentToEntity(cube2, new MeshRendererComponent())
-    ecs.addComponentToEntity(cube2, new AutoRotateComponent(vec3.fromValues(0, 1, 0), 1))
+    const camera = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA])[0] as [TransformComponent, CameraComponent]
+    this.renderer.setActiveCamera(camera)
+    console.log(this.ecs)
   }
 }
 

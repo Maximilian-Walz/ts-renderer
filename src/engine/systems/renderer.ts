@@ -1,67 +1,22 @@
-import { mat4 } from "wgpu-matrix";
+import { Mat4, mat4 } from "wgpu-matrix";
 import simpleShader from "../../simple-shader";
-import { CameraComponent, MeshRendererComponent, TransformComponent } from "../components";
-
-
-const cubeVertexSize = 4 * 10; // Byte size of one cube vertex.
-const cubePositionOffset = 0;
-const cubeColorOffset = 4 * 4; // Byte offset of cube vertex color attribute.
-const cubeUVOffset = 4 * 8;
-const cubeVertexCount = 36;
-
-const cubeVertexArray = new Float32Array([
-  // float4 position, float4 color, float2 uv,
-  1, -1, 1, 1,   1, 0, 1, 1,  0, 1,
-  -1, -1, 1, 1,  0, 0, 1, 1,  1, 1,
-  -1, -1, -1, 1, 0, 0, 0, 1,  1, 0,
-  1, -1, -1, 1,  1, 0, 0, 1,  0, 0,
-  1, -1, 1, 1,   1, 0, 1, 1,  0, 1,
-  -1, -1, -1, 1, 0, 0, 0, 1,  1, 0,
-
-  1, 1, 1, 1,    1, 1, 1, 1,  0, 1,
-  1, -1, 1, 1,   1, 0, 1, 1,  1, 1,
-  1, -1, -1, 1,  1, 0, 0, 1,  1, 0,
-  1, 1, -1, 1,   1, 1, 0, 1,  0, 0,
-  1, 1, 1, 1,    1, 1, 1, 1,  0, 1,
-  1, -1, -1, 1,  1, 0, 0, 1,  1, 0,
-
-  -1, 1, 1, 1,   0, 1, 1, 1,  0, 1,
-  1, 1, 1, 1,    1, 1, 1, 1,  1, 1,
-  1, 1, -1, 1,   1, 1, 0, 1,  1, 0,
-  -1, 1, -1, 1,  0, 1, 0, 1,  0, 0,
-  -1, 1, 1, 1,   0, 1, 1, 1,  0, 1,
-  1, 1, -1, 1,   1, 1, 0, 1,  1, 0,
-
-  -1, -1, 1, 1,  0, 0, 1, 1,  0, 1,
-  -1, 1, 1, 1,   0, 1, 1, 1,  1, 1,
-  -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
-  -1, -1, -1, 1, 0, 0, 0, 1,  0, 0,
-  -1, -1, 1, 1,  0, 0, 1, 1,  0, 1,
-  -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
-
-  1, 1, 1, 1,    1, 1, 1, 1,  0, 1,
-  -1, 1, 1, 1,   0, 1, 1, 1,  1, 1,
-  -1, -1, 1, 1,  0, 0, 1, 1,  1, 0,
-  -1, -1, 1, 1,  0, 0, 1, 1,  1, 0,
-  1, -1, 1, 1,   1, 0, 1, 1,  0, 0,
-  1, 1, 1, 1,    1, 1, 1, 1,  0, 1,
-
-  1, -1, -1, 1,  1, 0, 0, 1,  0, 1,
-  -1, -1, -1, 1, 0, 0, 0, 1,  1, 1,
-  -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
-  1, 1, -1, 1,   1, 1, 0, 1,  0, 0,
-  1, -1, -1, 1,  1, 0, 0, 1,  0, 1,
-  -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
-]);
+import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType } from "../components";
+import { AssetManager, BufferTarget } from "../assets/asset-manager";
 
 export class Renderer {
-  canvas!: HTMLCanvasElement
-  device!: GPUDevice
-  context!: GPUCanvasContext
-  pipeline!: GPURenderPipeline
+  private assetManager: AssetManager
+  private canvas!: HTMLCanvasElement
+  private device!: GPUDevice
+  private context!: GPUCanvasContext
+  private pipeline!: GPURenderPipeline
+  private renderPassDescriptor!: GPURenderPassDescriptor
 
-  renderPassDescriptor!: GPURenderPassDescriptor
-  verticesBuffer!: GPUBuffer
+  private gpuBuffers: GPUBuffer[] = []
+  private viewProjectionMatrix: Mat4 = mat4.identity()
+
+  constructor(assetManager: AssetManager) {
+    this.assetManager = assetManager;
+  }
 
   async init(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -90,49 +45,66 @@ export class Renderer {
       format: canvasFormat,
     })
 
+    const meshBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          buffer: {
+            type: "uniform"
+          },
+          visibility: GPUShaderStage.VERTEX
+        }
+      ]
+    })    
+
     const module = this.device.createShaderModule({
-      label: "Simple Shader",
       code: simpleShader,
     })
 
     this.pipeline = this.device.createRenderPipeline({
-      label: "Simple Pipeline",
-      layout: "auto",
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [
+          meshBindGroupLayout,
+        ]
+      }),
       vertex: {
         module,
         buffers: [
           {
-            arrayStride: cubeVertexSize,
+            arrayStride: 12,
             attributes: [
               {
-                // position
                 shaderLocation: 0,
-                offset: cubePositionOffset,
-                format: 'float32x4',
-              },
-              {
-                // uv
-                shaderLocation: 1,
-                offset: cubeUVOffset,
-                format: 'float32x2',
-              },
-            ],
+                offset: 0,
+                format: "float32x3",
+              }
+            ]
           },
-        ],
+          {
+            arrayStride: 12,
+            attributes: [
+              {
+                shaderLocation: 1,
+                offset: 0,
+                format: "float32x3"
+              }
+            ]
+          }
+        ]
       },
       fragment: {
         module,
         targets: [{ format: canvasFormat }],
-      },
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "back"
       },
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth24plus',
       },
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "back"
+      }
     })
 
     const depthTexture = this.device.createTexture({
@@ -160,13 +132,31 @@ export class Renderer {
       },
     }
 
-    this.verticesBuffer = this.device.createBuffer({
-      size: cubeVertexArray.byteLength,
-      usage: GPUBufferUsage.VERTEX,
-      mappedAtCreation: true,
-    });
-    new Float32Array(this.verticesBuffer.getMappedRange()).set(cubeVertexArray);
-    this.verticesBuffer.unmap();
+    this.assetManager.buffers.forEach((buffer, index) => {
+      let usage = GPUBufferUsage.UNIFORM
+      if (buffer.target == BufferTarget.ARRAY_BUFFER) usage = GPUBufferUsage.VERTEX
+      else if (buffer.target == BufferTarget.ELEMENT_ARRAY_BUFFER) usage = GPUBufferUsage.INDEX
+
+      this.gpuBuffers[index] = this.device.createBuffer({
+        size: buffer.data.length,
+        usage: usage,
+        mappedAtCreation: true,
+      })
+      new Uint8Array(this.gpuBuffers[index].getMappedRange()).set(buffer.data)
+      this.gpuBuffers[index].unmap()
+    })
+  }
+
+  private static calculateGlobalTransform(transform: TransformComponent) : Mat4 {
+    if (transform.parent != undefined) {
+      return mat4.multiply(this.calculateGlobalTransform(transform.parent), transform.transformationMatrix)
+    } else {
+      return transform.transformationMatrix
+    }
+  }
+
+  setActiveCamera([transform, camera]: [TransformComponent, CameraComponent]) {
+    mat4.multiply(camera.projectionMatrix, Renderer.calculateGlobalTransform(transform), this.viewProjectionMatrix)
   }
 
   initMeshRenderers(components : [TransformComponent, MeshRendererComponent][]) {
@@ -187,7 +177,7 @@ export class Renderer {
   }
 
 
-  render(camera: CameraComponent, models: [TransformComponent, MeshRendererComponent][]) {
+  render(models: [TransformComponent, MeshRendererComponent][]) {
     this.renderPassDescriptor.colorAttachments = [
       {
         view: this.context.getCurrentTexture().createView(),
@@ -200,21 +190,24 @@ export class Renderer {
     const commandEncoder = this.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setVertexBuffer(0, this.verticesBuffer);
-  
-    const viewProjectionMatrix = mat4.multiply(camera.projectionMatrix, camera.viewMatrix)
     
     models.forEach(([transform, meshRenderer]) => {
-      const modelViewProjectionMatrix = mat4.multiply(viewProjectionMatrix, transform.transformationMatrix)
-      this.device.queue.writeBuffer(
-        meshRenderer.modelMatrixBuffer!, 
-        0,
-        modelViewProjectionMatrix.buffer,
-        modelViewProjectionMatrix.byteOffset, 
-        modelViewProjectionMatrix.byteLength
-      )
-      passEncoder.setBindGroup(0, meshRenderer.bindGroup!);
-      passEncoder.draw(cubeVertexCount); 
+      const mvpMatrix = mat4.multiply(this.viewProjectionMatrix, Renderer.calculateGlobalTransform(transform))
+      this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
+      passEncoder.setBindGroup(0, meshRenderer.bindGroup!)
+      
+      meshRenderer.primitives.forEach(primitiveRenderData => {
+        const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? "uint16" : "uint32"
+        passEncoder.setIndexBuffer(this.gpuBuffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
+        // TODO: don't hardcode the 12 here
+        // TODO: don't hardcode which is which (i.e. that 0 is POSITION and 1 is NORMAL); somehow ask the asset manager where which one is
+        const positionAcessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.POSITION)!        
+        passEncoder.setVertexBuffer(0, this.gpuBuffers[positionAcessor.bufferIndex], positionAcessor.offset , positionAcessor.count * 12)
+        const normalAccessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.NORMAL)!
+        passEncoder.setVertexBuffer(1, this.gpuBuffers[normalAccessor.bufferIndex], normalAccessor.offset , normalAccessor.count * 12)
+        passEncoder.drawIndexed(primitiveRenderData.indexBufferAccessor.count);
+      })
+
     })
     
     passEncoder.end();

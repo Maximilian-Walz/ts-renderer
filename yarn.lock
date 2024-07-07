@@ -1105,6 +1105,11 @@ glob@^10.3.7:
     package-json-from-dist "^1.0.0"
     path-scurry "^1.11.1"
 
+gltf-loader-ts@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/gltf-loader-ts/-/gltf-loader-ts-0.3.1.tgz#917395bfc77dc98df148c57a2585170241be6318"
+  integrity sha512-GypLFqIDAEtl211fPyGA596Wz75R9eHEAMl+RQfQ8XQZb6Wks/1Aas6YuF/e/Xw57rULkefcBW/hsqLISkBBww==
+
 gopd@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/gopd/-/gopd-1.0.1.tgz"
@@ -2286,6 +2291,11 @@ wbuf@^1.1.0, wbuf@^1.7.3:
   integrity sha512-O84QOnr0icsbFGLS0O3bI5FswxzRr8/gHwWkDlQFskhSPryQXvrTMxjxGP4+iWYoauLoBvfDpkrOauZ+0iZpDA==
   dependencies:
     minimalistic-assert "^1.0.0"
+
+webgpu_recorder@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/webgpu_recorder/-/webgpu_recorder-1.2.1.tgz#9f39e0c740d539a5cba828886e5b8fc2dbcdab56"
+  integrity sha512-m7x7fx2d4fMjbBge9KjPwZS6dJrxTaZvPHi9kyi/sFOr60bJv+f7cYCON53lzM1hi0RxoolNszEvkdalMmjqGg==
 
 webpack-cli@^5.1.4:
   version "5.1.4"

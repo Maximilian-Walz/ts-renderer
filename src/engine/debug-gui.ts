@@ -1,11 +1,11 @@
 import { GUI } from "dat.gui";
 import { CameraComponent } from "./components";
-import { Vec3, mat4, vec3 } from "wgpu-matrix";
+import { mat4, vec3 } from "wgpu-matrix";
 
 class Float3 {
     x: number = 0
-    y: number = 0
-    z: number = -4
+    y: number = -0.8
+    z: number = -2.37
 }
 
 export class DebugGui {
@@ -16,6 +16,7 @@ export class DebugGui {
     }
 
     addCameraControls(cameraComponent: CameraComponent) {
+        /*
         const position = new Float3()        
         const updatePosition = () => {
             let newPosition = vec3.fromValues(position.x, position.y, position.z)
@@ -31,5 +32,6 @@ export class DebugGui {
         positionFolder.add(position, "x", min, max, step).onChange(updatePosition)
         positionFolder.add(position, "y", min, max, step).onChange(updatePosition)
         positionFolder.add(position, "z", min, max, step).onChange(updatePosition)
+        */
     }
 }

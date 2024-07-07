@@ -2,31 +2,33 @@ export default /*wgsl*/ `
 struct Uniforms {
   modelViewProjectionMatrix : mat4x4f,
 }
+
 @binding(0) @group(0) var<uniform> uniforms : Uniforms;
 
 struct VertexOutput {
   @builtin(position) Position : vec4f,
-  @location(0) fragUV : vec2f,
-  @location(1) fragPosition: vec4f,
+  @location(0) fragPosition: vec4f,
+  @location(1) fragNormal: vec4f,
 }
 
 @vertex
 fn vs(
+  @builtin(vertex_index) v_index: u32,
   @location(0) position : vec4f,
-  @location(1) uv : vec2f
+  @location(1) normal: vec4f
 ) -> VertexOutput {
   var output : VertexOutput;
   output.Position = uniforms.modelViewProjectionMatrix * position;
-  output.fragUV = uv;
-  output.fragPosition = 0.5 * (position + vec4(1.0, 1.0, 1.0, 1.0));
+  output.fragPosition = 0.5 * (position + vec4(1, 1, 1, 1));
+  output.fragNormal = 0.5 * (normal + vec4(1, 1, 1, 1));
   return output;
 }
 
 @fragment
 fn fs(
-  @location(0) fragUV: vec2f,
-  @location(1) fragPosition: vec4f
+  @location(0) fragPosition: vec4f,
+  @location(1) fragNormal: vec4f
 ) -> @location(0) vec4f {
-  return fragPosition;
+  return fragNormal;
 }
 `

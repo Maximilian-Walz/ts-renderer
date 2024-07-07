@@ -1,9 +1,8 @@
-type EntityId = number
+export type EntityId = number
 type ArchetypeIndex = number
 
 export enum ComponentType {
     TRANSFORM,
-    MESH,
     CAMERA,
     MESH_RENDERER,
     AUTO_ROTATE
@@ -40,6 +39,8 @@ export class EntityComponentSystem {
             const entityIndexInArchetype = currentArchetype.entities.findIndex(element => element == entityId)
             currentArchetype.entities.splice(entityIndexInArchetype, 1)
             
+            // TODO: Moving old components seems to not work sometimes
+
             // Insert entity into correct archetype
             const componentTypes = [component.type , ...currentArchetype.componentTypeToIndices.keys()]
             newArchetype = this.getOrCreateArchetype(componentTypes)
