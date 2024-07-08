@@ -35,7 +35,7 @@ export class SceneLoader {
   ) {
     const node = gltf.nodes![nodeIndex]
     // TODO: Handle transforms that don't come as a matrix
-    const tranformationMatrix = mat4.create(...node.matrix!)
+    const tranformationMatrix = mat4.create(...node.matrix??mat4.identity())
     const transform = new TransformComponent(tranformationMatrix, parentTransform)
     const entityId = ecs.createEntity(transform)
 

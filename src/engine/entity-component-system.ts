@@ -24,15 +24,36 @@ export class Archetype {
   componentTypeToIndices: Map<ComponentType, number> = new Map()
 }
 
-export class EntityComponentSystem {
+export type EntityTree = {
+  rootNodes: EntityId[]
+  childMap: Map<EntityId, EntityId[]>
+}
+
+export interface EntityComponentSystem {
+  createEntity(tranform: TransformComponent): EntityId
+  addComponentToEntity(entityId: EntityId, component: Component): void
+  getComponentsAsTuple(componentTypes: ComponentType[]): Component[][]
+  getEntityTree() : EntityTree
+}
+
+export class ArchetypeECS implements EntityComponentSystem {
   private archetypes: Archetype[] = []
   private lastEntityId: EntityId = 0
   private entityToArchetypeIndex: ArchetypeIndex[] = []
   private cachedQueries: Map<string, Archetype[]> = new Map()
+  private entityTree: EntityTree = { rootNodes: [], childMap: new Map() }
 
   createEntity(tranform: TransformComponent): EntityId {
     this.lastEntityId++
     tranform.entityId = this.lastEntityId
+    if (!tranform.parent) {
+      this.entityTree.rootNodes.push(this.lastEntityId)
+    } else if (this.entityTree.childMap.has(tranform.parent.entityId!)) {
+      this.entityTree.childMap.get(tranform.parent.entityId!)
+    } else {
+      this.entityTree.childMap.set(tranform.parent.entityId!, [this.lastEntityId])
+    }
+
     this.addComponentToEntity(this.lastEntityId, tranform)
     return this.lastEntityId
   }
@@ -118,5 +139,9 @@ export class EntityComponentSystem {
       })
     })
     return entities
+  }
+
+  getEntityTree() : EntityTree {
+    return this.entityTree
   }
 }

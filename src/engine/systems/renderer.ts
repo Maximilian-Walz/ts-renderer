@@ -133,8 +133,30 @@ export class Renderer {
         depthClearValue: 1.0,
         depthLoadOp: "clear",
         depthStoreOp: "store",
-      },
+      }, 
     }
+
+    // TODO: Fix this. Somehow the depth buffer isn't resized. Do I have to explicitely recreate the pipeline or something?
+    /*
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const width = entry.devicePixelContentBoxSize?.[0].inlineSize ||
+                      entry.contentBoxSize[0].inlineSize * devicePixelRatio;
+        const height = entry.devicePixelContentBoxSize?.[0].blockSize ||
+                       entry.contentBoxSize[0].blockSize * devicePixelRatio;
+        const canvas = entry.target;
+        //@ts-ignore
+        canvas.width = Math.max(1, Math.min(width, this.device.limits.maxTextureDimension2D));
+        //@ts-ignore
+        canvas.height = Math.max(1, Math.min(height, this.device.limits.maxTextureDimension2D));
+      }
+    });
+    try {
+      observer.observe(canvas, { box: 'device-pixel-content-box' });
+    } catch {
+      observer.observe(canvas, { box: 'content-box' });
+    }
+    */
 
     this.assetManager.buffers.forEach((buffer, index) => {
       let usage = GPUBufferUsage.UNIFORM

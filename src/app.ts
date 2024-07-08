@@ -3,7 +3,7 @@ import { Mat4, mat4, vec3 } from "wgpu-matrix"
 import { AssetManager } from "./engine/assets/asset-manager"
 import { AutoRotateComponent, CameraComponent, MeshRendererComponent, TransformComponent } from "./engine/components"
 import { DebugGui } from "./engine/debug-gui"
-import { ComponentType, EntityComponentSystem } from "./engine/entity-component-system"
+import { ArchetypeECS, ComponentType, EntityComponentSystem } from "./engine/entity-component-system"
 import { Renderer } from "./engine/systems/renderer"
 import { Rotator } from "./engine/systems/rotator"
 
@@ -26,7 +26,7 @@ export class App {
       throw new Error("No canvas found to render to")
     }
 
-    this.ecs = new EntityComponentSystem()
+    this.ecs = new ArchetypeECS()
     this.assetManager = new AssetManager(this.ecs)
     this.renderer = new Renderer(this.assetManager)
     this.rotator = new Rotator()
@@ -66,9 +66,10 @@ export class App {
 
   private async createScene() {
     this.assetManager.loadSceneFromGltf(
+      //"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf"
       "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf"
+      //this.assetManager.loadSceneFromGltf("/assets/gltf/Box.gltf")
     )
-    //this.assetManager.loadSceneFromGltf("/assets/gltf/Box.gltf")
 
     const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, this.canvas.width / this.canvas.height, 1, 100.0)
     const cameraComponent = new CameraComponent(projectionMatrix)
@@ -84,7 +85,6 @@ export class App {
       CameraComponent
     ]
     this.renderer.setActiveCamera(camera)
-    console.log(this.ecs)
   }
 }
 
