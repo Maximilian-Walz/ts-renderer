@@ -1,11 +1,11 @@
-import { mat4, vec3 } from "wgpu-matrix"
+import Stats from "stats.js"
+import { Mat4, mat4, vec3 } from "wgpu-matrix"
+import { AssetManager } from "./engine/assets/asset-manager"
 import { AutoRotateComponent, CameraComponent, MeshRendererComponent, TransformComponent } from "./engine/components"
+import { DebugGui } from "./engine/debug-gui"
 import { ComponentType, EntityComponentSystem } from "./engine/entity-component-system"
 import { Renderer } from "./engine/systems/renderer"
 import { Rotator } from "./engine/systems/rotator"
-import Stats from "stats.js"
-import { DebugGui } from "./engine/debug-gui"
-import { AssetManager } from "./engine/assets/asset-manager"
 
 export class App {
   private canvas: HTMLCanvasElement
@@ -14,12 +14,12 @@ export class App {
   private assetManager: AssetManager
   private rotator: Rotator
 
-  private stats : Stats = new Stats()
-  private debugGui : DebugGui = new DebugGui()
-  
+  private stats: Stats = new Stats()
+  private debugGui: DebugGui = new DebugGui()
+
   constructor() {
     this.stats.showPanel(0)
-    document.body.appendChild(this.stats.dom);
+    document.body.appendChild(this.stats.dom)
 
     this.canvas = document.querySelector("canvas")!
     if (!this.canvas) {
@@ -30,15 +30,17 @@ export class App {
     this.assetManager = new AssetManager(this.ecs)
     this.renderer = new Renderer(this.assetManager)
     this.rotator = new Rotator()
-        
+
     this.createScene().then(() => {
       this.renderer.init(this.canvas).then(() => this.init())
     })
-
   }
-  
+
   init() {
-    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
+    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [
+      TransformComponent,
+      MeshRendererComponent
+    ][]
     this.renderer.initMeshRenderers(models)
     requestAnimationFrame(() => this.loop())
   }
@@ -46,29 +48,41 @@ export class App {
   loop() {
     this.stats.begin()
 
-    const rotatableModels = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE]) as [TransformComponent, AutoRotateComponent][]
+    const rotatableModels = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE]) as [
+      TransformComponent,
+      AutoRotateComponent
+    ][]
     this.rotator.rotate(rotatableModels)
 
-    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
+    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [
+      TransformComponent,
+      MeshRendererComponent
+    ][]
     this.renderer.render(models)
 
-    this.stats.end();
+    this.stats.end()
     requestAnimationFrame(() => this.loop())
   }
 
   private async createScene() {
-    this.assetManager.loadSceneFromGltf("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf")
+    this.assetManager.loadSceneFromGltf(
+      "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf"
+    )
     //this.assetManager.loadSceneFromGltf("/assets/gltf/Box.gltf")
 
-    const cameraEntity = this.ecs.createEntity()
-    const projectionMatrix  = mat4.perspective((2 * Math.PI) / 5, this.canvas.width / this.canvas.height, 1, 100.0)
+    const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, this.canvas.width / this.canvas.height, 1, 100.0)
     const cameraComponent = new CameraComponent(projectionMatrix)
-    const transformComponent = new TransformComponent()
-    transformComponent.transformationMatrix = mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37))
+    const transformComponent = new TransformComponent(
+      mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37)) as Mat4
+    )
+    const cameraEntity = this.ecs.createEntity(transformComponent)
     this.ecs.addComponentToEntity(cameraEntity, cameraComponent)
     this.ecs.addComponentToEntity(cameraEntity, transformComponent)
 
-    const camera = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA])[0] as [TransformComponent, CameraComponent]
+    const camera = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA])[0] as [
+      TransformComponent,
+      CameraComponent
+    ]
     this.renderer.setActiveCamera(camera)
     console.log(this.ecs)
   }

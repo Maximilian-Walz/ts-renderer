@@ -1,7 +1,13 @@
-import { Mat4, mat4 } from "wgpu-matrix";
-import simpleShader from "../../simple-shader";
-import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType } from "../components";
-import { AssetManager, BufferTarget } from "../assets/asset-manager";
+import { Mat4, mat4 } from "wgpu-matrix"
+import simpleShader from "../../simple-shader"
+import { AssetManager, BufferTarget } from "../assets/asset-manager"
+import {
+  BufferDataComponentType,
+  CameraComponent,
+  MeshRendererComponent,
+  TransformComponent,
+  VertexAttributeType,
+} from "../components"
 
 export class Renderer {
   private assetManager: AssetManager
@@ -15,7 +21,7 @@ export class Renderer {
   private viewProjectionMatrix: Mat4 = mat4.identity()
 
   constructor(assetManager: AssetManager) {
-    this.assetManager = assetManager;
+    this.assetManager = assetManager
   }
 
   async init(canvas: HTMLCanvasElement) {
@@ -50,12 +56,12 @@ export class Renderer {
         {
           binding: 0,
           buffer: {
-            type: "uniform"
+            type: "uniform",
           },
-          visibility: GPUShaderStage.VERTEX
-        }
-      ]
-    })    
+          visibility: GPUShaderStage.VERTEX,
+        },
+      ],
+    })
 
     const module = this.device.createShaderModule({
       code: simpleShader,
@@ -63,9 +69,7 @@ export class Renderer {
 
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [
-          meshBindGroupLayout,
-        ]
+        bindGroupLayouts: [meshBindGroupLayout],
       }),
       vertex: {
         module,
@@ -77,8 +81,8 @@ export class Renderer {
                 shaderLocation: 0,
                 offset: 0,
                 format: "float32x3",
-              }
-            ]
+              },
+            ],
           },
           {
             arrayStride: 12,
@@ -86,11 +90,11 @@ export class Renderer {
               {
                 shaderLocation: 1,
                 offset: 0,
-                format: "float32x3"
-              }
-            ]
-          }
-        ]
+                format: "float32x3",
+              },
+            ],
+          },
+        ],
       },
       fragment: {
         module,
@@ -98,18 +102,18 @@ export class Renderer {
       },
       depthStencil: {
         depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus',
+        depthCompare: "less",
+        format: "depth24plus",
       },
       primitive: {
         topology: "triangle-list",
-        cullMode: "back"
-      }
+        cullMode: "back",
+      },
     })
 
     const depthTexture = this.device.createTexture({
       size: [canvas.width, canvas.height],
-      format: 'depth24plus',
+      format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     })
 
@@ -117,18 +121,18 @@ export class Renderer {
       colorAttachments: [
         {
           view: this.context.getCurrentTexture().createView(),
-    
+
           clearValue: [0.5, 0.5, 0.5, 1.0],
-          loadOp: 'clear',
-          storeOp: 'store',
+          loadOp: "clear",
+          storeOp: "store",
         },
       ],
       depthStencilAttachment: {
         view: depthTexture.createView(),
-    
+
         depthClearValue: 1.0,
-        depthLoadOp: 'clear',
-        depthStoreOp: 'store',
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
       },
     }
 
@@ -147,7 +151,7 @@ export class Renderer {
     })
   }
 
-  private static calculateGlobalTransform(transform: TransformComponent) : Mat4 {
+  private static calculateGlobalTransform(transform: TransformComponent): Mat4 {
     if (transform.parent != undefined) {
       return mat4.multiply(this.calculateGlobalTransform(transform.parent), transform.transformationMatrix)
     } else {
@@ -159,58 +163,77 @@ export class Renderer {
     mat4.multiply(camera.projectionMatrix, Renderer.calculateGlobalTransform(transform), this.viewProjectionMatrix)
   }
 
-  initMeshRenderers(components : [TransformComponent, MeshRendererComponent][]) {
+  initMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
     components.forEach(([transform, meshRenderer]) => {
       meshRenderer.modelMatrixBuffer = this.device.createBuffer({
         size: transform.transformationMatrix.byteLength,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       })
 
       meshRenderer.bindGroup = this.device.createBindGroup({
         layout: this.pipeline.getBindGroupLayout(0),
-        entries: [{
-          binding: 0,
-          resource: { buffer: meshRenderer.modelMatrixBuffer }
-        }]
+        entries: [
+          {
+            binding: 0,
+            resource: { buffer: meshRenderer.modelMatrixBuffer },
+          },
+        ],
       })
     })
   }
-
 
   render(models: [TransformComponent, MeshRendererComponent][]) {
     this.renderPassDescriptor.colorAttachments = [
       {
         view: this.context.getCurrentTexture().createView(),
         clearValue: [0.5, 0.5, 0.5, 1.0],
-        loadOp: 'clear',
-        storeOp: 'store',
+        loadOp: "clear",
+        storeOp: "store",
       },
     ]
-    
-    const commandEncoder = this.device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor);
-    passEncoder.setPipeline(this.pipeline);
-    
+
+    const commandEncoder = this.device.createCommandEncoder()
+    const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor)
+    passEncoder.setPipeline(this.pipeline)
+
     models.forEach(([transform, meshRenderer]) => {
       const mvpMatrix = mat4.multiply(this.viewProjectionMatrix, Renderer.calculateGlobalTransform(transform))
-      this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
+      this.device.queue.writeBuffer(
+        meshRenderer.modelMatrixBuffer!,
+        0,
+        mvpMatrix.buffer,
+        mvpMatrix.byteOffset,
+        mvpMatrix.byteLength
+      )
       passEncoder.setBindGroup(0, meshRenderer.bindGroup!)
-      
-      meshRenderer.primitives.forEach(primitiveRenderData => {
-        const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? "uint16" : "uint32"
+
+      meshRenderer.primitives.forEach((primitiveRenderData) => {
+        const type =
+          primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT
+            ? "uint16"
+            : "uint32"
         passEncoder.setIndexBuffer(this.gpuBuffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
         // TODO: don't hardcode the 12 here
         // TODO: don't hardcode which is which (i.e. that 0 is POSITION and 1 is NORMAL); somehow ask the asset manager where which one is
-        const positionAcessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.POSITION)!        
-        passEncoder.setVertexBuffer(0, this.gpuBuffers[positionAcessor.bufferIndex], positionAcessor.offset , positionAcessor.count * 12)
+        const positionAcessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.POSITION)!
+        passEncoder.setVertexBuffer(
+          0,
+          this.gpuBuffers[positionAcessor.bufferIndex],
+          positionAcessor.offset,
+          positionAcessor.count * 12
+        )
         const normalAccessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.NORMAL)!
-        passEncoder.setVertexBuffer(1, this.gpuBuffers[normalAccessor.bufferIndex], normalAccessor.offset , normalAccessor.count * 12)
-        passEncoder.drawIndexed(primitiveRenderData.indexBufferAccessor.count);
+        passEncoder.setVertexBuffer(
+          1,
+          this.gpuBuffers[normalAccessor.bufferIndex],
+          normalAccessor.offset,
+          normalAccessor.count * 12
+        )
+        passEncoder.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })
-
     })
-    
-    passEncoder.end();
-    this.device.queue.submit([commandEncoder.finish()]);
+
+    passEncoder.end()
+    this.device.queue.submit([commandEncoder.finish()])
   }
 }
