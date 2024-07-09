@@ -1,13 +1,10 @@
 import React from 'react'
+import './index.css'
 import { createRoot } from 'react-dom/client'
 import { Editor } from './components/Editor'
 import { Engine } from '../engine/engine'
 
 createRoot(document.getElementById('editor')!).render(<Editor />)
-
-export type EntityTree = {
-  rootNodes: number[]
-}
 
 export class GraphicEditor {
   private engine: Engine
@@ -29,8 +26,10 @@ export class GraphicEditor {
   }
 
   getEntityTree() {
-    return {
-      rootNodes: this.engine.ecs.getEntityTree().rootNodes,
-    }
+    return this.engine.ecs.getEntityTree()
+  }
+
+  getEntityComponentMap() {
+    return this.engine.ecs.getEntityComponentMap()
   }
 }

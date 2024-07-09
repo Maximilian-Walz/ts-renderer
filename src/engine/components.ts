@@ -1,7 +1,8 @@
-import { Mat4, Vec3, mat4 } from "wgpu-matrix"
-import { Component, ComponentType, EntityId } from "./entity-component-system"
+import { Mat4, Vec3, mat4 } from 'wgpu-matrix'
+import { Component, ComponentType, EntityId } from './entity-component-system'
 
 export class TransformComponent extends Component {
+  name: string | undefined
   transformationMatrix: Mat4
   entityId?: EntityId
   parent?: TransformComponent
@@ -14,10 +15,10 @@ export class TransformComponent extends Component {
 }
 
 export enum VertexAttributeType {
-  POSITION = "POSITION",
-  NORMAL = "NORMAL",
-  TANGENT = "TANGEN",
-  TEXCOORD_0 = "TEXCOORD_0",
+  POSITION = 'POSITION',
+  NORMAL = 'NORMAL',
+  TANGENT = 'TANGEN',
+  TEXCOORD_0 = 'TEXCOORD_0',
 }
 
 export enum BufferDataComponentType {
@@ -30,13 +31,13 @@ export enum BufferDataComponentType {
 }
 
 export enum BufferDataType {
-  SCALAR = "SCALAR",
-  VEC2 = "VEC2",
-  VEC3 = "VEC3",
-  VEC4 = "VEC4",
-  MAT2 = "MAT2",
-  MAT3 = "MAT3",
-  MAT4 = "MAT4",
+  SCALAR = 'SCALAR',
+  VEC2 = 'VEC2',
+  VEC3 = 'VEC3',
+  VEC4 = 'VEC4',
+  MAT2 = 'MAT2',
+  MAT3 = 'MAT3',
+  MAT4 = 'MAT4',
 }
 
 export type BufferAccessor = {
@@ -55,6 +56,7 @@ export type PrimitiveRenderData = {
 }
 
 export class MeshRendererComponent extends Component {
+  name: string | undefined
   bindGroup: GPUBindGroup | undefined
   modelMatrixBuffer: GPUBuffer | undefined
   primitives: PrimitiveRenderData[] = []
@@ -65,6 +67,7 @@ export class MeshRendererComponent extends Component {
 }
 
 export class CameraComponent extends Component {
+  name: string | undefined
   projectionMatrix: Mat4
 
   constructor(projectionMatrix: Mat4) {

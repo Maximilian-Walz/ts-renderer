@@ -1,1 +1,1 @@
-import './editor/graphic-editor'
+import './editor'

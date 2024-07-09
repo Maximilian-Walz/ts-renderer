@@ -1,16 +1,6 @@
 html,
-body {
+body,
+#editor {
   margin: 0; /* remove the default margin          */
   height: 100%; /* make the html,body fill the page   */
-}
-
-#editor {
-  width: 100%;
-  height: 100%;
-}
-
-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
 }

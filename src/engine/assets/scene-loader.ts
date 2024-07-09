@@ -1,5 +1,5 @@
-import { GlTf } from "gltf-loader-ts/lib/gltf"
-import { Mat4, mat4, vec3 } from "wgpu-matrix"
+import { GlTf } from 'gltf-loader-ts/lib/gltf'
+import { Mat4, mat4, vec3 } from 'wgpu-matrix'
 import {
   AutoRotateComponent,
   BufferAccessor,
@@ -9,8 +9,8 @@ import {
   PrimitiveRenderData,
   TransformComponent,
   VertexAttributeType,
-} from "../components"
-import { EntityComponentSystem, EntityId } from "../entity-component-system"
+} from '../components'
+import { EntityComponentSystem, EntityId } from '../entity-component-system'
 
 export class SceneLoader {
   static createEntitiesFromGltf(ecs: EntityComponentSystem, gltf: GlTf) {
@@ -27,22 +27,16 @@ export class SceneLoader {
     }
   }
 
-  private static loadNode(
-    ecs: EntityComponentSystem,
-    gltf: GlTf,
-    nodeIndex: number,
-    parentTransform?: TransformComponent
-  ) {
+  private static loadNode(ecs: EntityComponentSystem, gltf: GlTf, nodeIndex: number, parentTransform?: TransformComponent) {
     const node = gltf.nodes![nodeIndex]
     // TODO: Handle transforms that don't come as a matrix
-    const tranformationMatrix = mat4.create(...node.matrix??mat4.identity())
-    const transform = new TransformComponent(tranformationMatrix, parentTransform)
-    const entityId = ecs.createEntity(transform)
-
+    const tranformationMatrix = mat4.create(...(node.matrix ?? mat4.identity()))
+    const transformComponent = new TransformComponent(tranformationMatrix, parentTransform)
+    transformComponent.name = node.name
+    const entityId = ecs.createEntity(transformComponent)
     if (node.mesh != undefined) SceneLoader.loadMesh(ecs, gltf, entityId, node.mesh)
     if (node.camera != undefined) SceneLoader.loadCamera(ecs, gltf, entityId, node.camera)
-    if (node.children != undefined)
-      node.children.forEach((childIndex: number) => this.loadNode(ecs, gltf, childIndex, transform))
+    if (node.children != undefined) node.children.forEach((childIndex: number) => this.loadNode(ecs, gltf, childIndex, transformComponent))
 
     // Add auto rotator to root component for debugging purposes
     if (parentTransform == undefined) {
@@ -54,14 +48,9 @@ export class SceneLoader {
     const camera = gltf.cameras![cameraIndex]
 
     let projectionMatrix: Mat4
-    if (camera.type == "perspective") {
+    if (camera.type == 'perspective') {
       const perspectiveData = camera.perspective!
-      projectionMatrix = mat4.perspective(
-        perspectiveData.yfov,
-        perspectiveData.aspectRatio!,
-        perspectiveData.zfar!,
-        perspectiveData.zfar!
-      )
+      projectionMatrix = mat4.perspective(perspectiveData.yfov, perspectiveData.aspectRatio!, perspectiveData.zfar!, perspectiveData.zfar!)
     } else {
       const orthographicData = camera.orthographic!
       projectionMatrix = mat4.ortho(
@@ -73,20 +62,19 @@ export class SceneLoader {
         orthographicData.zfar
       )
     }
-
-    ecs.addComponentToEntity(entityId, new CameraComponent(projectionMatrix))
+    const cameraComponent = new CameraComponent(projectionMatrix)
+    cameraComponent.name = camera.name
+    ecs.addComponentToEntity(entityId, cameraComponent)
   }
 
   private static loadMesh(ecs: EntityComponentSystem, gltf: GlTf, entityId: EntityId, meshIndex: number) {
     const mesh = gltf.meshes![meshIndex]
     const meshRendererComponent = new MeshRendererComponent()
+    meshRendererComponent.name = mesh.name
     mesh.primitives.forEach((primitive) => {
       const vertexAttributes = new Map<VertexAttributeType, BufferAccessor>()
       Object.entries(primitive.attributes).forEach(([key, accessorIndex]) => {
-        vertexAttributes.set(
-          VertexAttributeType[key as keyof typeof VertexAttributeType],
-          SceneLoader.createAccessor(gltf, accessorIndex)
-        )
+        vertexAttributes.set(VertexAttributeType[key as keyof typeof VertexAttributeType], SceneLoader.createAccessor(gltf, accessorIndex))
       })
 
       const primitiveRenderData: PrimitiveRenderData = {

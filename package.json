@@ -9,15 +9,24 @@
     "build": "webpack"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.13",
     "@types/dat.gui": "^0.7.13",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/stats.js": "^0.17.3",
     "@webgpu/types": "latest",
+    "css-loader": "^7.1.2",
+    "postcss": "^8.4.39",
+    "postcss-loader": "^8.1.1",
+    "postcss-preset-env": "^9.6.0",
+    "prettier": "^3.3.2",
+    "prettier-plugin-tailwindcss": "^0.6.5",
     "source-map-loader": "latest",
+    "style-loader": "^4.0.0",
+    "tailwindcss": "^3.4.4",
     "ts-loader": "latest",
     "typescript": "latest",
-    "webpack": "latest",
+    "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.0.4"
   },
@@ -28,12 +37,5 @@
     "react-dom": "^18.3.1",
     "stats.js": "^0.17.0",
     "wgpu-matrix": "^3.0.1"
-  },
-  "prettier": {
-    "trailingComma": "es5",
-    "tabWidth": 2,
-    "semi": false,
-    "singleQuote": true,
-    "printWidth": 180
   }
 }

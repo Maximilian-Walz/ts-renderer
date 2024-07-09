@@ -1,30 +1,35 @@
-const path = require("path")
+const path = require('path')
 
 module.exports = {
-  mode: "development",
-  entry: "./src/app.ts",
+  mode: 'development',
+  entry: './src/app.ts',
   output: {
-    filename: "bundle.js",
-    path: path.resolve(__dirname, "dist"),
-    publicPath: "/dist/",
+    filename: 'bundle.js',
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/dist/',
   },
   devServer: {
     static: {
-      directory: path.join(__dirname, "/"),
+      directory: path.join(__dirname, '/'),
     },
   },
 
   // Enable sourcemaps for debugging webpack's output.
-  devtool: "source-map",
+  devtool: 'source-map',
 
   resolve: {
-    extensions: [".webpack.js", ".web.js", ".ts", ".tsx", ".js"],
+    extensions: ['.webpack.js', '.web.js', '.ts', '.tsx', '.js', '.css'],
   },
 
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: "ts-loader" },
-      { test: /\.js$/, loader: "source-map-loader" },
+      { test: /\.tsx?$/, loader: 'ts-loader' },
+      { test: /\.js$/, loader: 'source-map-loader' },
+      {
+        test: /\.css$/i,
+        include: path.resolve(__dirname, 'src'),
+        use: ['style-loader', 'css-loader', 'postcss-loader'],
+      },
     ],
   },
   optimization: {

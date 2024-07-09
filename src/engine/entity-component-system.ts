@@ -34,6 +34,8 @@ export interface EntityComponentSystem {
   addComponentToEntity(entityId: EntityId, component: Component): void
   getComponentsAsTuple(componentTypes: ComponentType[]): Component[][]
   getEntityTree(): EntityTree
+  getComponentsByEntityId(entityId: EntityId): Component[]
+  getEntityComponentMap(): Map<EntityId, Component[]>
 }
 
 export class ArchetypeECS implements EntityComponentSystem {
@@ -137,5 +139,24 @@ export class ArchetypeECS implements EntityComponentSystem {
 
   getEntityTree(): EntityTree {
     return this.entityTree
+  }
+
+  getComponentsByEntityId(entityId: EntityId): Component[] {
+    const archetype = this.archetypes[this.entityToArchetypeIndex[entityId]]
+    const rowIndex = archetype.entities.find((value) => value == entityId)!
+    return archetype.columns.map((column) => column[rowIndex])
+  }
+
+  getEntityComponentMap(): Map<number, Component[]> {
+    const componentMap = new Map<number, Component[]>()
+    this.archetypes.forEach((archetype) => {
+      archetype.entities.forEach((entityId, index) => {
+        componentMap.set(
+          entityId,
+          archetype.columns.map((column) => column[index])
+        )
+      })
+    })
+    return componentMap
   }
 }
