@@ -1,4 +1,4 @@
-import { TransformComponent } from "./components"
+import { TransformComponent } from './components'
 
 export type EntityId = number
 type ArchetypeIndex = number
@@ -33,7 +33,7 @@ export interface EntityComponentSystem {
   createEntity(tranform: TransformComponent): EntityId
   addComponentToEntity(entityId: EntityId, component: Component): void
   getComponentsAsTuple(componentTypes: ComponentType[]): Component[][]
-  getEntityTree() : EntityTree
+  getEntityTree(): EntityTree
 }
 
 export class ArchetypeECS implements EntityComponentSystem {
@@ -90,9 +90,7 @@ export class ArchetypeECS implements EntityComponentSystem {
 
   private getOrCreateArchetype(componentTypes: ComponentType[]): Archetype {
     // Check if archetype already exists
-    const archetype = this.archetypes.find((archetype) =>
-      componentTypes.every((componentType) => archetype.componentTypeToIndices.has(componentType))
-    )
+    const archetype = this.archetypes.find((archetype) => componentTypes.every((componentType) => archetype.componentTypeToIndices.has(componentType)))
     if (archetype) return archetype
 
     // If not, create it
@@ -114,16 +112,14 @@ export class ArchetypeECS implements EntityComponentSystem {
     const componentTypesHash = this.hashComponentTypes(componentTypes)
     let result = this.cachedQueries.get(componentTypesHash)
     if (!result) {
-      result = this.archetypes.filter((archetype) =>
-        componentTypes.every((componentType) => archetype.componentTypeToIndices.has(componentType))
-      )
+      result = this.archetypes.filter((archetype) => componentTypes.every((componentType) => archetype.componentTypeToIndices.has(componentType)))
       this.cachedQueries.set(componentTypesHash, result)
     }
     return result
   }
 
   private hashComponentTypes(componentTypes: ComponentType[]): string {
-    return componentTypes.join(",")
+    return componentTypes.join(',')
   }
 
   getComponentsAsTuple(componentTypes: ComponentType[]): Component[][] {
@@ -132,16 +128,14 @@ export class ArchetypeECS implements EntityComponentSystem {
     resultArchetypes.forEach((archetype) => {
       archetype.entities.forEach((entity, index) => {
         const components: Component[] = []
-        componentTypes.forEach((componentType) =>
-          components.push(archetype.columns[archetype.componentTypeToIndices.get(componentType)!][index])
-        )
+        componentTypes.forEach((componentType) => components.push(archetype.columns[archetype.componentTypeToIndices.get(componentType)!][index]))
         entities.push(components)
       })
     })
     return entities
   }
 
-  getEntityTree() : EntityTree {
+  getEntityTree(): EntityTree {
     return this.entityTree
   }
 }

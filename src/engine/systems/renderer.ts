@@ -1,18 +1,13 @@
-import { Mat4, mat4 } from "wgpu-matrix"
-import simpleShader from "../../simple-shader"
-import { AssetManager, BufferTarget } from "../assets/asset-manager"
-import {
-  BufferDataComponentType,
-  CameraComponent,
-  MeshRendererComponent,
-  TransformComponent,
-  VertexAttributeType,
-} from "../components"
+import { Mat4, mat4 } from 'wgpu-matrix'
+import simpleShader from '../../simple-shader'
+import { AssetManager, BufferTarget } from '../assets/asset-manager'
+import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType } from '../components'
 
 export class Renderer {
   private assetManager: AssetManager
-  private canvas!: HTMLCanvasElement
   private device!: GPUDevice
+  private canvas!: HTMLCanvasElement
+  private canvasFormat!: GPUTextureFormat
   private context!: GPUCanvasContext
   private pipeline!: GPURenderPipeline
   private renderPassDescriptor!: GPURenderPassDescriptor
@@ -24,39 +19,43 @@ export class Renderer {
     this.assetManager = assetManager
   }
 
-  async init(canvas: HTMLCanvasElement) {
-    this.canvas = canvas
-    // WebGPU device initialization
+  async init() {
     if (!navigator.gpu) {
-      throw new Error("WebGPU not supported on this browser.")
+      throw new Error('WebGPU not supported on this browser.')
     }
     const adapter = await navigator.gpu.requestAdapter()
     if (!adapter) {
-      throw new Error("No appropriate GPUAdapter found.")
+      throw new Error('No appropriate GPUAdapter found.')
     }
 
     this.device = await adapter.requestDevice()
     this.device.lost.then((info) => {
       console.error(`WebGPU device was lost: ${info.message}`)
-      if (info.reason !== "destroyed") {
-        this.init(canvas)
+      if (info.reason !== 'destroyed') {
+        this.init()
       }
     })
+  }
 
-    // Canvas configuration
-    this.context = canvas.getContext("webgpu")!
-    const canvasFormat = navigator.gpu.getPreferredCanvasFormat()
-    this.context!.configure({
+  setRenderTarget(canvas: HTMLCanvasElement) {
+    this.canvas = canvas
+    this.context = canvas.getContext('webgpu')!
+    this.canvasFormat = navigator.gpu.getPreferredCanvasFormat()
+    this.context.configure({
       device: this.device,
-      format: canvasFormat,
+      format: this.canvasFormat,
     })
+    this.createPipeline()
+    this.createRenderPassDescriptor()
+  }
 
+  createPipeline() {
     const meshBindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
           buffer: {
-            type: "uniform",
+            type: 'uniform',
           },
           visibility: GPUShaderStage.VERTEX,
         },
@@ -80,7 +79,7 @@ export class Renderer {
               {
                 shaderLocation: 0,
                 offset: 0,
-                format: "float32x3",
+                format: 'float32x3',
               },
             ],
           },
@@ -90,7 +89,7 @@ export class Renderer {
               {
                 shaderLocation: 1,
                 offset: 0,
-                format: "float32x3",
+                format: 'float32x3',
               },
             ],
           },
@@ -98,22 +97,24 @@ export class Renderer {
       },
       fragment: {
         module,
-        targets: [{ format: canvasFormat }],
+        targets: [{ format: this.canvasFormat }],
       },
       depthStencil: {
         depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus",
+        depthCompare: 'less',
+        format: 'depth24plus',
       },
       primitive: {
-        topology: "triangle-list",
-        cullMode: "back",
+        topology: 'triangle-list',
+        cullMode: 'back',
       },
     })
+  }
 
+  createRenderPassDescriptor() {
     const depthTexture = this.device.createTexture({
-      size: [canvas.width, canvas.height],
-      format: "depth24plus",
+      size: [this.canvas.width, this.canvas.height],
+      format: 'depth24plus',
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     })
 
@@ -123,40 +124,18 @@ export class Renderer {
           view: this.context.getCurrentTexture().createView(),
 
           clearValue: [0.5, 0.5, 0.5, 1.0],
-          loadOp: "clear",
-          storeOp: "store",
+          loadOp: 'clear',
+          storeOp: 'store',
         },
       ],
       depthStencilAttachment: {
         view: depthTexture.createView(),
 
         depthClearValue: 1.0,
-        depthLoadOp: "clear",
-        depthStoreOp: "store",
-      }, 
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+      },
     }
-
-    // TODO: Fix this. Somehow the depth buffer isn't resized. Do I have to explicitely recreate the pipeline or something?
-    /*
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const width = entry.devicePixelContentBoxSize?.[0].inlineSize ||
-                      entry.contentBoxSize[0].inlineSize * devicePixelRatio;
-        const height = entry.devicePixelContentBoxSize?.[0].blockSize ||
-                       entry.contentBoxSize[0].blockSize * devicePixelRatio;
-        const canvas = entry.target;
-        //@ts-ignore
-        canvas.width = Math.max(1, Math.min(width, this.device.limits.maxTextureDimension2D));
-        //@ts-ignore
-        canvas.height = Math.max(1, Math.min(height, this.device.limits.maxTextureDimension2D));
-      }
-    });
-    try {
-      observer.observe(canvas, { box: 'device-pixel-content-box' });
-    } catch {
-      observer.observe(canvas, { box: 'content-box' });
-    }
-    */
 
     this.assetManager.buffers.forEach((buffer, index) => {
       let usage = GPUBufferUsage.UNIFORM
@@ -185,7 +164,7 @@ export class Renderer {
     mat4.multiply(camera.projectionMatrix, Renderer.calculateGlobalTransform(transform), this.viewProjectionMatrix)
   }
 
-  initMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
+  prepareMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
     components.forEach(([transform, meshRenderer]) => {
       meshRenderer.modelMatrixBuffer = this.device.createBuffer({
         size: transform.transformationMatrix.byteLength,
@@ -205,12 +184,20 @@ export class Renderer {
   }
 
   render(models: [TransformComponent, MeshRendererComponent][]) {
+    const currentWidth = this.canvas.clientWidth
+    const currentHeight = this.canvas.clientHeight
+    if (currentWidth !== this.canvas.width || currentHeight !== this.canvas.height) {
+      this.canvas.width = currentWidth
+      this.canvas.height = currentHeight
+      this.createRenderPassDescriptor()
+    }
+
     this.renderPassDescriptor.colorAttachments = [
       {
         view: this.context.getCurrentTexture().createView(),
         clearValue: [0.5, 0.5, 0.5, 1.0],
-        loadOp: "clear",
-        storeOp: "store",
+        loadOp: 'clear',
+        storeOp: 'store',
       },
     ]
 
@@ -220,37 +207,18 @@ export class Renderer {
 
     models.forEach(([transform, meshRenderer]) => {
       const mvpMatrix = mat4.multiply(this.viewProjectionMatrix, Renderer.calculateGlobalTransform(transform))
-      this.device.queue.writeBuffer(
-        meshRenderer.modelMatrixBuffer!,
-        0,
-        mvpMatrix.buffer,
-        mvpMatrix.byteOffset,
-        mvpMatrix.byteLength
-      )
+      this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
       passEncoder.setBindGroup(0, meshRenderer.bindGroup!)
 
       meshRenderer.primitives.forEach((primitiveRenderData) => {
-        const type =
-          primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT
-            ? "uint16"
-            : "uint32"
+        const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
         passEncoder.setIndexBuffer(this.gpuBuffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
         // TODO: don't hardcode the 12 here
         // TODO: don't hardcode which is which (i.e. that 0 is POSITION and 1 is NORMAL); somehow ask the asset manager where which one is
         const positionAcessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.POSITION)!
-        passEncoder.setVertexBuffer(
-          0,
-          this.gpuBuffers[positionAcessor.bufferIndex],
-          positionAcessor.offset,
-          positionAcessor.count * 12
-        )
+        passEncoder.setVertexBuffer(0, this.gpuBuffers[positionAcessor.bufferIndex], positionAcessor.offset, positionAcessor.count * 12)
         const normalAccessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.NORMAL)!
-        passEncoder.setVertexBuffer(
-          1,
-          this.gpuBuffers[normalAccessor.bufferIndex],
-          normalAccessor.offset,
-          normalAccessor.count * 12
-        )
+        passEncoder.setVertexBuffer(1, this.gpuBuffers[normalAccessor.bufferIndex], normalAccessor.offset, normalAccessor.count * 12)
         passEncoder.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })
     })

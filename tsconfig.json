@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "jsx": "react",
     "outDir": "./dist",
     "allowJs": false,
     "target": "es2017",
