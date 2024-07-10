@@ -56,7 +56,7 @@ export type PrimitiveRenderData = {
 }
 
 export class MeshRendererComponent extends Component {
-  name: string | undefined
+  name?: string
   bindGroup: GPUBindGroup | undefined
   modelMatrixBuffer: GPUBuffer | undefined
   primitives: PrimitiveRenderData[] = []
@@ -67,12 +67,18 @@ export class MeshRendererComponent extends Component {
 }
 
 export class CameraComponent extends Component {
-  name: string | undefined
-  projectionMatrix: Mat4
+  name?: string
+  fov: number
+  aspect?: number
+  zNear: number
+  zfar: number
 
-  constructor(projectionMatrix: Mat4) {
+  constructor(fov?: number, aspect?: number, zNear?: number, zFar?: number) {
     super(ComponentType.CAMERA)
-    this.projectionMatrix = projectionMatrix
+    this.fov = fov ??= (2 * Math.PI) / 5
+    this.aspect = aspect ??= 16 / 9
+    this.zNear = zNear ??= 1
+    this.zfar = zFar ??= 100
   }
 }
 

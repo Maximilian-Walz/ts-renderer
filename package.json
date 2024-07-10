@@ -16,6 +16,7 @@
     "@types/stats.js": "^0.17.3",
     "@webgpu/types": "latest",
     "css-loader": "^7.1.2",
+    "daisyui": "^4.12.10",
     "postcss": "^8.4.39",
     "postcss-loader": "^8.1.1",
     "postcss-preset-env": "^9.6.0",

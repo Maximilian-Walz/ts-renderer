@@ -41,6 +41,7 @@ export interface EntityComponentSystem {
   getComponentsAsTuple(componentTypes: ComponentType[]): Component[][]
   getEntityTree(): EntityTree
   getComponentsByEntityId(entityId: EntityId): Component[]
+  clear(): void
 }
 
 export class ArchetypeECS implements EntityComponentSystem {
@@ -178,6 +179,15 @@ export class ArchetypeECS implements EntityComponentSystem {
     })
     return componentMap
   }
+
+  clear() {
+    this.archetypes = []
+    this.lastEntityId = 0
+    this.entityToArchetypeIndex = []
+    this.cachedQueries.clear()
+    this.entityTree.nodes.clear()
+    this.entityTree.rootNodeIds = []
+  }
 }
 
 type ComponentRecord = {
@@ -254,5 +264,12 @@ export class SimpleEcs implements EntityComponentSystem {
     return this.componentMap
       .filter((componentRecords) => componentRecords.filter((componentRecord) => componentRecord.entityId == entityId).length != 0)
       .map((validComponentRecords) => validComponentRecords[0].component)
+  }
+
+  clear() {
+    this.componentMap = Array.from({ length: NUM_OF_ENTITY_TYPES }, () => [])
+    this.nextEntityIndex = 0
+    this.entityTree.nodes.clear()
+    this.entityTree.rootNodeIds = []
   }
 }

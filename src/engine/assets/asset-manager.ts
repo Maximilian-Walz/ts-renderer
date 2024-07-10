@@ -1,6 +1,6 @@
-import { GltfLoader } from "gltf-loader-ts"
-import { EntityComponentSystem } from "../entity-component-system"
-import { SceneLoader } from "./scene-loader"
+import { GltfLoader } from 'gltf-loader-ts'
+import { EntityComponentSystem } from '../entity-component-system'
+import { SceneLoader } from './scene-loader'
 
 export enum BufferTarget {
   ARRAY_BUFFER = 34962,
@@ -23,29 +23,19 @@ export class AssetManager {
     this.gltfLoader = new GltfLoader()
   }
 
-  async loadSceneFromGltf(path: string, onProgress?: ((xhr: ProgressEvent<EventTarget>) => void) | undefined) {
-    return this.gltfLoader
-      .load(path, (xhr) => {
-        // @ts-ignore
-        if (xhr.total)
-          // @ts-ignore
-          console.log((xhr.loaded / xhr.total) * 100 + "% loaded")
-        else console.log("Finished loading " + path)
-        // @ts-ignore
-        onProgress ?? xhr
+  async loadSceneFromGltf(path: string) {
+    const asset = await this.gltfLoader.load(path)
+    console.log('Finished loading ' + path)
+    SceneLoader.createEntitiesFromGltf(this.ecs, asset.gltf)
+    await Promise.all(
+      asset.gltf.bufferViews!.map(async (bufferView, index) => {
+        await asset.bufferViewData(index).then((data) => {
+          this.buffers[index] = {
+            data: data,
+            target: bufferView.target,
+          }
+        })
       })
-      .then((asset) => {
-        SceneLoader.createEntitiesFromGltf(this.ecs, asset.gltf)
-        asset.gltf.bufferViews!.forEach(
-          async (bufferView, index) =>
-            await asset.bufferViewData(index).then(
-              (data) =>
-                (this.buffers[index] = {
-                  data: data,
-                  target: bufferView.target,
-                })
-            )
-        )
-      })
+    )
   }
 }

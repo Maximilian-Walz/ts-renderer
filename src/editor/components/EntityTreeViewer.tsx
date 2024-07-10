@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { EntityId, EntityNode } from '../../engine/entity-component-system'
 
 type EntityTree = {
@@ -17,15 +17,29 @@ type NodeProps = {
 
 function Node({ nodeId, nodes }: NodeProps) {
   const node = nodes[nodeId]
+  const [expanded, setExpanded] = useState<boolean>(false)
+  const expandable = node.childIds.length > 0
+
   return (
     node && (
-      <div>
-        {node.name || nodeId}
-        {node.childIds.map((childId) => (
-          <div className="ml-3" key={childId}>
-            <Node nodeId={childId} nodes={nodes} />
+      <div tabIndex={1} className="">
+        <button style={{ visibility: expandable ? 'visible' : 'hidden' }} className="h-5 w-5" onClick={() => setExpanded(!expanded)}>
+          {expanded ? '-' : '+'}
+        </button>
+        <button className="btn btn-ghost btn-xs p-0">
+          <div className="badge badge-xs bg-primary-200" />
+          {node.name || nodeId}
+        </button>
+        {expanded && expandable && (
+          <div className="">
+            {node.childIds.map((childId) => (
+              <div key={childId} className="flex">
+                <div className="divider divider-start divider-horizontal -mx-0.5 ml-0.5" />
+                <Node nodeId={childId} nodes={nodes} />
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     )
   )
@@ -33,7 +47,7 @@ function Node({ nodeId, nodes }: NodeProps) {
 
 export function EntityTreeViewer({ entityTree }: Props) {
   return (
-    <div className="m-2 rounded-xl bg-gray-800 p-5">
+    <div className="rounded-xl">
       {entityTree.rootNodeIds.map((nodeId) => (
         <Node key={nodeId} nodeId={nodeId} nodes={entityTree.nodes} />
       ))}

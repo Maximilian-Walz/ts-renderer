@@ -50,21 +50,13 @@ export class SceneLoader {
     let projectionMatrix: Mat4
     if (camera.type == 'perspective') {
       const perspectiveData = camera.perspective!
-      projectionMatrix = mat4.perspective(perspectiveData.yfov, perspectiveData.aspectRatio!, perspectiveData.zfar!, perspectiveData.zfar!)
+      projectionMatrix = mat4.perspective(perspectiveData.yfov, perspectiveData.aspectRatio!, perspectiveData.zfar!, perspectiveData.z!)
+      const cameraComponent = new CameraComponent(perspectiveData.yfov, perspectiveData.aspectRatio, perspectiveData.znear, perspectiveData.zfar)
+      cameraComponent.name = camera.name
+      ecs.addComponentToEntity(entityId, cameraComponent)
     } else {
-      const orthographicData = camera.orthographic!
-      projectionMatrix = mat4.ortho(
-        orthographicData.xmag / 2,
-        orthographicData.xmag / 2,
-        orthographicData.ymag / 2,
-        orthographicData.ymag / 2,
-        orthographicData.znear,
-        orthographicData.zfar
-      )
+      throw Error('Orthographic camera not implemented yet.')
     }
-    const cameraComponent = new CameraComponent(projectionMatrix)
-    cameraComponent.name = camera.name
-    ecs.addComponentToEntity(entityId, cameraComponent)
   }
 
   private static loadMesh(ecs: EntityComponentSystem, gltf: GlTf, entityId: EntityId, meshIndex: number) {

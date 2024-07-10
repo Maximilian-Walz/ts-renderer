@@ -1,7 +1,15 @@
-import { Mat4, mat4 } from 'wgpu-matrix'
+import { Mat4, mat4, vec3 } from 'wgpu-matrix'
 import simpleShader from '../../simple-shader'
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
 import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType } from '../components'
+
+export type CameraData = {
+  viewMatrix: Mat4
+  fov: number
+  aspect: number | 'canvas'
+  zNear: number
+  zFar: number
+}
 
 export class Renderer {
   private assetManager: AssetManager
@@ -13,7 +21,14 @@ export class Renderer {
   private renderPassDescriptor!: GPURenderPassDescriptor
 
   private gpuBuffers: GPUBuffer[] = []
-  private viewProjectionMatrix: Mat4 = mat4.identity()
+
+  private cameraData: CameraData = {
+    viewMatrix: mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37)),
+    fov: (Math.PI * 2) / 5,
+    aspect: 'canvas',
+    zNear: 1,
+    zFar: 100,
+  }
 
   constructor(assetManager: AssetManager) {
     this.assetManager = assetManager
@@ -136,20 +151,6 @@ export class Renderer {
         depthStoreOp: 'store',
       },
     }
-
-    this.assetManager.buffers.forEach((buffer, index) => {
-      let usage = GPUBufferUsage.UNIFORM
-      if (buffer.target == BufferTarget.ARRAY_BUFFER) usage = GPUBufferUsage.VERTEX
-      else if (buffer.target == BufferTarget.ELEMENT_ARRAY_BUFFER) usage = GPUBufferUsage.INDEX
-
-      this.gpuBuffers[index] = this.device.createBuffer({
-        size: buffer.data.length,
-        usage: usage,
-        mappedAtCreation: true,
-      })
-      new Uint8Array(this.gpuBuffers[index].getMappedRange()).set(buffer.data)
-      this.gpuBuffers[index].unmap()
-    })
   }
 
   private static calculateGlobalTransform(transform: TransformComponent): Mat4 {
@@ -160,8 +161,34 @@ export class Renderer {
     }
   }
 
-  setActiveCamera([transform, camera]: [TransformComponent, CameraComponent]) {
-    mat4.multiply(camera.projectionMatrix, Renderer.calculateGlobalTransform(transform), this.viewProjectionMatrix)
+  setActiveCameraComponent([transform, camera]: [TransformComponent, CameraComponent]) {
+    this.cameraData = {
+      viewMatrix: Renderer.calculateGlobalTransform(transform),
+      fov: camera.fov,
+      aspect: camera.aspect ? camera.aspect : 'canvas',
+      zNear: camera.zNear,
+      zFar: camera.zfar,
+    }
+  }
+
+  setActiveCamera(cameraData: CameraData) {
+    this.cameraData = cameraData
+  }
+
+  prepareGpuBuffers() {
+    this.assetManager.buffers.forEach((buffer, index) => {
+      let usage = GPUBufferUsage.UNIFORM
+      if (buffer.target == BufferTarget.ARRAY_BUFFER) usage = GPUBufferUsage.VERTEX
+      else if (buffer.target == BufferTarget.ELEMENT_ARRAY_BUFFER) usage = GPUBufferUsage.INDEX
+      this.gpuBuffers[index] = this.device.createBuffer({
+        size: buffer.data.length,
+        usage: usage,
+        mappedAtCreation: true,
+      })
+      new Uint8Array(this.gpuBuffers[index].getMappedRange()).set(buffer.data)
+      this.gpuBuffers[index].unmap()
+    })
+    console.log('Buffers loaded:', this.gpuBuffers.length)
   }
 
   prepareMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
@@ -181,6 +208,7 @@ export class Renderer {
         ],
       })
     })
+    console.log('Models prepared for rendering:', components.length)
   }
 
   render(models: [TransformComponent, MeshRendererComponent][]) {
@@ -192,21 +220,22 @@ export class Renderer {
       this.createRenderPassDescriptor()
     }
 
-    this.renderPassDescriptor.colorAttachments = [
-      {
-        view: this.context.getCurrentTexture().createView(),
-        clearValue: [0.5, 0.5, 0.5, 1.0],
-        loadOp: 'clear',
-        storeOp: 'store',
-      },
-    ]
+    const renderTexture = (this.renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0]
+    renderTexture.view = this.context.getCurrentTexture().createView()
+
+    const aspect = this.cameraData.aspect == 'canvas' ? currentWidth / currentHeight : this.cameraData.aspect
+    const projectionMatrix = mat4.perspective(this.cameraData.fov, aspect, this.cameraData.zNear, this.cameraData.zFar)
+    const viewProjectionMatrix = mat4.multiply(projectionMatrix, this.cameraData.viewMatrix)
 
     const commandEncoder = this.device.createCommandEncoder()
     const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor)
     passEncoder.setPipeline(this.pipeline)
 
     models.forEach(([transform, meshRenderer]) => {
-      const mvpMatrix = mat4.multiply(this.viewProjectionMatrix, Renderer.calculateGlobalTransform(transform))
+      if (meshRenderer.modelMatrixBuffer == undefined) {
+        return
+      }
+      const mvpMatrix = mat4.multiply(viewProjectionMatrix, Renderer.calculateGlobalTransform(transform))
       this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
       passEncoder.setBindGroup(0, meshRenderer.bindGroup!)
 

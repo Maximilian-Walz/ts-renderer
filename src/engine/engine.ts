@@ -1,10 +1,14 @@
 import Stats from 'stats.js'
-import { Mat4, mat4, vec3 } from 'wgpu-matrix'
 import { AssetManager } from './assets/asset-manager'
-import { AutoRotateComponent, CameraComponent, MeshRendererComponent, TransformComponent } from './components'
+import { AutoRotateComponent, MeshRendererComponent, TransformComponent } from './components'
 import { ComponentType, EntityComponentSystem, SimpleEcs } from './entity-component-system'
 import { Renderer } from './systems/renderer'
 import { Rotator } from './systems/rotator'
+
+export type Scene = {
+  name?: string
+  source: string
+}
 
 export class Engine {
   ecs: EntityComponentSystem
@@ -21,7 +25,6 @@ export class Engine {
   }
 
   async init() {
-    await this.createScene()
     await this.renderer.init()
   }
 
@@ -33,9 +36,6 @@ export class Engine {
   private initRendering() {
     this.stats.showPanel(0)
     document.body.appendChild(this.stats.dom)
-
-    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
-    this.renderer.prepareMeshRenderers(models)
 
     requestAnimationFrame(() => this.loop())
   }
@@ -53,22 +53,11 @@ export class Engine {
     requestAnimationFrame(() => this.loop())
   }
 
-  private async createScene() {
-    this.assetManager.loadSceneFromGltf(
-      //'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf'
-      'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf'
-      //'/assets/gltf/Box.gltf'
-      //'/assets/gltf/hirarchy.glb'
-    )
-
-    const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, 900 / 700, 1, 100.0)
-    const cameraComponent = new CameraComponent(projectionMatrix)
-    const transformComponent = new TransformComponent(mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37)) as Mat4)
-    //const transformComponent = new TransformComponent(mat4.translate(mat4.identity(), vec3.fromValues(0, 0, -3.5)) as Mat4)
-    const cameraEntity = this.ecs.createEntity(transformComponent)
-    this.ecs.addComponentToEntity(cameraEntity, cameraComponent)
-
-    const camera = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA])[0] as [TransformComponent, CameraComponent]
-    this.renderer.setActiveCamera(camera)
+  async loadScene(source: string) {
+    this.ecs.clear()
+    await this.assetManager.loadSceneFromGltf(source)
+    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
+    this.renderer.prepareGpuBuffers()
+    this.renderer.prepareMeshRenderers(models)
   }
 }
