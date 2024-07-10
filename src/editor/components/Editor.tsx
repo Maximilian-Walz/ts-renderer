@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { GraphicEditor } from '..'
 import { EntityTreeViewer } from './EntityTreeViewer'
 import { SceneViewer } from './SceneViewer'
+import { Panel } from './Panel'
+import { EntityViewer } from './EntityViewer'
 
 function useEditor() {
   const editorRef = useRef<GraphicEditor>()
@@ -34,12 +36,16 @@ export function Editor() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const editor = useEditor()
   const editorProjection = useEditorProjection(editor)
+  const [activeEntityId, setActiveEntityId] = useState<number | null>(null)
 
+  const activeEntityName = activeEntityId != null ? (editorProjection.entityTree.nodes[activeEntityId].name ??= `Entity ${activeEntityId}`) : 'Entity Viewer'
   useEffect(() => {
     editor.init().then(() => {
       if (canvasRef.current) {
         editor.setRenderTarget(canvasRef.current)
-        editor.setActiveScene(0).then(() => editorProjection.setProjection(editor))
+        editor.setActiveScene(0).then(() => {
+          editorProjection.setProjection(editor)
+        })
       }
     })
   }, [canvasRef, editor])
@@ -47,15 +53,14 @@ export function Editor() {
   return (
     <div className="relative h-full w-full">
       <canvas className="h-full w-full" ref={canvasRef}></canvas>
-      <div className="collapse absolute top-14 ml-2 w-auto min-w-[50%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
-        <div className="text-md collapse-title font-medium">Scene</div>
-        <input defaultChecked type="checkbox" />
-        <div className="collapse-content">
-          <SceneViewer {...editorProjection} />
-          <div className="divider my-2"></div>
-          <EntityTreeViewer entityTree={editorProjection.entityTree} />
-        </div>
-      </div>
+      <Panel title="Scene" className="absolute left-2 top-2 w-auto min-w-[48%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
+        <SceneViewer {...editorProjection} />
+        <div className="divider my-2"></div>
+        <EntityTreeViewer entityTree={editorProjection.entityTree} setActiveEntityId={setActiveEntityId} />
+      </Panel>
+      <Panel title={activeEntityName} className="absolute right-2 top-2 w-auto min-w-[48%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
+        {activeEntityId != null ? <EntityViewer components={activeEntityId != null ? editor.getComponentsByEntityId(activeEntityId) : undefined} /> : null}
+      </Panel>
     </div>
   )
 }

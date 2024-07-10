@@ -1,23 +1,7 @@
-import { TransformComponent } from './components'
+import { Component, ComponentType, NUM_OF_ENTITY_TYPES, TransformComponent } from './components'
 
 export type EntityId = number
 type ArchetypeIndex = number
-
-const NUM_OF_ENTITY_TYPES = 4
-export enum ComponentType {
-  TRANSFORM,
-  CAMERA,
-  MESH_RENDERER,
-  AUTO_ROTATE,
-}
-
-export abstract class Component {
-  type: ComponentType
-
-  constructor(type: ComponentType) {
-    this.type = type
-  }
-}
 
 export class Archetype {
   entities: EntityId[] = []

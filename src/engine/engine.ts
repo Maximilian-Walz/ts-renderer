@@ -1,7 +1,7 @@
-import Stats from 'stats.js'
+import Stats, { Panel } from 'stats.js'
 import { AssetManager } from './assets/asset-manager'
-import { AutoRotateComponent, MeshRendererComponent, TransformComponent } from './components'
-import { ComponentType, EntityComponentSystem, SimpleEcs } from './entity-component-system'
+import { AutoRotateComponent, ComponentType, MeshRendererComponent, TransformComponent } from './components'
+import { EntityComponentSystem, SimpleEcs } from './entity-component-system'
 import { Renderer } from './systems/renderer'
 import { Rotator } from './systems/rotator'
 
@@ -35,6 +35,9 @@ export class Engine {
 
   private initRendering() {
     this.stats.showPanel(0)
+    this.stats.dom.style.position = 'absolute'
+    this.stats.dom.style.bottom = '0px'
+    this.stats.dom.style.top = 'auto'
     document.body.appendChild(this.stats.dom)
 
     requestAnimationFrame(() => this.loop())

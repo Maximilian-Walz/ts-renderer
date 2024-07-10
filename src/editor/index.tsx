@@ -1,9 +1,9 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { mat4, vec3 } from 'wgpu-matrix'
-import { CameraComponent, TransformComponent } from '../engine/components'
+import { CameraComponent, ComponentType, TransformComponent } from '../engine/components'
 import { Engine, Scene } from '../engine/engine'
-import { ComponentType, EntityNode } from '../engine/entity-component-system'
+import { EntityNode } from '../engine/entity-component-system'
 import { CameraData } from '../engine/systems/renderer'
 import { Editor } from './components/Editor'
 import './index.css'
@@ -14,10 +14,10 @@ export class GraphicEditor {
   private engine: Engine
   private initialized: boolean = false
   private scenes: Scene[] = [
+    { name: 'Hierarchy', source: '/assets/gltf/hirarchy.glb' },
     { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
     { name: 'Duck', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf' },
     { name: 'Box', source: '/assets/gltf/Box.gltf' },
-    { name: 'Hierarchy', source: '/assets/gltf/hirarchy.glb' },
   ]
 
   private cameras: CameraData[] = [
@@ -73,5 +73,9 @@ export class GraphicEditor {
       rootNodeIds: entityTree.rootNodeIds,
       nodes: nodes,
     }
+  }
+
+  getComponentsByEntityId(entityId: number) {
+    return this.engine.ecs.getComponentsByEntityId(entityId).map((component) => component.toJson())
   }
 }

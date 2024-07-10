@@ -8,14 +8,16 @@ type EntityTree = {
 
 type Props = {
   entityTree: EntityTree
+  setActiveEntityId: (entityId: number) => void
 }
 
 type NodeProps = {
   nodeId: EntityId
   nodes: EntityNode[]
+  setActiveEntityId: (entityId: number) => void
 }
 
-function Node({ nodeId, nodes }: NodeProps) {
+function Node({ nodeId, nodes, setActiveEntityId }: NodeProps) {
   const node = nodes[nodeId]
   const [expanded, setExpanded] = useState<boolean>(false)
   const expandable = node.childIds.length > 0
@@ -26,16 +28,16 @@ function Node({ nodeId, nodes }: NodeProps) {
         <button style={{ visibility: expandable ? 'visible' : 'hidden' }} className="h-5 w-5" onClick={() => setExpanded(!expanded)}>
           {expanded ? '-' : '+'}
         </button>
-        <button className="btn btn-ghost btn-xs p-0">
+        <button onClick={() => setActiveEntityId(nodeId)} className="btn btn-ghost btn-xs p-0.5">
           <div className="badge badge-xs bg-primary-200" />
-          {node.name || nodeId}
+          {node.name || `Entity ${nodeId}`}
         </button>
         {expanded && expandable && (
           <div className="">
             {node.childIds.map((childId) => (
               <div key={childId} className="flex">
                 <div className="divider divider-start divider-horizontal -mx-0.5 ml-0.5" />
-                <Node nodeId={childId} nodes={nodes} />
+                <Node nodeId={childId} {...{ nodes, setActiveEntityId }} />
               </div>
             ))}
           </div>
@@ -45,11 +47,11 @@ function Node({ nodeId, nodes }: NodeProps) {
   )
 }
 
-export function EntityTreeViewer({ entityTree }: Props) {
+export function EntityTreeViewer({ entityTree, setActiveEntityId }: Props) {
   return (
     <div className="rounded-xl">
       {entityTree.rootNodeIds.map((nodeId) => (
-        <Node key={nodeId} nodeId={nodeId} nodes={entityTree.nodes} />
+        <Node key={nodeId} nodes={entityTree.nodes} {...{ nodeId, setActiveEntityId }} />
       ))}
     </div>
   )

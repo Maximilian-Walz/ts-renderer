@@ -1,5 +1,22 @@
 import { Mat4, Vec3, mat4 } from 'wgpu-matrix'
-import { Component, ComponentType, EntityId } from './entity-component-system'
+import { EntityId } from './entity-component-system'
+
+export const NUM_OF_ENTITY_TYPES = 4
+export enum ComponentType {
+  TRANSFORM,
+  CAMERA,
+  MESH_RENDERER,
+  AUTO_ROTATE,
+}
+
+export abstract class Component {
+  type: ComponentType
+  abstract toJson(): Object
+
+  constructor(type: ComponentType) {
+    this.type = type
+  }
+}
 
 export class TransformComponent extends Component {
   name: string | undefined
@@ -11,6 +28,16 @@ export class TransformComponent extends Component {
     super(ComponentType.TRANSFORM)
     this.transformationMatrix = tranformationMatrix ?? mat4.identity()
     this.parent = parentTransform
+  }
+
+  toJson(): Object {
+    return {
+      type: this.type,
+      name: this.name,
+      tranformationMatrix: this.transformationMatrix,
+      entityId: this.entityId,
+      parent: this.parent?.entityId,
+    }
   }
 }
 
@@ -64,6 +91,18 @@ export class MeshRendererComponent extends Component {
   constructor() {
     super(ComponentType.MESH_RENDERER)
   }
+
+  toJson(): Object {
+    return {
+      type: this.type,
+      name: this.name,
+      primitives: this.primitives.map((primitiveData) => {
+        return {
+          material: 'Some material data...',
+        }
+      }),
+    }
+  }
 }
 
 export class CameraComponent extends Component {
@@ -80,6 +119,17 @@ export class CameraComponent extends Component {
     this.zNear = zNear ??= 1
     this.zfar = zFar ??= 100
   }
+
+  toJson(): Object {
+    return {
+      type: this.type,
+      name: this.name,
+      fov: this.fov,
+      aspect: this.aspect,
+      zNear: this.zNear,
+      zFar: this.zfar,
+    }
+  }
 }
 
 export class AutoRotateComponent extends Component {
@@ -90,5 +140,13 @@ export class AutoRotateComponent extends Component {
     super(ComponentType.AUTO_ROTATE)
     this.axis = axis
     this.speed = speed
+  }
+
+  toJson(): Object {
+    return {
+      type: this.type,
+      axis: this.axis,
+      speed: this.speed,
+    }
   }
 }
