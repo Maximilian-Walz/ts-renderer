@@ -38,8 +38,6 @@ export class GraphicEditor {
     if (this.initialized) return
     await this.engine.init()
     this.initialized = true
-
-    this.setActiveScene(0)
   }
 
   setRenderTarget(canvas: HTMLCanvasElement) {
