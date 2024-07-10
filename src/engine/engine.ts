@@ -1,10 +1,10 @@
+import Stats from 'stats.js'
 import { Mat4, mat4, vec3 } from 'wgpu-matrix'
 import { AssetManager } from './assets/asset-manager'
 import { AutoRotateComponent, CameraComponent, MeshRendererComponent, TransformComponent } from './components'
-import { ArchetypeECS, ComponentType, EntityComponentSystem } from './entity-component-system'
+import { ComponentType, EntityComponentSystem, SimpleEcs } from './entity-component-system'
 import { Renderer } from './systems/renderer'
 import { Rotator } from './systems/rotator'
-import Stats from 'stats.js'
 
 export class Engine {
   ecs: EntityComponentSystem
@@ -14,7 +14,7 @@ export class Engine {
   private stats: Stats = new Stats()
 
   constructor() {
-    this.ecs = new ArchetypeECS()
+    this.ecs = new SimpleEcs()
     this.assetManager = new AssetManager(this.ecs)
     this.renderer = new Renderer(this.assetManager)
     this.rotator = new Rotator()
@@ -56,18 +56,17 @@ export class Engine {
   private async createScene() {
     this.assetManager.loadSceneFromGltf(
       //'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf'
-      //'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf'
+      'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf'
       //'/assets/gltf/Box.gltf'
-      '/assets/gltf/hirarchy.glb'
+      //'/assets/gltf/hirarchy.glb'
     )
 
     const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, 900 / 700, 1, 100.0)
     const cameraComponent = new CameraComponent(projectionMatrix)
-    //const transformComponent = new TransformComponent(mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37)) as Mat4)
-    const transformComponent = new TransformComponent(mat4.translate(mat4.identity(), vec3.fromValues(0, 0, -3.5)) as Mat4)
+    const transformComponent = new TransformComponent(mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37)) as Mat4)
+    //const transformComponent = new TransformComponent(mat4.translate(mat4.identity(), vec3.fromValues(0, 0, -3.5)) as Mat4)
     const cameraEntity = this.ecs.createEntity(transformComponent)
     this.ecs.addComponentToEntity(cameraEntity, cameraComponent)
-    this.ecs.addComponentToEntity(cameraEntity, transformComponent)
 
     const camera = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA])[0] as [TransformComponent, CameraComponent]
     this.renderer.setActiveCamera(camera)

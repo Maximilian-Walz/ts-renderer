@@ -3,6 +3,7 @@ import { TransformComponent } from './components'
 export type EntityId = number
 type ArchetypeIndex = number
 
+const NUM_OF_ENTITY_TYPES = 4
 export enum ComponentType {
   TRANSFORM,
   CAMERA,
@@ -24,9 +25,14 @@ export class Archetype {
   componentTypeToIndices: Map<ComponentType, number> = new Map()
 }
 
+export type EntityNode = {
+  name?: string
+  childIds: EntityId[]
+}
+
 export type EntityTree = {
-  rootNodes: EntityId[]
-  childMap: Map<EntityId, EntityId[]>
+  rootNodeIds: EntityId[]
+  nodes: Map<EntityId, EntityNode>
 }
 
 export interface EntityComponentSystem {
@@ -35,7 +41,6 @@ export interface EntityComponentSystem {
   getComponentsAsTuple(componentTypes: ComponentType[]): Component[][]
   getEntityTree(): EntityTree
   getComponentsByEntityId(entityId: EntityId): Component[]
-  getEntityComponentMap(): Map<EntityId, Component[]>
 }
 
 export class ArchetypeECS implements EntityComponentSystem {
@@ -43,17 +48,31 @@ export class ArchetypeECS implements EntityComponentSystem {
   private lastEntityId: EntityId = 0
   private entityToArchetypeIndex: ArchetypeIndex[] = []
   private cachedQueries: Map<string, Archetype[]> = new Map()
-  private entityTree: EntityTree = { rootNodes: [], childMap: new Map() }
+  private entityTree: EntityTree = { rootNodeIds: [], nodes: new Map() }
 
   createEntity(tranform: TransformComponent): EntityId {
     this.lastEntityId++
     tranform.entityId = this.lastEntityId
-    if (!tranform.parent) {
-      this.entityTree.rootNodes.push(this.lastEntityId)
-    } else if (this.entityTree.childMap.has(tranform.parent.entityId!)) {
-      this.entityTree.childMap.get(tranform.parent.entityId!)
+
+    if (this.entityTree.nodes.has(this.lastEntityId)) {
+      this.entityTree.nodes.get(this.lastEntityId)!.name = tranform.name
     } else {
-      this.entityTree.childMap.set(tranform.parent.entityId!, [this.lastEntityId])
+      this.entityTree.nodes.set(this.lastEntityId, {
+        name: tranform.name,
+        childIds: [],
+      })
+    }
+
+    if (!tranform.parent) {
+      this.entityTree.rootNodeIds.push(this.lastEntityId)
+    } else {
+      if (this.entityTree.nodes.has(tranform.parent.entityId!)) {
+        this.entityTree.nodes.get(tranform.parent.entityId!)!.childIds.push(this.lastEntityId)
+      } else {
+        this.entityTree.nodes.set(this.lastEntityId, {
+          childIds: [this.lastEntityId],
+        })
+      }
     }
 
     this.addComponentToEntity(this.lastEntityId, tranform)
@@ -158,5 +177,82 @@ export class ArchetypeECS implements EntityComponentSystem {
       })
     })
     return componentMap
+  }
+}
+
+type ComponentRecord = {
+  entityId: number
+  component: Component
+}
+
+export class SimpleEcs implements EntityComponentSystem {
+  // Maps a ComponentType to a list of entities that have it
+  private componentMap: ComponentRecord[][] = Array.from({ length: NUM_OF_ENTITY_TYPES }, () => [])
+  private nextEntityIndex: number = 0
+
+  private entityTree: EntityTree = {
+    rootNodeIds: [],
+    nodes: new Map(),
+  }
+
+  createEntity(tranform: TransformComponent): number {
+    const entityIndex = this.nextEntityIndex
+    tranform.entityId = entityIndex
+
+    if (this.entityTree.nodes.has(entityIndex)) {
+      this.entityTree.nodes.get(entityIndex)!.name = tranform.name
+    } else {
+      this.entityTree.nodes.set(entityIndex, {
+        name: tranform.name,
+        childIds: [],
+      })
+    }
+
+    if (!tranform.parent) {
+      this.entityTree.rootNodeIds.push(entityIndex)
+    } else {
+      if (this.entityTree.nodes.has(tranform.parent.entityId!)) {
+        this.entityTree.nodes.get(tranform.parent.entityId!)!.childIds.push(entityIndex)
+      } else {
+        this.entityTree.nodes.set(entityIndex, {
+          childIds: [entityIndex],
+        })
+      }
+    }
+
+    this.addComponentToEntity(entityIndex, tranform)
+    this.nextEntityIndex++
+    return entityIndex
+  }
+
+  addComponentToEntity(entityId: number, component: Component): void {
+    this.componentMap[component.type].push({
+      entityId: entityId,
+      component: component,
+    })
+  }
+
+  getComponentsAsTuple(componentTypes: ComponentType[]): Component[][] {
+    const componentsPerEntity = []
+    for (let entityId = 0; entityId < this.nextEntityIndex; entityId++) {
+      const validComponents = componentTypes
+        .map((componentType) => this.componentMap[componentType].filter((componentRecord) => componentRecord.entityId == entityId))
+        .filter((validComponentRecords) => validComponentRecords.length > 0)
+        .map((validComponentRecords) => validComponentRecords[0].component)
+      if (validComponents.length == componentTypes.length) {
+        componentsPerEntity.push(validComponents)
+      }
+    }
+    return componentsPerEntity
+  }
+
+  getEntityTree(): EntityTree {
+    return this.entityTree
+  }
+
+  getComponentsByEntityId(entityId: number): Component[] {
+    return this.componentMap
+      .filter((componentRecords) => componentRecords.filter((componentRecord) => componentRecord.entityId == entityId).length != 0)
+      .map((validComponentRecords) => validComponentRecords[0].component)
   }
 }

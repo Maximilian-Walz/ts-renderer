@@ -1,8 +1,9 @@
 import React from 'react'
-import './index.css'
 import { createRoot } from 'react-dom/client'
-import { Editor } from './components/Editor'
 import { Engine } from '../engine/engine'
+import { EntityNode } from '../engine/entity-component-system'
+import { Editor } from './components/Editor'
+import './index.css'
 
 createRoot(document.getElementById('editor')!).render(<Editor />)
 
@@ -26,10 +27,15 @@ export class GraphicEditor {
   }
 
   getEntityTree() {
-    return this.engine.ecs.getEntityTree()
-  }
+    const entityTree = this.engine.ecs.getEntityTree()
+    const nodes: EntityNode[] = Array(entityTree.nodes.size)
+    for (let [entityId, entityNode] of entityTree.nodes.entries()) {
+      nodes[entityId] = entityNode
+    }
 
-  getEntityComponentMap() {
-    return this.engine.ecs.getEntityComponentMap()
+    return {
+      rootNodeIds: entityTree.rootNodeIds,
+      nodes: nodes,
+    }
   }
 }

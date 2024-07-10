@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { EntityTreeViewer } from './EntityTreeViewer'
 import { GraphicEditor } from '..'
+import { EntityTreeViewer } from './EntityTreeViewer'
 
 function useEditor() {
   const editorRef = useRef<GraphicEditor>()
@@ -13,7 +13,6 @@ function useEditor() {
 function projectEditor(editor: GraphicEditor) {
   return {
     entityTree: editor.getEntityTree(),
-    entityComponentMap: editor.getEntityComponentMap(),
   }
 }
 
@@ -43,7 +42,7 @@ export function Editor() {
     <div className="relative h-full w-full">
       <canvas className="h-full w-full" ref={canvasRef}></canvas>
       <div className="absolute top-14">
-        <EntityTreeViewer entityTree={editorProjection.entityTree} entityComponentMap={editorProjection.entityComponentMap} />
+        <EntityTreeViewer entityTree={editorProjection.entityTree} />
       </div>
     </div>
   )
