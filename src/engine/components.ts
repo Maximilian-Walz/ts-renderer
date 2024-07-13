@@ -1,4 +1,4 @@
-import { Mat4, Vec3, mat4 } from 'wgpu-matrix'
+import { Mat4, Quat, Vec3, mat3, mat4, quat, vec3 } from 'wgpu-matrix'
 import { EntityId } from './entity-component-system'
 
 export const NUM_OF_ENTITY_TYPES = 4
@@ -20,21 +20,53 @@ export abstract class Component {
 
 export class TransformComponent extends Component {
   name: string | undefined
-  transformationMatrix: Mat4
+  position: Vec3
+  rotation: Quat
+  scale: Vec3
   entityId?: EntityId
   parent?: TransformComponent
 
-  constructor(tranformationMatrix?: Mat4, parentTransform?: TransformComponent) {
+  constructor(parentTransform?: TransformComponent) {
     super(ComponentType.TRANSFORM)
-    this.transformationMatrix = tranformationMatrix ?? mat4.identity()
     this.parent = parentTransform
+    this.position = vec3.zero()
+    this.rotation = quat.identity()
+    this.scale = vec3.fromValues(1, 1, 1)
+  }
+
+  static fromMatrix(tranformationMatrix: Mat4, parentTransform?: TransformComponent) {
+    const transformComponent = new TransformComponent(parentTransform)
+    transformComponent.position = vec3.getTranslation(tranformationMatrix)
+    transformComponent.scale = vec3.getScaling(tranformationMatrix)
+    transformComponent.rotation = quat.fromMat(mat3.fromMat4(tranformationMatrix))
+
+    return transformComponent
+  }
+
+  static fromValues(position?: Vec3, rotation?: Quat, scale?: Vec3, parentTransform?: TransformComponent) {
+    const transformComponent = new TransformComponent(parentTransform)
+    if (position) transformComponent.position = position
+    if (rotation) transformComponent.rotation = rotation
+    if (scale) transformComponent.scale = scale
+    return transformComponent
+  }
+
+  toMatrix() {
+    const matrix = mat4.fromQuat(this.rotation)
+    matrix[12] = this.position[0]
+    matrix[13] = this.position[1]
+    matrix[14] = this.position[2]
+    mat4.scale(matrix, this.scale, matrix)
+    return matrix
   }
 
   toJson(): Object {
     return {
       type: this.type,
       name: this.name,
-      tranformationMatrix: this.transformationMatrix,
+      position: this.position,
+      rotation: this.rotation,
+      scale: this.scale,
       entityId: this.entityId,
       parent: this.parent?.entityId,
     }
@@ -110,14 +142,19 @@ export class CameraComponent extends Component {
   fov: number
   aspect?: number
   zNear: number
-  zfar: number
+  zFar: number
 
   constructor(fov?: number, aspect?: number, zNear?: number, zFar?: number) {
     super(ComponentType.CAMERA)
     this.fov = fov ??= (2 * Math.PI) / 5
     this.aspect = aspect ??= 16 / 9
     this.zNear = zNear ??= 1
-    this.zfar = zFar ??= 100
+    this.zFar = zFar ??= 100
+  }
+
+  getPerspective(aspect?: number): Mat4 {
+    // TODO: Aspect is not applied on default camera
+    return mat4.perspective(this.fov, (this.aspect ??= aspect ??= 1), this.zNear, this.zFar)
   }
 
   toJson(): Object {
@@ -127,7 +164,7 @@ export class CameraComponent extends Component {
       fov: this.fov,
       aspect: this.aspect,
       zNear: this.zNear,
-      zFar: this.zfar,
+      zFar: this.zFar,
     }
   }
 }

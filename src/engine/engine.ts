@@ -1,4 +1,4 @@
-import Stats, { Panel } from 'stats.js'
+import Stats from 'stats.js'
 import { AssetManager } from './assets/asset-manager'
 import { AutoRotateComponent, ComponentType, MeshRendererComponent, TransformComponent } from './components'
 import { EntityComponentSystem, SimpleEcs } from './entity-component-system'

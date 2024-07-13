@@ -1,14 +1,11 @@
-import { Mat4, mat4, vec3 } from 'wgpu-matrix'
+import { Mat4, mat4 } from 'wgpu-matrix'
 import simpleShader from '../../simple-shader'
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
 import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType } from '../components'
 
 export type CameraData = {
-  viewMatrix: Mat4
-  fov: number
-  aspect: number | 'canvas'
-  zNear: number
-  zFar: number
+  transform: TransformComponent
+  camera: CameraComponent
 }
 
 export class Renderer {
@@ -22,13 +19,7 @@ export class Renderer {
 
   private gpuBuffers: GPUBuffer[] = []
 
-  private cameraData: CameraData = {
-    viewMatrix: mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37)),
-    fov: (Math.PI * 2) / 5,
-    aspect: 'canvas',
-    zNear: 1,
-    zFar: 100,
-  }
+  private cameraData: CameraData | undefined
 
   constructor(assetManager: AssetManager) {
     this.assetManager = assetManager
@@ -120,6 +111,7 @@ export class Renderer {
         format: 'depth24plus',
       },
       primitive: {
+        // TODO: don't hardcode!
         topology: 'triangle-list',
         cullMode: 'back',
       },
@@ -155,20 +147,18 @@ export class Renderer {
 
   private static calculateGlobalTransform(transform: TransformComponent): Mat4 {
     if (transform.parent != undefined) {
-      return mat4.multiply(this.calculateGlobalTransform(transform.parent), transform.transformationMatrix)
+      return mat4.multiply(this.calculateGlobalTransform(transform.parent), transform.toMatrix())
     } else {
-      return transform.transformationMatrix
+      return transform.toMatrix()
     }
   }
 
   setActiveCameraComponent([transform, camera]: [TransformComponent, CameraComponent]) {
     this.cameraData = {
-      viewMatrix: Renderer.calculateGlobalTransform(transform),
-      fov: camera.fov,
-      aspect: camera.aspect ? camera.aspect : 'canvas',
-      zNear: camera.zNear,
-      zFar: camera.zfar,
+      transform: transform,
+      camera: camera,
     }
+    console.log(this.cameraData)
   }
 
   setActiveCamera(cameraData: CameraData) {
@@ -194,7 +184,7 @@ export class Renderer {
   prepareMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
     components.forEach(([transform, meshRenderer]) => {
       meshRenderer.modelMatrixBuffer = this.device.createBuffer({
-        size: transform.transformationMatrix.byteLength,
+        size: transform.toMatrix().byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       })
 
@@ -212,6 +202,10 @@ export class Renderer {
   }
 
   render(models: [TransformComponent, MeshRendererComponent][]) {
+    if (!this.cameraData) {
+      return
+    }
+
     const currentWidth = this.canvas.clientWidth
     const currentHeight = this.canvas.clientHeight
     if (currentWidth !== this.canvas.width || currentHeight !== this.canvas.height) {
@@ -223,9 +217,9 @@ export class Renderer {
     const renderTexture = (this.renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0]
     renderTexture.view = this.context.getCurrentTexture().createView()
 
-    const aspect = this.cameraData.aspect == 'canvas' ? currentWidth / currentHeight : this.cameraData.aspect
-    const projectionMatrix = mat4.perspective(this.cameraData.fov, aspect, this.cameraData.zNear, this.cameraData.zFar)
-    const viewProjectionMatrix = mat4.multiply(projectionMatrix, this.cameraData.viewMatrix)
+    const aspect = (this.cameraData.camera.aspect ??= currentWidth / currentHeight)
+    const projectionMatrix = this.cameraData.camera.getPerspective(aspect)
+    const viewProjectionMatrix = mat4.multiply(projectionMatrix, Renderer.calculateGlobalTransform(this.cameraData.transform))
 
     const commandEncoder = this.device.createCommandEncoder()
     const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor)

@@ -1,6 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { mat4, vec3 } from 'wgpu-matrix'
+import { vec3 } from 'wgpu-matrix'
 import { CameraComponent, ComponentType, TransformComponent } from '../engine/components'
 import { Engine, Scene } from '../engine/engine'
 import { EntityNode } from '../engine/entity-component-system'
@@ -22,11 +22,8 @@ export class GraphicEditor {
 
   private cameras: CameraData[] = [
     {
-      viewMatrix: mat4.translate(mat4.identity(), vec3.fromValues(0, -0.8, -2.37)),
-      fov: 2,
-      aspect: 'canvas',
-      zNear: 1,
-      zFar: 100,
+      camera: new CameraComponent((Math.PI * 2) / 5, undefined, 1, 100),
+      transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -3), undefined, undefined),
     },
   ]
 

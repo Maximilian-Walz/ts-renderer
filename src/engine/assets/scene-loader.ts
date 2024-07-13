@@ -1,5 +1,5 @@
 import { GlTf } from 'gltf-loader-ts/lib/gltf'
-import { Mat4, mat4, vec3 } from 'wgpu-matrix'
+import { mat4, quat, vec3 } from 'wgpu-matrix'
 import {
   AutoRotateComponent,
   BufferAccessor,
@@ -29,9 +29,20 @@ export class SceneLoader {
 
   private static loadNode(ecs: EntityComponentSystem, gltf: GlTf, nodeIndex: number, parentTransform?: TransformComponent) {
     const node = gltf.nodes![nodeIndex]
-    // TODO: Handle transforms that don't come as a matrix
-    const tranformationMatrix = mat4.create(...(node.matrix ?? mat4.identity()))
-    const transformComponent = new TransformComponent(tranformationMatrix, parentTransform)
+
+    let transformComponent: TransformComponent
+    if (node.matrix) {
+      transformComponent = TransformComponent.fromMatrix(mat4.create(...node.matrix), parentTransform)
+    } else {
+      const translation = node.translation ? vec3.fromValues(...node.translation) : undefined
+      const rotation = node.rotation ? quat.fromValues(...node.rotation) : undefined
+      const scale = node.scale ? vec3.fromValues(...node.scale) : undefined
+      transformComponent = TransformComponent.fromValues(translation, rotation, scale, parentTransform)
+    }
+
+    // TODO: Check if view matrix for camera is correct
+    if (node.camera != undefined) console.log(transformComponent)
+
     transformComponent.name = node.name
     const entityId = ecs.createEntity(transformComponent)
     if (node.mesh != undefined) SceneLoader.loadMesh(ecs, gltf, entityId, node.mesh)
@@ -46,11 +57,10 @@ export class SceneLoader {
 
   private static loadCamera(ecs: EntityComponentSystem, gltf: GlTf, entityId: EntityId, cameraIndex: number) {
     const camera = gltf.cameras![cameraIndex]
+    console.log(camera)
 
-    let projectionMatrix: Mat4
     if (camera.type == 'perspective') {
       const perspectiveData = camera.perspective!
-      projectionMatrix = mat4.perspective(perspectiveData.yfov, perspectiveData.aspectRatio!, perspectiveData.zfar!, perspectiveData.z!)
       const cameraComponent = new CameraComponent(perspectiveData.yfov, perspectiveData.aspectRatio, perspectiveData.znear, perspectiveData.zfar)
       cameraComponent.name = camera.name
       ecs.addComponentToEntity(entityId, cameraComponent)
