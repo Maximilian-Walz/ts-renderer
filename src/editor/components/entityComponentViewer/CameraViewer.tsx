@@ -18,7 +18,7 @@ export function CameraViewer({ entityId, cameraData }: Props) {
   return (
     <ComponentViewer title="Camera" icon={<LuCamera />}>
       <div className="join join-vertical space-y-1">
-        <LabelInput label="Name" initialValue={cameraData.name} onChange={(value) => (getCamera().name = value)} />
+        <LabelInput label="Name" initialValue={(cameraData.name ??= '')} onChange={(value) => (getCamera().name = value)} />
         <NumberInput label={'Field of View'} initialValue={cameraData.fov} precision={4} step={0.1} onChange={(value) => (getCamera().fov = value)} />
         <NumberInput label={'Aspect Ratio'} initialValue={cameraData.aspect} precision={4} step={0.1} onChange={(value) => (getCamera().aspect = value)} />
         <div className="form-control space-y-0.5">

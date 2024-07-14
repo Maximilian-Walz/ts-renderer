@@ -38,7 +38,7 @@ export function TransformViewer({ entityId, transformData }: Props) {
     <ComponentViewer title="Transform" icon={<LuAxis3D />}>
       <div className="join join-vertical space-y-2">
         <div className="self-end">
-          <LabelInput label="Name" initialValue={transformData.name} onChange={(value) => (getTransform().name = value)} />
+          <LabelInput label="Name" initialValue={(transformData.name ??= '')} onChange={(value) => (getTransform().name = value)} />
         </div>
         <VectorInput label="Position" icon={<LuMove3D />} initialValue={position} targetValue={() => getTransform().position} />
         <VectorInput label="Rotation" icon={<LuRotate3D />} initialValue={rotation} targetValue={() => getTransform().rotation} />
