@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { createContext, useEffect, useRef, useState } from 'react'
 import { GraphicEditor } from '..'
 import { EntityTreeViewer } from './EntityTreeViewer'
 import { EntityViewer } from './EntityViewer'
@@ -31,12 +31,14 @@ function useEditorProjection(editor: GraphicEditor) {
     },
   }
 }
+export const EditorContext = createContext<GraphicEditor | undefined>(undefined)
 
 export function Editor() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const editor = useEditor()
   const editorProjection = useEditorProjection(editor)
-  const [activeEntityId, setActiveEntityId] = useState<number | null>(null)
+  const [activeEntityId, setActiveEntityId] = useState<number | null>(0)
+  const [doRealtimeUpdates, setDoRealtimeUpdates] = useState<boolean>(false)
 
   const activeEntityName =
     activeEntityId != null && editorProjection.entityTree.nodes.length > activeEntityId
@@ -48,6 +50,7 @@ export function Editor() {
         editor.setRenderTarget(canvasRef.current)
         editor.setActiveScene(0).then(() => {
           editorProjection.setProjection(editor)
+          setDoRealtimeUpdates(true)
         })
       }
     })
@@ -56,14 +59,16 @@ export function Editor() {
   return (
     <div className="relative h-full w-full">
       <canvas className="h-full w-full" ref={canvasRef}></canvas>
-      <Panel title="Scene" className="bg-base-100 absolute left-2 top-2 w-auto min-w-[48%] md:min-w-[30%] lg:min-w-[20%]">
-        <SceneViewer {...editorProjection} />
-        <div className="divider my-2"></div>
-        <EntityTreeViewer entityTree={editorProjection.entityTree} setActiveEntityId={setActiveEntityId} />
-      </Panel>
-      <Panel title={activeEntityName} className="bg-base-100 absolute right-2 top-2 w-auto min-w-[48%] md:min-w-[30%] lg:min-w-[20%]">
-        {activeEntityId != null ? <EntityViewer components={activeEntityId != null ? editor.getComponentsByEntityId(activeEntityId) : undefined} /> : null}
-      </Panel>
+      <EditorContext.Provider value={editor}>
+        <Panel title="Scene" className="absolute left-2 top-2 w-auto min-w-[48%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
+          <SceneViewer {...editorProjection} />
+          <div className="divider my-2"></div>
+          <EntityTreeViewer entityTree={editorProjection.entityTree} setActiveEntityId={setActiveEntityId} />
+        </Panel>
+        <Panel title={activeEntityName} className="absolute right-2 top-2 w-auto min-w-[48%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
+          {activeEntityId != null ? <EntityViewer {...{ activeEntityId, doRealtimeUpdates }} /> : null}
+        </Panel>
+      </EditorContext.Provider>
     </div>
   )
 }

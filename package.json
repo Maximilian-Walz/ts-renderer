@@ -32,10 +32,12 @@
     "webpack-dev-server": "^5.0.4"
   },
   "dependencies": {
+    "@uidotdev/usehooks": "^2.4.1-experimental.1",
     "dat.gui": "^0.7.9",
     "gltf-loader-ts": "^0.3.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "^0.0.0-experimental-df5f2736-20240712",
+    "react-dom": "^0.0.0-experimental-df5f2736-20240712",
+    "react-icons": "^5.2.1",
     "stats.js": "^0.17.0",
     "wgpu-matrix": "^3.0.1"
   }

@@ -1,41 +1,32 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { CameraComponent, ComponentType } from '../../../engine/components'
+import { EditorContext } from '../Editor'
+import { NumberInput } from '../data/NumberInput'
+import { LabelInput } from '../data/LabelInput'
+import { ComponentViewer } from './ComponentViewer'
+import { LuCamera } from 'react-icons/lu'
 
 type Props = {
+  entityId: number
   cameraData: any
 }
 
-export function CameraViewer({ cameraData }: Props) {
+export function CameraViewer({ entityId, cameraData }: Props) {
+  const editor = useContext(EditorContext)
+  const getCamera = () => editor?.getComponentByEntityId(entityId, ComponentType.CAMERA) as CameraComponent
+
   return (
-    <div className="overflox-x-auto">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Camera Component</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Name</td>
-            <td>{cameraData.name}</td>
-          </tr>
-          <tr>
-            <td>Aspect ratio</td>
-            <td>{cameraData.aspect.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td>FOV</td>
-            <td>{cameraData.fov.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td>Clip near</td>
-            <td>{cameraData.zNear.toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td>Clip far</td>
-            <td>{cameraData.zFar.toFixed(2)}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <ComponentViewer title="Camera" icon={<LuCamera />}>
+      <div className="join join-vertical space-y-1">
+        <LabelInput label="Name" initialValue={cameraData.name} onChange={(value) => (getCamera().name = value)} />
+        <NumberInput label={'Field of View'} initialValue={cameraData.fov} precision={4} step={0.1} onChange={(value) => (getCamera().fov = value)} />
+        <NumberInput label={'Aspect Ratio'} initialValue={cameraData.aspect} precision={4} step={0.1} onChange={(value) => (getCamera().aspect = value)} />
+        <div className="form-control space-y-0.5">
+          <div className="label-text -mb-4">Clip</div>
+          <NumberInput label={'Near'} initialValue={cameraData.zNear} precision={4} onChange={(value) => (getCamera().zNear = value)} />
+          <NumberInput label={'Far'} initialValue={cameraData.zFar} precision={4} onChange={(value) => (getCamera().zFar = value)} />
+        </div>
+      </div>
+    </ComponentViewer>
   )
 }

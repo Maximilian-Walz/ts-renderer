@@ -1,5 +1,9 @@
-import React, { useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { EntityId, EntityNode } from '../../engine/entity-component-system'
+import { LuAxis3D, LuBox, LuCamera } from 'react-icons/lu'
+import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
+import { EditorContext } from './Editor'
+import { ComponentType } from '../../engine/components'
 
 type EntityTree = {
   rootNodeIds: number[]
@@ -11,6 +15,12 @@ type Props = {
   setActiveEntityId: (entityId: number) => void
 }
 
+function getIcon(componentTypes: ComponentType[]): JSX.Element {
+  if (componentTypes.includes(ComponentType.CAMERA)) return <LuCamera />
+  else if (componentTypes.includes(ComponentType.MESH_RENDERER)) return <LuBox />
+  else return <LuAxis3D />
+}
+
 type NodeProps = {
   nodeId: EntityId
   nodes: EntityNode[]
@@ -18,25 +28,30 @@ type NodeProps = {
 }
 
 function Node({ nodeId, nodes, setActiveEntityId }: NodeProps) {
+  const editor = useContext(EditorContext)
   const node = nodes[nodeId]
   const [expanded, setExpanded] = useState<boolean>(false)
   const expandable = node.childIds.length > 0
 
+  const icon = getIcon(editor!.getComponentTypesByEntityId(nodeId))
+
   return (
     node && (
-      <div tabIndex={1} className="">
-        <button style={{ visibility: expandable ? 'visible' : 'hidden' }} className="h-5 w-5" onClick={() => setExpanded(!expanded)}>
-          {expanded ? '-' : '+'}
-        </button>
-        <button onClick={() => setActiveEntityId(nodeId)} className="btn btn-ghost btn-xs p-0.5">
-          <div className="badge badge-xs bg-primary-200" />
-          {node.name || `Entity ${nodeId}`}
-        </button>
+      <div tabIndex={1} className="mt-0.5">
+        <div className="join items-center">
+          <button style={{ visibility: expandable ? 'visible' : 'hidden' }} className="mr-1 rounded-full hover:bg-gray-700" onClick={() => setExpanded(!expanded)}>
+            {expanded ? <MdKeyboardArrowUp /> : <MdKeyboardArrowDown />}
+          </button>
+          <button onClick={() => setActiveEntityId(nodeId)} className="btn btn-ghost btn-xs content-center rounded-full px-1 text-sm hover:bg-gray-700">
+            <div className="rounded-full px-0 text-primary-500">{icon}</div>
+            {node.name || `Entity ${nodeId}`}
+          </button>
+        </div>
         {expanded && expandable && (
-          <div className="">
+          <div>
             {node.childIds.map((childId) => (
               <div key={childId} className="flex">
-                <div className="divider divider-start divider-horizontal -mx-0.5 ml-0.5" />
+                <div className="divider divider-start divider-horizontal -mr-0.5 ml-0" />
                 <Node nodeId={childId} {...{ nodes, setActiveEntityId }} />
               </div>
             ))}

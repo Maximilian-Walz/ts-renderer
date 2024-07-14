@@ -25,6 +25,8 @@ export interface EntityComponentSystem {
   getComponentsAsTuple(componentTypes: ComponentType[]): Component[][]
   getEntityTree(): EntityTree
   getComponentsByEntityId(entityId: EntityId): Component[]
+  getComponentByEntityId(entityId: EntityId, type: ComponentType): Component
+  getComponentTypesByEntityId(entityId: EntityId): ComponentType[]
   clear(): void
 }
 
@@ -172,6 +174,14 @@ export class ArchetypeECS implements EntityComponentSystem {
     this.entityTree.nodes.clear()
     this.entityTree.rootNodeIds = []
   }
+
+  getComponentByEntityId(entityId: number, type: ComponentType): Component {
+    throw Error('Not implemented yet')
+  }
+
+  getComponentTypesByEntityId(entityId: EntityId): ComponentType[] {
+    throw Error('Not implemented yet')
+  }
 }
 
 type ComponentRecord = {
@@ -246,8 +256,23 @@ export class SimpleEcs implements EntityComponentSystem {
 
   getComponentsByEntityId(entityId: number): Component[] {
     return this.componentMap
-      .filter((componentRecords) => componentRecords.filter((componentRecord) => componentRecord.entityId == entityId).length != 0)
+      .map((componentRecords) => componentRecords.filter((componentRecord) => componentRecord.entityId === entityId))
+      .filter((validComponentRecords) => validComponentRecords.length > 0)
       .map((validComponentRecords) => validComponentRecords[0].component)
+  }
+
+  getComponentByEntityId(entityId: number, type: ComponentType): Component {
+    return this.componentMap
+      .map((componentRecords) => componentRecords.filter((componentRecord) => componentRecord.entityId === entityId && componentRecord.component.type == type))
+      .filter((validComponentRecords) => validComponentRecords.length > 0)
+      .map((validComponents) => validComponents[0].component)[0]
+  }
+
+  getComponentTypesByEntityId(entityId: number): ComponentType[] {
+    return this.componentMap
+      .map((componentRecords) => componentRecords.filter((componentRecord) => componentRecord.entityId === entityId))
+      .filter((validComponentRecords) => validComponentRecords.length > 0)
+      .map((validComponents) => validComponents[0].component.type)
   }
 
   clear() {

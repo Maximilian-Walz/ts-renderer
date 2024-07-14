@@ -1,38 +1,47 @@
-import React from 'react'
+import { useIntervalWhen } from '@uidotdev/usehooks'
+import React, { useContext, useState } from 'react'
 import { ComponentType } from '../../engine/components'
-import { CameraViewer } from './entityComponentViewer/CameraViewer'
-import { TransformViewer } from './entityComponentViewer/TransformViewer'
-import { MeshRendererViewer } from './entityComponentViewer/MeshRendererViewer'
+import { EditorContext } from './Editor'
 import { AutoRotateViewer } from './entityComponentViewer/AutoRotateViewer'
+import { CameraViewer } from './entityComponentViewer/CameraViewer'
+import { MeshRendererViewer } from './entityComponentViewer/MeshRendererViewer'
+import { TransformViewer } from './entityComponentViewer/TransformViewer'
 
 type Props = {
-  components: any[] | undefined
+  activeEntityId: number
+  doRealtimeUpdates: boolean
 }
 
-function componentSwitch(componentType: ComponentType, componentData: any) {
+function componentSwitch(componentType: ComponentType, activeEntityId: number, componentData: any) {
   switch (componentType) {
     case ComponentType.TRANSFORM:
-      return <TransformViewer transformData={componentData} />
+      return <TransformViewer entityId={activeEntityId} transformData={componentData} />
     case ComponentType.CAMERA:
-      return <CameraViewer cameraData={componentData} />
+      return <CameraViewer entityId={activeEntityId} cameraData={componentData} />
     case ComponentType.MESH_RENDERER:
-      return <MeshRendererViewer meshRendererData={componentData} />
+      return <MeshRendererViewer entityId={activeEntityId} meshRendererData={componentData} />
     case ComponentType.AUTO_ROTATE:
-      return <AutoRotateViewer autoRotateData={componentData} />
+      return <AutoRotateViewer entityId={activeEntityId} autoRotateData={componentData} />
   }
 }
 
-export function EntityViewer({ components }: Props) {
-  console.log(components)
+export function EntityViewer({ activeEntityId, doRealtimeUpdates }: Props) {
+  const editor = useContext(EditorContext)
+  const [components, setComponents] = useState<any[]>(editor!.getComponentsByEntityId(activeEntityId))
+
+  useIntervalWhen(
+    () => {
+      if (editor) {
+        setComponents(editor.getComponentsByEntityId(activeEntityId))
+      }
+    },
+    { ms: 50, when: doRealtimeUpdates, startImmediately: false }
+  )
+
   return components ? (
-    <div>
+    <div className="space-y-2">
       {components.length > 0
-        ? components?.map((component, index) => (
-            <div key={index}>
-              <div className="divider my-2" />
-              {componentSwitch(component.type, component)}
-            </div>
-          ))
+        ? components?.map((component, index) => <div key={index}>{componentSwitch(component.type, activeEntityId, component)}</div>)
         : 'This entity has no components'}
     </div>
   ) : null

@@ -1,31 +1,36 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { VectorInput } from '../data/VectorInput'
+import { EditorContext } from '../Editor'
+import { AutoRotateComponent, ComponentType } from '../../../engine/components'
+import { NumberInput } from '../data/NumberInput'
+import { ComponentViewer } from './ComponentViewer'
+import { LuAxis3D, LuRotateCw } from 'react-icons/lu'
 
 type Props = {
+  entityId: number
   autoRotateData: any
 }
 
-export function AutoRotateViewer({ autoRotateData }: Props) {
+export function AutoRotateViewer({ entityId, autoRotateData }: Props) {
+  const editor = useContext(EditorContext)
+  const getAutoRotate = () => editor?.getComponentByEntityId(entityId, ComponentType.AUTO_ROTATE) as AutoRotateComponent
+
+  const axis = [
+    { label: 'X', value: autoRotateData.axis[0] },
+    { label: 'Y', value: autoRotateData.axis[1] },
+    { label: 'Z', value: autoRotateData.axis[2] },
+  ]
+
   return (
-    <div className="overflox-x-auto">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Auto Rotate Component</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="pr-5">Axis</td>
-            <td>{autoRotateData.axis[0]}</td>
-            <td>{autoRotateData.axis[1]}</td>
-            <td>{autoRotateData.axis[2]}</td>
-          </tr>
-          <tr>
-            <td className="pr-5">Speed</td>
-            <td>{autoRotateData.speed}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <ComponentViewer title="Auto Rotate" icon={<LuRotateCw />}>
+      <div className="join join-vertical">
+        <div className="self-end">
+          <NumberInput label="Speed" initialValue={autoRotateData.speed} onChange={(value) => (getAutoRotate().speed = value)} />
+        </div>
+        <div>
+          <VectorInput label="Axis" icon={<LuAxis3D />} initialValue={axis} targetValue={() => getAutoRotate().axis} />
+        </div>
+      </div>
+    </ComponentViewer>
   )
 }

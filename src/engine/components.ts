@@ -147,14 +147,13 @@ export class CameraComponent extends Component {
   constructor(fov?: number, aspect?: number, zNear?: number, zFar?: number) {
     super(ComponentType.CAMERA)
     this.fov = fov ??= (2 * Math.PI) / 5
-    this.aspect = aspect ??= 16 / 9
+    this.aspect = aspect
     this.zNear = zNear ??= 1
     this.zFar = zFar ??= 100
   }
 
   getPerspective(aspect?: number): Mat4 {
-    // TODO: Aspect is not applied on default camera
-    return mat4.perspective(this.fov, (this.aspect ??= aspect ??= 1), this.zNear, this.zFar)
+    return mat4.perspective(this.fov, (aspect ??= this.aspect ??= 1), this.zNear, this.zFar)
   }
 
   toJson(): Object {
