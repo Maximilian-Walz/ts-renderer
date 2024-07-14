@@ -48,7 +48,7 @@ export class SceneLoader {
 
     // Add auto rotator to mesh renderer components for debugging purposes
     if (node.mesh != undefined) {
-      ecs.addComponentToEntity(entityId, new AutoRotateComponent(vec3.fromValues(0, 0, 1), 10))
+      //ecs.addComponentToEntity(entityId, new AutoRotateComponent(vec3.fromValues(0, 0, 1), 10))
     }
   }
 

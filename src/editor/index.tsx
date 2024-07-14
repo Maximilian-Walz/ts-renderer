@@ -18,6 +18,7 @@ export class GraphicEditor {
     { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
     { name: 'Duck', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf' },
     { name: 'Box', source: '/assets/gltf/Box.gltf' },
+    { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
   ]
 
   private cameras: CameraData[] = [
