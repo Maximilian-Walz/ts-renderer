@@ -1,9 +1,9 @@
 import React, { useContext, useState } from 'react'
-import { EntityId, EntityNode } from '../../engine/entity-component-system'
 import { LuAxis3D, LuBox, LuCamera } from 'react-icons/lu'
-import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
-import { EditorContext } from './Editor'
+import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md'
 import { ComponentType } from '../../engine/components'
+import { EntityId, EntityNode } from '../../engine/entity-component-system'
+import { EditorContext } from './Editor'
 
 type EntityTree = {
   rootNodeIds: number[]
@@ -40,7 +40,7 @@ function Node({ nodeId, nodes, setActiveEntityId }: NodeProps) {
       <div tabIndex={1} className="mt-0.5">
         <div className="join items-center">
           <button style={{ visibility: expandable ? 'visible' : 'hidden' }} className="mr-1 rounded-full hover:bg-gray-700" onClick={() => setExpanded(!expanded)}>
-            {expanded ? <MdKeyboardArrowUp /> : <MdKeyboardArrowDown />}
+            {expanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowRight />}
           </button>
           <button onClick={() => setActiveEntityId(nodeId)} className="btn btn-ghost btn-xs content-center rounded-full px-1 text-sm hover:bg-gray-700">
             <div className="rounded-full px-0 text-primary-500">{icon}</div>

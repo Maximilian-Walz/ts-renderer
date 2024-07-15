@@ -137,31 +137,59 @@ export class MeshRendererComponent extends Component {
   }
 }
 
+export type PerspectiveData = {
+  fov: number
+  aspect: number
+}
+
+export type OrthographicData = {
+  xMag: number
+  yMag: number
+}
+
+export enum CameraType {
+  PERSPECTIVE,
+  ORTHOGRAPHIC,
+}
+
 export class CameraComponent extends Component {
   name?: string
-  fov: number
-  aspect?: number
+  cameraType: CameraType
+  useCanvasAspect?: boolean
+  data: PerspectiveData | OrthographicData
   zNear: number
   zFar: number
 
-  constructor(fov?: number, aspect?: number, zNear?: number, zFar?: number) {
+  constructor(cameraType: CameraType, data: PerspectiveData | OrthographicData, zNear?: number, zFar?: number) {
     super(ComponentType.CAMERA)
-    this.fov = fov ??= (2 * Math.PI) / 5
-    this.aspect = aspect
+    this.cameraType = cameraType
+    this.useCanvasAspect = true
+    this.data = data
     this.zNear = zNear ??= 1
     this.zFar = zFar ??= 100
   }
 
-  getPerspective(aspect?: number): Mat4 {
-    return mat4.perspective(this.fov, (aspect ??= this.aspect ??= 1), this.zNear, this.zFar)
+  getProjection(cavasWidth?: number, canvasHeight?: number): Mat4 {
+    let data
+    switch (this.cameraType) {
+      case CameraType.PERSPECTIVE:
+        data = this.data as PerspectiveData
+        if (this.useCanvasAspect && (!cavasWidth || !canvasHeight)) throw Error('Camera is canvas constrained but no canvas width or height is not provided.')
+        const aspect = this.useCanvasAspect ? cavasWidth! / canvasHeight! : data.aspect
+        return mat4.perspective(data.fov, aspect, this.zNear, this.zFar)
+      case CameraType.ORTHOGRAPHIC:
+        data = this.data as OrthographicData
+        return mat4.ortho(data.xMag, data.xMag, data.yMag, data.yMag, this.zNear, this.zFar)
+    }
   }
 
   toJson(): Object {
     return {
       type: this.type,
       name: this.name,
-      fov: this.fov,
-      aspect: this.aspect,
+      data: this.data,
+      cameraType: this.cameraType,
+      useCanvasAspect: this.useCanvasAspect,
       zNear: this.zNear,
       zFar: this.zFar,
     }

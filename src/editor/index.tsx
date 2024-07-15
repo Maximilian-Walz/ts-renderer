@@ -1,7 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { quat, vec3 } from 'wgpu-matrix'
-import { CameraComponent, ComponentType, TransformComponent } from '../engine/components'
+import { vec3 } from 'wgpu-matrix'
+import { CameraComponent, CameraType, ComponentType, TransformComponent } from '../engine/components'
 import { Engine, Scene } from '../engine/engine'
 import { EntityNode } from '../engine/entity-component-system'
 import { CameraData } from '../engine/systems/renderer'
@@ -23,7 +23,7 @@ export class GraphicEditor {
 
   private cameras: CameraData[] = [
     {
-      camera: new CameraComponent((Math.PI * 2) / 5, undefined, 1, 100),
+      camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }),
       transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -3), undefined, undefined),
     },
   ]

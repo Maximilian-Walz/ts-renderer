@@ -1,15 +1,6 @@
 import { GlTf } from 'gltf-loader-ts/lib/gltf'
 import { mat4, quat, vec3 } from 'wgpu-matrix'
-import {
-  AutoRotateComponent,
-  BufferAccessor,
-  BufferDataType,
-  CameraComponent,
-  MeshRendererComponent,
-  PrimitiveRenderData,
-  TransformComponent,
-  VertexAttributeType,
-} from '../components'
+import { BufferAccessor, BufferDataType, CameraComponent, CameraType, MeshRendererComponent, PrimitiveRenderData, TransformComponent, VertexAttributeType } from '../components'
 import { EntityComponentSystem, EntityId } from '../entity-component-system'
 
 export class SceneLoader {
@@ -55,14 +46,25 @@ export class SceneLoader {
   private static loadCamera(ecs: EntityComponentSystem, gltf: GlTf, entityId: EntityId, cameraIndex: number) {
     const camera = gltf.cameras![cameraIndex]
 
+    let cameraComponent: CameraComponent
     if (camera.type == 'perspective') {
       const perspectiveData = camera.perspective!
-      const cameraComponent = new CameraComponent(perspectiveData.yfov, perspectiveData.aspectRatio, perspectiveData.znear, perspectiveData.zfar)
-      cameraComponent.name = camera.name
-      ecs.addComponentToEntity(entityId, cameraComponent)
+      const cameraData = {
+        fov: perspectiveData.yfov,
+        aspect: (perspectiveData.aspectRatio ??= 1),
+      }
+      cameraComponent = new CameraComponent(CameraType.PERSPECTIVE, cameraData, perspectiveData.znear, perspectiveData.zfar)
+      cameraComponent.useCanvasAspect = !perspectiveData.aspectRatio
     } else {
-      throw Error('Orthographic camera not implemented yet.')
+      const orthographicData = camera.orthographic!
+      const cameraData = {
+        xMag: orthographicData.xmag,
+        yMag: orthographicData.ymag,
+      }
+      cameraComponent = new CameraComponent(CameraType.ORTHOGRAPHIC, cameraData, orthographicData.znear, orthographicData.zfar)
     }
+    cameraComponent.name = camera.name
+    ecs.addComponentToEntity(entityId, cameraComponent)
   }
 
   private static loadMesh(ecs: EntityComponentSystem, gltf: GlTf, entityId: EntityId, meshIndex: number) {

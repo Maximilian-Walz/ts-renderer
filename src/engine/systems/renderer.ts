@@ -1,4 +1,4 @@
-import { Mat4, mat4, quat, vec3 } from 'wgpu-matrix'
+import { Mat4, mat4 } from 'wgpu-matrix'
 import simpleShader from '../../simple-shader'
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
 import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType } from '../components'
@@ -216,8 +216,7 @@ export class Renderer {
     const renderTexture = (this.renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0]
     renderTexture.view = this.context.getCurrentTexture().createView()
 
-    const aspect = this.cameraData.camera.aspect ? this.cameraData.camera.aspect : currentWidth / currentHeight
-    const projectionMatrix = this.cameraData.camera.getPerspective(aspect)
+    const projectionMatrix = this.cameraData.camera.getProjection(currentWidth, currentHeight)
     const viewProjectionMatrix = mat4.multiply(projectionMatrix, Renderer.calculateGlobalTransform(this.cameraData.transform))
     //const viewProjectionMatrix = mat4.perspective(1, 1, 1, 100)
     //mat4.multiply(viewProjectionMatrix, mat4.transform, viewProjectionMatrix)
