@@ -64,7 +64,7 @@ export function Editor() {
         <Panel title="Scene" className="absolute left-2 top-2 w-auto min-w-[48%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
           <SceneViewer {...editorProjection} />
           <div className="divider my-2"></div>
-          <EntityTreeViewer entityTree={editorProjection.entityTree} setActiveEntityId={setActiveEntityId} />
+          <EntityTreeViewer entityTree={editorProjection.entityTree} activeEntityId={activeEntityId} setActiveEntityId={setActiveEntityId} />
         </Panel>
         <Panel title={activeEntityName} className="absolute right-2 top-2 w-auto min-w-[48%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
           {activeEntityId != null ? <EntityViewer {...{ activeEntityId, doRealtimeUpdates }} /> : null}

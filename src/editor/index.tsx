@@ -4,6 +4,7 @@ import { mat4, quat, utils, vec3 } from 'wgpu-matrix'
 import { CameraComponent, CameraType, ComponentType, TransformComponent } from '../engine/components'
 import { Engine, Scene } from '../engine/engine'
 import { EntityNode } from '../engine/entity-component-system'
+import { CameraData } from '../engine/systems/renderer'
 import { Editor } from './components/Editor'
 import './index.css'
 
@@ -28,6 +29,8 @@ export class GraphicEditor {
     cameraTarget: vec3.zero(),
   }
 
+  activeCameraEntityId: number | undefined
+
   constructor() {
     this.engine = new Engine()
   }
@@ -51,9 +54,7 @@ export class GraphicEditor {
     this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
 
     const cameras = this.engine.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA]) as [TransformComponent, CameraComponent][]
-    if (cameras.length > 0) {
-      console.log('Using scene camera')
-      this.engine.renderer.setActiveCameraComponent(cameras[0])
+    if (cameras.length > 0 && false) {
     } else {
       console.log('Using default camera')
       this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
@@ -85,8 +86,21 @@ export class GraphicEditor {
     return this.engine.ecs.getComponentTypesByEntityId(entityId)
   }
 
+  setActiveCamera(cameraEntityId: number) {
+    const cameraData: CameraData = {
+      camera: this.engine.ecs.getComponentByEntityId(cameraEntityId, ComponentType.CAMERA) as CameraComponent,
+      transform: this.engine.ecs.getComponentByEntityId(cameraEntityId, ComponentType.TRANSFORM) as TransformComponent,
+    }
+    // TODO: Clone camera data to editorCam (to mirror Blenders camera behaviour, when moving inside a scene camera)
+    this.engine.renderer.setActiveCamera(cameraData)
+    this.activeCameraEntityId = cameraEntityId
+  }
+
   applyCameraPan(deltaX: number, deltaY: number) {
-    // TODO: Set ediorCamera as active
+    // Set ediorCamera as active
+    this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
+    this.activeCameraEntityId = undefined
+
     const position = this.editorCamera.cameraData.transform.position
     const target = this.editorCamera.cameraTarget
 
@@ -102,7 +116,10 @@ export class GraphicEditor {
   }
 
   applyCameraRotation(deltaX: number, deltaY: number) {
-    // TODO: Set ediorCamera as active
+    // Set ediorCamera as active
+    this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
+    this.activeCameraEntityId = undefined
+
     const angleY = utils.degToRad(deltaX / 10)
     const angleX = utils.degToRad(deltaY / 10)
     const position = this.editorCamera.cameraData.transform.position
