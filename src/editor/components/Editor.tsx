@@ -4,6 +4,7 @@ import { EntityTreeViewer } from './EntityTreeViewer'
 import { EntityViewer } from './EntityViewer'
 import { Panel } from './Panel'
 import { SceneViewer } from './SceneViewer'
+import { Viewport } from './Viewport'
 
 function useEditor() {
   const editorRef = useRef<GraphicEditor>()
@@ -58,8 +59,8 @@ export function Editor() {
 
   return (
     <div className="relative h-full w-full">
-      <canvas className="h-full w-full" ref={canvasRef}></canvas>
       <EditorContext.Provider value={editor}>
+        <Viewport canvasRef={canvasRef} />
         <Panel title="Scene" className="absolute left-2 top-2 w-auto min-w-[48%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
           <SceneViewer {...editorProjection} />
           <div className="divider my-2"></div>

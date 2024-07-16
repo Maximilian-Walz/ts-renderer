@@ -1,4 +1,9 @@
 html,
+body {
+  overscroll-behavior-x: none; /* Prevent chrome 'back' touchpad gesture */
+}
+
+html,
 body,
 #editor {
   margin: 0; /* remove the default margin          */

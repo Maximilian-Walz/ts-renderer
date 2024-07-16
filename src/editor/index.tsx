@@ -1,10 +1,9 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { vec3 } from 'wgpu-matrix'
+import { mat4, quat, utils, vec3 } from 'wgpu-matrix'
 import { CameraComponent, CameraType, ComponentType, TransformComponent } from '../engine/components'
 import { Engine, Scene } from '../engine/engine'
 import { EntityNode } from '../engine/entity-component-system'
-import { CameraData } from '../engine/systems/renderer'
 import { Editor } from './components/Editor'
 import './index.css'
 
@@ -15,18 +14,19 @@ export class GraphicEditor {
   private initialized: boolean = false
   private scenes: Scene[] = [
     { name: 'Hierarchy', source: '/assets/gltf/hirarchy_separate.gltf' },
+    { name: 'Box', source: '/assets/gltf/Box.gltf' },
     { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
     { name: 'Duck', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf' },
-    { name: 'Box', source: '/assets/gltf/Box.gltf' },
     { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
   ]
 
-  private cameras: CameraData[] = [
-    {
+  private editorCamera = {
+    cameraData: {
       camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }),
       transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -3), undefined, undefined),
     },
-  ]
+    cameraTarget: vec3.zero(),
+  }
 
   constructor() {
     this.engine = new Engine()
@@ -48,7 +48,7 @@ export class GraphicEditor {
 
   async setActiveScene(sceneIndex: number) {
     await this.engine.loadScene(this.scenes[sceneIndex].source)
-    this.engine.renderer.setActiveCamera(this.cameras[0])
+    this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
 
     const cameras = this.engine.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA]) as [TransformComponent, CameraComponent][]
     if (cameras.length > 0) {
@@ -56,7 +56,7 @@ export class GraphicEditor {
       this.engine.renderer.setActiveCameraComponent(cameras[0])
     } else {
       console.log('Using default camera')
-      this.engine.renderer.setActiveCamera(this.cameras[0])
+      this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
     }
   }
 
@@ -83,5 +83,43 @@ export class GraphicEditor {
 
   getComponentTypesByEntityId(entityId: number): ComponentType[] {
     return this.engine.ecs.getComponentTypesByEntityId(entityId)
+  }
+
+  applyCameraPan(deltaX: number, deltaY: number) {
+    // TODO: Set ediorCamera as active
+    const position = this.editorCamera.cameraData.transform.position
+    const target = this.editorCamera.cameraTarget
+
+    const currentMatrix = this.editorCamera.cameraData.transform.toMatrix()
+    const rightVector = vec3.set(currentMatrix[0], currentMatrix[4], currentMatrix[8])
+    const upVvector = vec3.set(currentMatrix[1], currentMatrix[5], currentMatrix[9])
+
+    vec3.add(position, vec3.scale(rightVector, deltaX / 100), position)
+    vec3.add(position, vec3.scale(upVvector, -deltaY / 100), position)
+
+    vec3.add(target, vec3.scale(rightVector, deltaX / 100), target)
+    vec3.add(target, vec3.scale(upVvector, -deltaY / 100), target)
+  }
+
+  applyCameraRotation(deltaX: number, deltaY: number) {
+    // TODO: Set ediorCamera as active
+    const angleY = utils.degToRad(deltaX / 10)
+    const angleX = utils.degToRad(deltaY / 10)
+    const position = this.editorCamera.cameraData.transform.position
+    const rotation = this.editorCamera.cameraData.transform.rotation
+    const scale = this.editorCamera.cameraData.transform.scale
+    const target = this.editorCamera.cameraTarget
+    const up = vec3.fromValues(0, 1, 0)
+
+    const viewMatrix = mat4.lookAt(position, vec3.zero(), up)
+    vec3.getTranslation(viewMatrix, position)
+
+    // Get current camera x-axis
+    const currentMatrix = this.editorCamera.cameraData.transform.toMatrix()
+    const axis = vec3.set(currentMatrix[0], currentMatrix[4], currentMatrix[8])
+    const rotX = quat.fromAxisAngle(axis, angleX)
+
+    quat.mul(rotation, rotX, rotation)
+    quat.rotateY(rotation, angleY, rotation) // Important to do y-axis last
   }
 }

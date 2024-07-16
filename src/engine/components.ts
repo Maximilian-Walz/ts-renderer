@@ -34,6 +34,12 @@ export class TransformComponent extends Component {
     this.scale = vec3.fromValues(1, 1, 1)
   }
 
+  setMatrix(tranformationMatrix: Mat4) {
+    vec3.copy(vec3.getTranslation(tranformationMatrix), this.position)
+    vec3.copy(vec3.getScaling(tranformationMatrix), this.scale)
+    quat.copy(quat.fromMat(mat3.fromMat4(tranformationMatrix)), this.rotation)
+  }
+
   static fromMatrix(tranformationMatrix: Mat4, parentTransform?: TransformComponent) {
     const transformComponent = new TransformComponent(parentTransform)
     transformComponent.position = vec3.getTranslation(tranformationMatrix)

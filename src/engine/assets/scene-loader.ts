@@ -34,7 +34,7 @@ export class SceneLoader {
     transformComponent.name = node.name
     const entityId = ecs.createEntity(transformComponent)
     if (node.mesh != undefined) SceneLoader.loadMesh(ecs, gltf, entityId, node.mesh)
-    if (node.camera != undefined) SceneLoader.loadCamera(ecs, gltf, entityId, node.camera)
+    //if (node.camera != undefined) SceneLoader.loadCamera(ecs, gltf, entityId, node.camera)
     if (node.children != undefined) node.children.forEach((childIndex: number) => this.loadNode(ecs, gltf, childIndex, transformComponent))
 
     // Add auto rotator to mesh renderer components for debugging purposes

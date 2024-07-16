@@ -164,6 +164,10 @@ export class Renderer {
     this.cameraData = cameraData
   }
 
+  getActiveCamera() {
+    return this.cameraData
+  }
+
   prepareGpuBuffers() {
     this.assetManager.buffers.forEach((buffer, index) => {
       let usage = GPUBufferUsage.UNIFORM
