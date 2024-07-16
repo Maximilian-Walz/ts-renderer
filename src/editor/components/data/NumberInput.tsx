@@ -1,5 +1,5 @@
-import { useHover } from '@uidotdev/usehooks'
-import React, { FocusEvent, useEffect, useRef, useState } from 'react'
+import { useClickAway, useHover } from '@uidotdev/usehooks'
+import React, { FocusEvent, MutableRefObject, useEffect, useRef, useState } from 'react'
 import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from 'react-icons/md'
 
 type Props = {
@@ -16,6 +16,11 @@ export function NumberInput({ initialValue, onChange, label, labelContained = fa
   const [valid, setValid] = useState<boolean>(true)
   const [editing, setEditing] = useState<boolean>(false)
   const [inputRef, hovering] = useHover()
+
+  const numberInputRef: MutableRefObject<HTMLDivElement> = useClickAway(() => {
+    setEditing(false)
+    window.getSelection()?.empty()
+  })
 
   useEffect(() => {
     if (!editing) {
@@ -88,6 +93,37 @@ export function NumberInput({ initialValue, onChange, label, labelContained = fa
     }, 300)
   }
 
+  const handleMouseDown = (event: React.PointerEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    event.currentTarget.requestPointerLock()
+  }
+
+  const handleMouseMove = (event: React.PointerEvent<HTMLInputElement>) => {
+    if (event.buttons == 1) {
+      let scaledAmount = (step * (event.movementX + event.movementY)) / 100
+      if (event.shiftKey) {
+        scaledAmount /= 10
+      } else if (event.ctrlKey) {
+        scaledAmount *= 10
+      }
+      handleChange((Number.parseFloat(value) + scaledAmount).toString())
+    }
+  }
+
+  const handleMouseUp = (event: React.PointerEvent<HTMLInputElement>) => {
+    document.exitPointerLock()
+    if (event.detail > 0) {
+      setEditing(true)
+      event.currentTarget.focus()
+    }
+  }
+
+  const handleDragStart = (event: React.DragEvent<HTMLInputElement>) => {
+    event.currentTarget.requestPointerLock()
+    event.stopPropagation()
+    event.preventDefault()
+  }
+
   // Block the body from scrolling (or any other element)
   useEffect(() => {
     const cancelWheel = (event: WheelEvent) => wheelTimeout.current && event.preventDefault()
@@ -96,7 +132,7 @@ export function NumberInput({ initialValue, onChange, label, labelContained = fa
   }, [])
 
   return (
-    <div className="form-control indicator join join-horizontal self-end">
+    <div className="form-control indicator join join-horizontal self-end" ref={numberInputRef}>
       {!labelContained && <span className="label-text inline self-center pr-3">{label}</span>}
       {!valid && <span className="badge indicator-item badge-error">!</span>}
       <div className="join join-horizontal mr-auto bg-gray-700" ref={inputRef}>
@@ -112,13 +148,17 @@ export function NumberInput({ initialValue, onChange, label, labelContained = fa
           {labelContained && !editing && <span className="label-text absolute bottom-0 top-0 self-center pl-1">{label}</span>}
           <input
             type="text"
-            className={`input input-xs self-center rounded-none border-none bg-inherit pr-1 align-top hover:bg-gray-600 focus:outline-none ${editing && 'text-start'} ${!editing && (labelContained ? 'text-end' : 'text-center')}`}
+            className={`input input-xs self-center rounded-none border-none bg-inherit pr-1 align-top hover:cursor-ew-resize hover:bg-gray-600 focus:outline-none ${editing && 'text-start'} ${!editing && (labelContained ? 'text-end' : 'text-center')}`}
             value={value}
             onChange={(event) => handleUpdate(event.target.value)}
             onKeyDown={handleSubmit}
             onFocus={startEditing}
             onBlur={handleBlur}
             onWheel={handleWheel}
+            onDragStart={handleDragStart}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
           />
         </div>
         <button
