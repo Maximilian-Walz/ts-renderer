@@ -14,9 +14,9 @@ export class GraphicEditor {
   private engine: Engine
   private initialized: boolean = false
   private scenes: Scene[] = [
+    { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
     { name: 'Hierarchy', source: '/assets/gltf/hirarchy_separate.gltf' },
     { name: 'Box', source: '/assets/gltf/Box.gltf' },
-    { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
     { name: 'Duck', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf' },
     { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
   ]
@@ -102,17 +102,12 @@ export class GraphicEditor {
     this.activeCameraEntityId = undefined
 
     const position = this.editorCamera.cameraData.transform.position
-    const target = this.editorCamera.cameraTarget
-
     const currentMatrix = this.editorCamera.cameraData.transform.toMatrix()
-    const rightVector = vec3.set(currentMatrix[0], currentMatrix[4], currentMatrix[8])
-    const upVvector = vec3.set(currentMatrix[1], currentMatrix[5], currentMatrix[9])
+    const cameraX = mat4.getAxis(mat4.transpose(currentMatrix), 0)
+    const cameraZ = mat4.getAxis(mat4.transpose(currentMatrix), 2)
 
-    vec3.add(position, vec3.scale(rightVector, deltaX / 100), position)
-    vec3.add(position, vec3.scale(upVvector, -deltaY / 100), position)
-
-    vec3.add(target, vec3.scale(rightVector, deltaX / 100), target)
-    vec3.add(target, vec3.scale(upVvector, -deltaY / 100), target)
+    vec3.add(position, vec3.scale(cameraX, deltaX / 100), position)
+    vec3.add(position, vec3.scale(cameraZ, -deltaY / 100), position)
   }
 
   applyCameraRotation(deltaX: number, deltaY: number) {
@@ -125,18 +120,15 @@ export class GraphicEditor {
     const position = this.editorCamera.cameraData.transform.position
     const rotation = this.editorCamera.cameraData.transform.rotation
     const scale = this.editorCamera.cameraData.transform.scale
-    const target = this.editorCamera.cameraTarget
     const up = vec3.fromValues(0, 1, 0)
-
-    const viewMatrix = mat4.lookAt(position, vec3.zero(), up)
-    vec3.getTranslation(viewMatrix, position)
 
     // Get current camera x-axis
     const currentMatrix = this.editorCamera.cameraData.transform.toMatrix()
-    const axis = vec3.set(currentMatrix[0], currentMatrix[4], currentMatrix[8])
-    const rotX = quat.fromAxisAngle(axis, angleX)
-
+    const cameraZ = mat4.getAxis(mat4.transpose(currentMatrix), 2)
+    const cameraX = mat4.getAxis(mat4.transpose(currentMatrix), 0)
+    const rotX = quat.fromAxisAngle(cameraX, angleX)
     quat.mul(rotation, rotX, rotation)
-    quat.rotateY(rotation, angleY, rotation) // Important to do y-axis last
+    quat.rotateY(rotation, angleY, rotation)
+    vec3.getTranslation(currentMatrix, position)
   }
 }

@@ -222,8 +222,6 @@ export class Renderer {
 
     const projectionMatrix = this.cameraData.camera.getProjection(currentWidth, currentHeight)
     const viewProjectionMatrix = mat4.multiply(projectionMatrix, Renderer.calculateGlobalTransform(this.cameraData.transform))
-    //const viewProjectionMatrix = mat4.perspective(1, 1, 1, 100)
-    //mat4.multiply(viewProjectionMatrix, mat4.transform, viewProjectionMatrix)
 
     const commandEncoder = this.device.createCommandEncoder()
     const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor)
