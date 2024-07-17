@@ -61,6 +61,7 @@ export class Engine {
     await this.assetManager.loadSceneFromGltf(source)
     const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
     this.renderer.prepareGpuBuffers()
+    this.renderer.prepareGpuTextures()
     this.renderer.prepareMeshRenderers(models)
   }
 }

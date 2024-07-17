@@ -14,11 +14,13 @@ export class GraphicEditor {
   private engine: Engine
   private initialized: boolean = false
   private scenes: Scene[] = [
+    { name: 'BoomBox', source: '/assets/gltf/BoomBox.glb' },
+    { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
+    { name: 'BoxTextured', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/BoxTextured/glTF-Embedded/BoxTextured.gltf' },
     { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
     { name: 'Hierarchy', source: '/assets/gltf/hirarchy_separate.gltf' },
     { name: 'Box', source: '/assets/gltf/Box.gltf' },
     { name: 'Duck', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf' },
-    { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
   ]
 
   private editorCamera = {

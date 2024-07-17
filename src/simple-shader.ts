@@ -3,7 +3,9 @@ struct Uniforms {
   modelViewProjectionMatrix : mat4x4f,
 }
 
-@binding(0) @group(0) var<uniform> uniforms : Uniforms;
+@group(0) @binding(0) var<uniform> uniforms : Uniforms;
+@group(1) @binding(0) var myTexture: texture_2d<f32>;
+@group(1) @binding(1) var mySampler: sampler;
 
 struct VertexOutput {
   @builtin(position) Position : vec4f,
@@ -33,6 +35,6 @@ fn fs(
   @location(1) fragNormal: vec4f,
   @location(2) fragTexcoord0: vec2f
 ) -> @location(0) vec4f {
-  return vec4(fragTexcoord0, 0, 1);
+  return textureSample(myTexture, mySampler,fragTexcoord0);
 }
 `

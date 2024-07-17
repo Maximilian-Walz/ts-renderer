@@ -105,23 +105,54 @@ export enum BufferDataType {
   MAT4 = 'MAT4',
 }
 
-export const getBufferDataTypeSize = (bufferDataType: BufferDataType) => {
+export const getBufferDataTypeByteCount = (bufferDataType: BufferDataType, componentType: BufferDataComponentType) => {
+  let componentCount
   switch (bufferDataType) {
     case BufferDataType.SCALAR:
-      return 4
+      componentCount = 1
+      break
     case BufferDataType.VEC2:
-      return 8
+      componentCount = 2
+      break
     case BufferDataType.VEC3:
-      return 12
+      componentCount = 3
+      break
     case BufferDataType.VEC4:
-      return 16
+      componentCount = 4
+      break
     case BufferDataType.MAT2:
-      return 16
+      componentCount = 4
+      break
     case BufferDataType.MAT3:
-      return 36
+      componentCount = 9
+      break
     case BufferDataType.MAT4:
-      return 64
+      componentCount = 16
+      break
   }
+
+  let componentSize
+  switch (componentType) {
+    case BufferDataComponentType.SIGNED_BYTE:
+      componentSize = 1
+      break
+    case BufferDataComponentType.UNSIGNED_BYTE:
+      componentSize = 1
+      break
+    case BufferDataComponentType.SIGNED_SHORT:
+      componentSize = 2
+      break
+    case BufferDataComponentType.UNSIGNED_SHORT:
+      componentSize = 2
+      break
+    case BufferDataComponentType.UNSIGNED_INT:
+      componentSize = 4
+      break
+    case BufferDataComponentType.FLOAT:
+      componentSize = 4
+      break
+  }
+  return componentCount * componentSize
 }
 
 export type BufferAccessor = {
@@ -132,11 +163,14 @@ export type BufferAccessor = {
   count: number
 }
 
-export type MaterialData = {}
+export type MaterialData = {
+  name?: string
+  textureIndex: number
+}
 
 export type PrimitiveRenderData = {
   bindGroup: GPUBindGroup | undefined
-  material: MaterialData
+  material?: MaterialData
   indexBufferAccessor: BufferAccessor
   vertexAttributes: Map<VertexAttributeType, BufferAccessor>
   mode: number | undefined

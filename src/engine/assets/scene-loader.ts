@@ -87,18 +87,24 @@ export class SceneLoader {
         vertexAttributes.set(VertexAttributeType[key as keyof typeof VertexAttributeType], SceneLoader.createAccessor(gltf, accessorIndex))
       })
 
-      const materialData: MaterialData = {}
-
       const primitiveRenderData: PrimitiveRenderData = {
         bindGroup: undefined,
         indexBufferAccessor: SceneLoader.createAccessor(gltf, primitive.indices!),
         vertexAttributes: vertexAttributes,
-        material: materialData,
+        material: primitive.material != undefined ? SceneLoader.loadMaterial(gltf, primitive.material) : undefined,
         mode: primitive.mode,
       }
       meshRendererComponent.primitives.push(primitiveRenderData)
     })
     ecs.addComponentToEntity(entityId, meshRendererComponent)
+  }
+
+  private static loadMaterial(gltf: GlTf, materialIndex: number): MaterialData {
+    const material = gltf.materials![materialIndex]
+    return {
+      name: material.name,
+      textureIndex: material.pbrMetallicRoughness?.baseColorTexture?.index!,
+    }
   }
 
   private static createAccessor(gltf: GlTf, accessorIndex: number): BufferAccessor {

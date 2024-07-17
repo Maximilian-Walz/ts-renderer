@@ -1,11 +1,16 @@
 import { Mat4, mat4 } from 'wgpu-matrix'
 import simpleShader from '../../simple-shader'
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
-import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType, getBufferDataTypeSize } from '../components'
+import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../components'
 
 export type CameraData = {
   transform: TransformComponent
   camera: CameraComponent
+}
+
+type GPUTextureData = {
+  texture: GPUTexture
+  sampler: GPUSampler
 }
 
 export class Renderer {
@@ -18,6 +23,7 @@ export class Renderer {
   private renderPassDescriptor!: GPURenderPassDescriptor
 
   private gpuBuffers: GPUBuffer[] = []
+  private gpuTextures: GPUTextureData[] = []
 
   private cameraData: CameraData | undefined
 
@@ -68,13 +74,28 @@ export class Renderer {
       ],
     })
 
+    const primitiveBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          texture: {},
+          visibility: GPUShaderStage.FRAGMENT,
+        },
+        {
+          binding: 1,
+          sampler: {},
+          visibility: GPUShaderStage.FRAGMENT,
+        },
+      ],
+    })
+
     const module = this.device.createShaderModule({
       code: simpleShader,
     })
 
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [meshBindGroupLayout],
+        bindGroupLayouts: [meshBindGroupLayout, primitiveBindGroupLayout],
       }),
       vertex: {
         module,
@@ -180,11 +201,14 @@ export class Renderer {
 
   prepareGpuBuffers() {
     this.assetManager.buffers.forEach((buffer, index) => {
-      let usage = GPUBufferUsage.UNIFORM
+      // TODO: Can I set less as default? Counter example: BoomBox
+      let usage = GPUBufferUsage.UNIFORM | GPUBufferUsage.VERTEX | GPUBufferUsage.INDEX
       if (buffer.target == BufferTarget.ARRAY_BUFFER) usage = GPUBufferUsage.VERTEX
       else if (buffer.target == BufferTarget.ELEMENT_ARRAY_BUFFER) usage = GPUBufferUsage.INDEX
+      const bufferLength = buffer.data.length + (4 - (buffer.data.length % 4))
+      console.log(bufferLength)
       this.gpuBuffers[index] = this.device.createBuffer({
-        size: buffer.data.length,
+        size: bufferLength,
         usage: usage,
         mappedAtCreation: true,
       })
@@ -192,6 +216,35 @@ export class Renderer {
       this.gpuBuffers[index].unmap()
     })
     console.log('Buffers loaded:', this.gpuBuffers.length)
+  }
+
+  prepareGpuTextures() {
+    this.assetManager.textures.forEach((texture, index) => {
+      const gpuTexture = this.device.createTexture({
+        size: [texture.image.width, texture.image.height, 1],
+        format: 'rgba8unorm',
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+      })
+
+      const gpuSampler = texture.sampler
+        ? this.device.createSampler({
+            addressModeU: texture.sampler.wrapS as GPUAddressMode,
+            addressModeV: texture.sampler.wrapT as GPUAddressMode,
+            magFilter: texture.sampler.magFilter as GPUFilterMode,
+            minFilter: texture.sampler.minFilter as GPUFilterMode,
+            mipmapFilter: texture.sampler.mipMapFilter as GPUFilterMode,
+          })
+        : this.device.createSampler({
+            addressModeU: 'repeat',
+            addressModeV: 'repeat',
+          })
+
+      this.device.queue.copyExternalImageToTexture({ source: texture.image }, { texture: gpuTexture }, [texture.image.width, texture.image.height])
+      this.gpuTextures[index] = {
+        texture: gpuTexture,
+        sampler: gpuSampler,
+      }
+    })
   }
 
   prepareMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
@@ -209,6 +262,23 @@ export class Renderer {
             resource: { buffer: meshRenderer.modelMatrixBuffer },
           },
         ],
+      })
+
+      // Primitives
+      meshRenderer.primitives.forEach((primitiveData) => {
+        primitiveData.bindGroup = this.device.createBindGroup({
+          layout: this.pipeline.getBindGroupLayout(1),
+          entries: [
+            {
+              binding: 0,
+              resource: this.gpuTextures[primitiveData.material!.textureIndex].texture.createView(),
+            },
+            {
+              binding: 1,
+              resource: this.gpuTextures[primitiveData.material!.textureIndex].sampler,
+            },
+          ],
+        })
       })
     })
     console.log('Models prepared for rendering:', components.length)
@@ -253,9 +323,10 @@ export class Renderer {
         const vertexDataMapping = [VertexAttributeType.POSITION, VertexAttributeType.NORMAL, VertexAttributeType.TEXCOORD_0]
         vertexDataMapping.forEach((attributeType, index) => {
           const accessor = primitiveRenderData.vertexAttributes.get(attributeType)!
-          passEncoder.setVertexBuffer(index, this.gpuBuffers[accessor.bufferIndex], accessor.offset, accessor.count * getBufferDataTypeSize(accessor.type))
+          const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
+          passEncoder.setVertexBuffer(index, this.gpuBuffers[accessor.bufferIndex], accessor.offset, accessor.count * byteCount)
         })
-
+        passEncoder.setBindGroup(1, primitiveRenderData.bindGroup!)
         passEncoder.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })
     })
