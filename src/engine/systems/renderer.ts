@@ -1,7 +1,7 @@
 import { Mat4, mat4 } from 'wgpu-matrix'
 import simpleShader from '../../simple-shader'
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
-import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType } from '../components'
+import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType, getBufferDataTypeSize } from '../components'
 
 export type CameraData = {
   transform: TransformComponent
@@ -96,6 +96,16 @@ export class Renderer {
                 shaderLocation: 1,
                 offset: 0,
                 format: 'float32x3',
+              },
+            ],
+          },
+          {
+            arrayStride: 8,
+            attributes: [
+              {
+                shaderLocation: 2,
+                offset: 0,
+                format: 'float32x2',
               },
             ],
           },
@@ -238,12 +248,14 @@ export class Renderer {
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
         passEncoder.setIndexBuffer(this.gpuBuffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
-        // TODO: don't hardcode the 12 here
-        // TODO: don't hardcode which is which (i.e. that 0 is POSITION and 1 is NORMAL); somehow ask the asset manager where which one is
-        const positionAcessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.POSITION)!
-        passEncoder.setVertexBuffer(0, this.gpuBuffers[positionAcessor.bufferIndex], positionAcessor.offset, positionAcessor.count * 12)
-        const normalAccessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.NORMAL)!
-        passEncoder.setVertexBuffer(1, this.gpuBuffers[normalAccessor.bufferIndex], normalAccessor.offset, normalAccessor.count * 12)
+
+        // TODO: don't hardcode which is which (i.e. that 0 is POSITION and 1 is NORMAL); somehow ask the asset manager / pipeline / shader where it should be
+        const vertexDataMapping = [VertexAttributeType.POSITION, VertexAttributeType.NORMAL, VertexAttributeType.TEXCOORD_0]
+        vertexDataMapping.forEach((attributeType, index) => {
+          const accessor = primitiveRenderData.vertexAttributes.get(attributeType)!
+          passEncoder.setVertexBuffer(index, this.gpuBuffers[accessor.bufferIndex], accessor.offset, accessor.count * getBufferDataTypeSize(accessor.type))
+        })
+
         passEncoder.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })
     })

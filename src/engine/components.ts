@@ -105,6 +105,25 @@ export enum BufferDataType {
   MAT4 = 'MAT4',
 }
 
+export const getBufferDataTypeSize = (bufferDataType: BufferDataType) => {
+  switch (bufferDataType) {
+    case BufferDataType.SCALAR:
+      return 4
+    case BufferDataType.VEC2:
+      return 8
+    case BufferDataType.VEC3:
+      return 12
+    case BufferDataType.VEC4:
+      return 16
+    case BufferDataType.MAT2:
+      return 16
+    case BufferDataType.MAT3:
+      return 36
+    case BufferDataType.MAT4:
+      return 64
+  }
+}
+
 export type BufferAccessor = {
   bufferIndex: number
   offset: number
@@ -113,8 +132,11 @@ export type BufferAccessor = {
   count: number
 }
 
+export type MaterialData = {}
+
 export type PrimitiveRenderData = {
   bindGroup: GPUBindGroup | undefined
+  material: MaterialData
   indexBufferAccessor: BufferAccessor
   vertexAttributes: Map<VertexAttributeType, BufferAccessor>
   mode: number | undefined
