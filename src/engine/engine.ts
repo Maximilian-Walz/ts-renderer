@@ -62,6 +62,7 @@ export class Engine {
     const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
     this.renderer.prepareGpuBuffers()
     this.renderer.prepareGpuTextures()
+    this.renderer.prepareMaterials()
     this.renderer.prepareMeshRenderers(models)
   }
 }

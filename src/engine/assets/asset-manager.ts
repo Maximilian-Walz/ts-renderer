@@ -1,5 +1,8 @@
-import { GltfLoader } from 'gltf-loader-ts'
+import { GltfAsset, GltfLoader } from 'gltf-loader-ts'
+import { Material as GltfMaterial, TextureInfo } from 'gltf-loader-ts/lib/gltf'
+import { vec3, vec4 } from 'wgpu-matrix'
 import { EntityComponentSystem } from '../entity-component-system'
+import { BasicMaterial, Material, PbrMaterial, TextureIdentifier } from '../material'
 import { SceneLoader } from './scene-loader'
 
 export enum BufferTarget {
@@ -43,9 +46,13 @@ export class AssetManager {
   buffers: Buffer[] = []
   textures: TextureData[] = []
 
+  materials: Material[] = []
+  defaultMaterial: Material
+
   constructor(ecs: EntityComponentSystem) {
     this.ecs = ecs
     this.gltfLoader = new GltfLoader()
+    this.defaultMaterial = new BasicMaterial()
   }
 
   static mapTextureWrapMode(wrapMode?: number): TextureWrapMode {
@@ -100,6 +107,12 @@ export class AssetManager {
     console.log('Finished loading ' + path)
     SceneLoader.createEntitiesFromGltf(this.ecs, asset.gltf)
 
+    await this.loadBuffers(asset)
+    await this.loadTextures(asset)
+    this.createMaterials(asset)
+  }
+
+  async loadBuffers(asset: GltfAsset) {
     if (asset.gltf.bufferViews) {
       await Promise.all(
         asset.gltf.bufferViews.map(async (bufferView, index) =>
@@ -112,7 +125,9 @@ export class AssetManager {
         )
       )
     }
+  }
 
+  async loadTextures(asset: GltfAsset) {
     if (asset.gltf.textures) {
       await Promise.all(
         asset.gltf.textures.map(async (texture, index) =>
@@ -136,5 +151,52 @@ export class AssetManager {
         )
       )
     }
+  }
+
+  createMaterials(asset: GltfAsset) {
+    asset.gltf.materials?.forEach((materialData, index) => {
+      let material
+      if (AssetManager.hasNoTexture(materialData)) {
+        material = new BasicMaterial()
+      } else {
+        material = new PbrMaterial()
+        if (materialData.pbrMetallicRoughness) {
+          const pbr = materialData.pbrMetallicRoughness
+          material.albedoTexture = AssetManager.parseTextureInfo(pbr.baseColorTexture)
+          material.metallicRoughnessTexture = AssetManager.parseTextureInfo(pbr.metallicRoughnessTexture)
+        }
+        material.occlusionTexture = AssetManager.parseTextureInfo(materialData.occlusionTexture as TextureInfo)
+        material.emissiveTexture = AssetManager.parseTextureInfo(materialData.emissiveTexture as TextureInfo)
+      }
+      // In both cases, set factors
+      if (materialData.pbrMetallicRoughness) {
+        const pbr = materialData.pbrMetallicRoughness
+        if (pbr.baseColorFactor) material.albedoFactor = vec4.fromValues(...pbr.baseColorFactor)
+        if (pbr.metallicFactor) material.metallicFactor = pbr.metallicFactor
+        if (pbr.roughnessFactor) material.roughnessFactor = pbr.roughnessFactor
+      }
+      if (materialData.emissiveFactor) material.emissiveFactor = vec3.fromValues(...materialData.emissiveFactor)
+
+      this.materials[index] = material
+    })
+  }
+
+  static parseTextureInfo(textureInfo: TextureInfo | undefined): TextureIdentifier | undefined {
+    if (textureInfo) {
+      return {
+        textureId: textureInfo.index,
+        texCoordId: (textureInfo.texCoord ??= 0),
+      }
+    }
+  }
+
+  static hasNoTexture(materialData: GltfMaterial): boolean {
+    return (
+      materialData.pbrMetallicRoughness?.baseColorTexture == undefined &&
+      materialData.pbrMetallicRoughness?.metallicRoughnessTexture == undefined &&
+      materialData.normalTexture == undefined &&
+      materialData.occlusionTexture == undefined &&
+      materialData.emissiveTexture == undefined
+    )
   }
 }

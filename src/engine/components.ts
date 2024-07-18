@@ -163,14 +163,8 @@ export type BufferAccessor = {
   count: number
 }
 
-export type MaterialData = {
-  name?: string
-  textureIndex: number
-}
-
 export type PrimitiveRenderData = {
-  bindGroup: GPUBindGroup | undefined
-  material?: MaterialData
+  materialIndex?: number
   indexBufferAccessor: BufferAccessor
   vertexAttributes: Map<VertexAttributeType, BufferAccessor>
   mode: number | undefined

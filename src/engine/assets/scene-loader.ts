@@ -1,16 +1,6 @@
 import { GlTf } from 'gltf-loader-ts/lib/gltf'
 import { mat4, quat, vec3 } from 'wgpu-matrix'
-import {
-  BufferAccessor,
-  BufferDataType,
-  CameraComponent,
-  CameraType,
-  MaterialData,
-  MeshRendererComponent,
-  PrimitiveRenderData,
-  TransformComponent,
-  VertexAttributeType,
-} from '../components'
+import { BufferAccessor, BufferDataType, CameraComponent, CameraType, MeshRendererComponent, PrimitiveRenderData, TransformComponent, VertexAttributeType } from '../components'
 import { EntityComponentSystem, EntityId } from '../entity-component-system'
 
 export class SceneLoader {
@@ -88,23 +78,14 @@ export class SceneLoader {
       })
 
       const primitiveRenderData: PrimitiveRenderData = {
-        bindGroup: undefined,
         indexBufferAccessor: SceneLoader.createAccessor(gltf, primitive.indices!),
         vertexAttributes: vertexAttributes,
-        material: primitive.material != undefined ? SceneLoader.loadMaterial(gltf, primitive.material) : undefined,
+        materialIndex: primitive.material,
         mode: primitive.mode,
       }
       meshRendererComponent.primitives.push(primitiveRenderData)
     })
     ecs.addComponentToEntity(entityId, meshRendererComponent)
-  }
-
-  private static loadMaterial(gltf: GlTf, materialIndex: number): MaterialData {
-    const material = gltf.materials![materialIndex]
-    return {
-      name: material.name,
-      textureIndex: material.pbrMetallicRoughness?.baseColorTexture?.index!,
-    }
   }
 
   private static createAccessor(gltf: GlTf, accessorIndex: number): BufferAccessor {

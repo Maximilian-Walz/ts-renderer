@@ -10,7 +10,7 @@ struct Uniforms {
 struct VertexOutput {
   @builtin(position) Position : vec4f,
   @location(0) fragPosition: vec4f,
-  @location(1) fragNormal: vec4f,
+  @location(1) fragNormal: vec3f,
   @location(2) fragTexcoord0: vec2f
 }
 
@@ -18,13 +18,13 @@ struct VertexOutput {
 fn vs(
   @builtin(vertex_index) v_index: u32,
   @location(0) position : vec4f,
-  @location(1) normal: vec4f,
+  @location(1) normal: vec3f,
   @location(2) texcoord0: vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
   output.Position = uniforms.modelViewProjectionMatrix * position;
   output.fragPosition = 0.5 * (position + vec4(1, 1, 1, 1));
-  output.fragNormal = 0.5 * (normal + vec4(1, 1, 1, 1));
+  output.fragNormal = 0.5 * (normal + vec3(1, 1, 1));
   output.fragTexcoord0 = texcoord0; 
   return output;
 }
@@ -32,7 +32,7 @@ fn vs(
 @fragment
 fn fs(
   @location(0) fragPosition: vec4f,
-  @location(1) fragNormal: vec4f,
+  @location(1) fragNormal: vec3f,
   @location(2) fragTexcoord0: vec2f
 ) -> @location(0) vec4f {
   return textureSample(myTexture, mySampler,fragTexcoord0);

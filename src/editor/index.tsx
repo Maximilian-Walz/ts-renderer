@@ -14,19 +14,21 @@ export class GraphicEditor {
   private engine: Engine
   private initialized: boolean = false
   private scenes: Scene[] = [
+    { name: 'Water Bottle', source: '/assets/gltf/WaterBottle.glb' },
+    { name: 'BoxTextured', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/BoxTextured/glTF-Embedded/BoxTextured.gltf' },
     { name: 'BoomBox', source: '/assets/gltf/BoomBox.glb' },
     { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
-    { name: 'BoxTextured', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/BoxTextured/glTF-Embedded/BoxTextured.gltf' },
     { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
     { name: 'Hierarchy', source: '/assets/gltf/hirarchy_separate.gltf' },
     { name: 'Box', source: '/assets/gltf/Box.gltf' },
     { name: 'Duck', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf' },
+    { name: 'CylinderEngine', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/2CylinderEngine/glTF-Embedded/2CylinderEngine.gltf' },
   ]
 
   private editorCamera = {
     cameraData: {
-      camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }),
-      transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -3), undefined, undefined),
+      camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1),
+      transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -0.3), undefined, undefined),
     },
     cameraTarget: vec3.zero(),
   }
