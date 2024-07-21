@@ -156,7 +156,8 @@ export class AssetManager {
   createMaterials(asset: GltfAsset) {
     asset.gltf.materials?.forEach((materialData, index) => {
       let material
-      if (AssetManager.hasNoTexture(materialData)) {
+      // TODO: remove '&& false'
+      if (AssetManager.hasNoTexture(materialData) && false) {
         material = new BasicMaterial()
       } else {
         material = new PbrMaterial()

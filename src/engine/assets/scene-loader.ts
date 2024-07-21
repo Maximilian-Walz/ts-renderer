@@ -1,6 +1,16 @@
 import { GlTf } from 'gltf-loader-ts/lib/gltf'
 import { mat4, quat, vec3 } from 'wgpu-matrix'
-import { BufferAccessor, BufferDataType, CameraComponent, CameraType, MeshRendererComponent, PrimitiveRenderData, TransformComponent, VertexAttributeType } from '../components'
+import {
+  AutoRotateComponent,
+  BufferAccessor,
+  BufferDataType,
+  CameraComponent,
+  CameraType,
+  MeshRendererComponent,
+  PrimitiveRenderData,
+  TransformComponent,
+  VertexAttributeType,
+} from '../components'
 import { EntityComponentSystem, EntityId } from '../entity-component-system'
 
 export class SceneLoader {
@@ -39,7 +49,7 @@ export class SceneLoader {
 
     // Add auto rotator to mesh renderer components for debugging purposes
     if (node.mesh != undefined) {
-      //ecs.addComponentToEntity(entityId, new AutoRotateComponent(vec3.fromValues(0, 0, 1), 10))
+      //ecs.addComponentToEntity(entityId, new AutoRotateComponent(vec3.fromValues(0, 1, 0), 10))
     }
   }
 

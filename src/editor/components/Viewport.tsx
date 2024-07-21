@@ -16,15 +16,22 @@ export function Viewport({ canvasRef }: Props) {
   }
 
   const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    // TODO: Implement behaviour with mouse
+    if (event.buttons == 1) {
+      if (event.shiftKey) {
+        editor?.applyCameraPan(event.movementX, event.movementY)
+      } else {
+        editor?.applyCameraRotation(event.movementX * 5, event.movementY * 5)
+      }
+    }
   }
 
   const handleCanvasWheelMove = (event: React.WheelEvent<HTMLCanvasElement>) => {
     if (isTrackPad(event)) {
       if (event.shiftKey) {
-        editor?.applyCameraPan(-event.deltaX, -event.deltaY)
+        //editor?.applyCameraPan(-event.deltaX, -event.deltaY)
       } else {
-        editor?.applyCameraRotation(-event.deltaX, -event.deltaY)
+        editor?.applyCameraScale(event.deltaY)
+        //editor?.applyCameraRotation(-event.deltaX, -event.deltaY)
       }
     } else {
       // TODO: Implement behaviour with mouse

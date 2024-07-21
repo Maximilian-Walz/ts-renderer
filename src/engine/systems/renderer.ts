@@ -190,6 +190,14 @@ export class Renderer {
     }
   }
 
+  private static calculateGlobalCameraTransform(transform: TransformComponent): Mat4 {
+    if (transform.parent != undefined) {
+      return mat4.multiply(transform.toMatrix(), this.calculateGlobalTransform(transform.parent))
+    } else {
+      return transform.toMatrix()
+    }
+  }
+
   setActiveCameraComponent([transform, camera]: [TransformComponent, CameraComponent]) {
     this.cameraData = {
       transform: transform,
@@ -327,7 +335,7 @@ export class Renderer {
     renderTexture.view = this.context.getCurrentTexture().createView()
 
     const projectionMatrix = this.cameraData.camera.getProjection(currentWidth, currentHeight)
-    const viewProjectionMatrix = mat4.multiply(projectionMatrix, Renderer.calculateGlobalTransform(this.cameraData.transform))
+    const viewProjectionMatrix = mat4.multiply(projectionMatrix, Renderer.calculateGlobalCameraTransform(this.cameraData.transform))
 
     const commandEncoder = this.device.createCommandEncoder()
     const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor)

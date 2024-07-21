@@ -14,29 +14,29 @@ export class GraphicEditor {
   private engine: Engine
   private initialized: boolean = false
   private scenes: Scene[] = [
+    { name: 'Hierarchy', source: '/assets/gltf/hirarchy.glb' },
     { name: 'Water Bottle', source: '/assets/gltf/WaterBottle.glb' },
     { name: 'BoxTextured', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/BoxTextured/glTF-Embedded/BoxTextured.gltf' },
     { name: 'BoomBox', source: '/assets/gltf/BoomBox.glb' },
     { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
     { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
-    { name: 'Hierarchy', source: '/assets/gltf/hirarchy_separate.gltf' },
     { name: 'Box', source: '/assets/gltf/Box.gltf' },
     { name: 'Duck', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf' },
     { name: 'CylinderEngine', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/2CylinderEngine/glTF-Embedded/2CylinderEngine.gltf' },
   ]
 
-  private editorCamera = {
-    cameraData: {
-      camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1),
-      transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -0.3), undefined, undefined),
-    },
-    cameraTarget: vec3.zero(),
-  }
+  private editorCamera: CameraData
 
   activeCameraEntityId: number | undefined
 
   constructor() {
     this.engine = new Engine()
+
+    let targetTransform = new TransformComponent()
+    this.editorCamera = {
+      transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -4), undefined, undefined, targetTransform),
+      camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1),
+    }
   }
 
   async init() {
@@ -55,13 +55,13 @@ export class GraphicEditor {
 
   async setActiveScene(sceneIndex: number) {
     await this.engine.loadScene(this.scenes[sceneIndex].source)
-    this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
+    this.engine.renderer.setActiveCamera(this.editorCamera)
 
     const cameras = this.engine.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA]) as [TransformComponent, CameraComponent][]
     if (cameras.length > 0 && false) {
     } else {
       console.log('Using default camera')
-      this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
+      this.engine.renderer.setActiveCamera(this.editorCamera)
     }
   }
 
@@ -102,37 +102,40 @@ export class GraphicEditor {
 
   applyCameraPan(deltaX: number, deltaY: number) {
     // Set ediorCamera as active
-    this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
+    this.engine.renderer.setActiveCamera(this.editorCamera)
     this.activeCameraEntityId = undefined
 
-    const position = this.editorCamera.cameraData.transform.position
-    const currentMatrix = this.editorCamera.cameraData.transform.toMatrix()
+    const currentMatrix = this.editorCamera.transform.toMatrix()
     const cameraX = mat4.getAxis(mat4.transpose(currentMatrix), 0)
-    const cameraZ = mat4.getAxis(mat4.transpose(currentMatrix), 2)
+    const cameraZ = mat4.getAxis(mat4.transpose(currentMatrix), 1)
 
-    vec3.add(position, vec3.scale(cameraX, deltaX / 100), position)
-    vec3.add(position, vec3.scale(cameraZ, -deltaY / 100), position)
+    const target = this.editorCamera.transform.parent!.position
+    const scale = 1 / (this.editorCamera.transform.scale[0] * this.editorCamera.transform.scale[0] * 100)
+    vec3.add(target, vec3.scale(cameraX, deltaX * scale), target)
+    vec3.add(target, vec3.scale(cameraZ, -deltaY * scale), target)
   }
 
   applyCameraRotation(deltaX: number, deltaY: number) {
     // Set ediorCamera as active
-    this.engine.renderer.setActiveCamera(this.editorCamera.cameraData)
+    this.engine.renderer.setActiveCamera(this.editorCamera)
     this.activeCameraEntityId = undefined
 
     const angleY = utils.degToRad(deltaX / 10)
     const angleX = utils.degToRad(deltaY / 10)
-    const position = this.editorCamera.cameraData.transform.position
-    const rotation = this.editorCamera.cameraData.transform.rotation
-    const scale = this.editorCamera.cameraData.transform.scale
-    const up = vec3.fromValues(0, 1, 0)
+    const rotation = this.editorCamera.transform.rotation
 
     // Get current camera x-axis
-    const currentMatrix = this.editorCamera.cameraData.transform.toMatrix()
-    const cameraZ = mat4.getAxis(mat4.transpose(currentMatrix), 2)
-    const cameraX = mat4.getAxis(mat4.transpose(currentMatrix), 0)
-    const rotX = quat.fromAxisAngle(cameraX, angleX)
-    quat.mul(rotation, rotX, rotation)
+    const axis = mat4.getAxis(mat4.transpose(this.editorCamera.transform.toMatrix()), 0)
+    vec3.normalize(axis, axis)
+    const rotQuat = quat.fromAxisAngle(axis, angleX)
+    quat.mul(rotation, rotQuat, rotation)
     quat.rotateY(rotation, angleY, rotation)
-    vec3.getTranslation(currentMatrix, position)
+    quat.normalize(rotation, rotation)
+  }
+
+  applyCameraScale(delta: number) {
+    const scale = this.editorCamera.transform.scale
+    const factor = delta < 0 ? 100 / -delta : delta / 100
+    vec3.scale(scale, factor, scale)
   }
 }
