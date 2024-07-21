@@ -35,6 +35,9 @@ fn fs(
   @location(1) fragNormal: vec3f,
   @location(2) fragTexcoord0: vec2f
 ) -> @location(0) vec4f {
-  return textureSample(myTexture, mySampler,fragTexcoord0);
+
+  var lightDir = normalize(vec3f(0.7, 1, 0));
+  var nDotL = dot(normalize(fragNormal), lightDir);
+  return textureSample(myTexture, mySampler,fragTexcoord0) * nDotL;
 }
 `
