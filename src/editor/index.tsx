@@ -135,7 +135,7 @@ export class GraphicEditor {
 
   applyCameraScale(delta: number) {
     const scale = this.editorCamera.transform.scale
-    const factor = delta < 0 ? 100 / -delta : delta / 100
-    vec3.scale(scale, factor, scale)
+    vec3.addScaled(scale, vec3.fromValues(1, 1, 1), delta, scale)
+    vec3.clamp(scale, 0.00001, 10000, scale)
   }
 }

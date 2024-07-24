@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@uidotdev/usehooks": "^2.4.1-experimental.1",
+    "@use-gesture/react": "^10.3.1",
     "dat.gui": "^0.7.9",
     "gltf-loader-ts": "^0.3.1",
     "react": "^0.0.0-experimental-df5f2736-20240712",

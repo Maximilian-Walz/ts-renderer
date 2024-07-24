@@ -4,7 +4,8 @@ import { EntityTreeViewer } from './EntityTreeViewer'
 import { EntityViewer } from './EntityViewer'
 import { Panel } from './Panel'
 import { SceneViewer } from './SceneViewer'
-import { Viewport } from './Viewport'
+import { InputMode, Viewport } from './Viewport'
+import { ViewportCameraSettings } from './ViewportCameraSettings'
 
 function useEditor() {
   const editorRef = useRef<GraphicEditor>()
@@ -41,6 +42,8 @@ export function Editor() {
   const [activeEntityId, setActiveEntityId] = useState<number | null>(0)
   const [doRealtimeUpdates, setDoRealtimeUpdates] = useState<boolean>(false)
 
+  const [inputMode, setInputMode] = useState<InputMode>(InputMode.TRACKPAD)
+
   const activeEntityName =
     activeEntityId != null && editorProjection.entityTree.nodes.length > activeEntityId
       ? (editorProjection.entityTree.nodes[activeEntityId].name ??= `Entity ${activeEntityId}`)
@@ -60,8 +63,9 @@ export function Editor() {
   return (
     <div className="relative h-full w-full">
       <EditorContext.Provider value={editor}>
-        <Viewport canvasRef={canvasRef} />
+        <Viewport canvasRef={canvasRef} inputMode={inputMode} />
         <Panel title="Scene" className="absolute left-2 top-2 w-auto min-w-[48%] bg-base-100 md:min-w-[30%] lg:min-w-[20%]">
+          <ViewportCameraSettings currentInputMode={inputMode} setInputMode={setInputMode} />
           <SceneViewer {...editorProjection} />
           <div className="divider my-2"></div>
           <EntityTreeViewer entityTree={editorProjection.entityTree} activeEntityId={activeEntityId} setActiveEntityId={setActiveEntityId} />
