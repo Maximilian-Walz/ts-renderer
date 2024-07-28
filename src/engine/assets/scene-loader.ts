@@ -1,7 +1,6 @@
 import { GlTf } from 'gltf-loader-ts/lib/gltf'
 import { mat4, quat, vec3 } from 'wgpu-matrix'
 import {
-  AutoRotateComponent,
   BufferAccessor,
   BufferDataType,
   CameraComponent,
@@ -10,7 +9,7 @@ import {
   PrimitiveRenderData,
   TransformComponent,
   VertexAttributeType,
-} from '../components'
+} from '../components/components'
 import { EntityComponentSystem, EntityId } from '../entity-component-system'
 
 export class SceneLoader {

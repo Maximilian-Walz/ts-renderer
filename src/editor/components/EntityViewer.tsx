@@ -1,6 +1,6 @@
 import { useIntervalWhen } from '@uidotdev/usehooks'
 import React, { useContext, useState } from 'react'
-import { ComponentType } from '../../engine/components'
+import { ComponentType } from '../../engine/components/components'
 import { EditorContext } from './Editor'
 import { AutoRotateViewer } from './entityComponentViewer/AutoRotateViewer'
 import { CameraViewer } from './entityComponentViewer/CameraViewer'

@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react'
 import { LuAxis3D, LuBox, LuCamera } from 'react-icons/lu'
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md'
-import { ComponentType } from '../../engine/components'
+import { ComponentType } from '../../engine/components/components'
 import { EntityId, EntityNode } from '../../engine/entity-component-system'
 import { EditorContext } from './Editor'
 

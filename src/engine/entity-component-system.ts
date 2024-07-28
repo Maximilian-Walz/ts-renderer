@@ -1,4 +1,4 @@
-import { Component, ComponentType, NUM_OF_ENTITY_TYPES, TransformComponent } from './components'
+import { Component, ComponentType, NUM_OF_ENTITY_TYPES, TransformComponent } from './components/components'
 
 export type EntityId = number
 type ArchetypeIndex = number

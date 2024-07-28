@@ -1,10 +1,10 @@
 import React, { useContext } from 'react'
-import { VectorInput } from '../data/VectorInput'
-import { EditorContext } from '../Editor'
-import { AutoRotateComponent, ComponentType } from '../../../engine/components'
-import { NumberInput } from '../data/NumberInput'
-import { ComponentViewer } from './ComponentViewer'
 import { LuAxis3D, LuRotateCw } from 'react-icons/lu'
+import { AutoRotateComponent, ComponentType } from '../../../engine/components/components'
+import { EditorContext } from '../Editor'
+import { NumberInput } from '../data/NumberInput'
+import { VectorInput } from '../data/VectorInput'
+import { ComponentViewer } from './ComponentViewer'
 
 type Props = {
   entityId: number

@@ -1,5 +1,5 @@
 import { quat } from 'wgpu-matrix'
-import { AutoRotateComponent, TransformComponent } from '../components'
+import { AutoRotateComponent, TransformComponent } from '../components/components'
 
 export class Rotator {
   rotate(models: [TransformComponent, AutoRotateComponent][]) {

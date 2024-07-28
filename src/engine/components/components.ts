@@ -1,5 +1,5 @@
 import { Mat4, Quat, Vec3, mat3, mat4, quat, vec3 } from 'wgpu-matrix'
-import { EntityId } from './entity-component-system'
+import { EntityId } from '../entity-component-system'
 
 export const NUM_OF_ENTITY_TYPES = 4
 export enum ComponentType {
@@ -55,6 +55,22 @@ export class TransformComponent extends Component {
     if (rotation) transformComponent.rotation = rotation
     if (scale) transformComponent.scale = scale
     return transformComponent
+  }
+
+  static calculateGlobalTransform(transform: TransformComponent): Mat4 {
+    if (transform.parent != undefined) {
+      return mat4.multiply(this.calculateGlobalTransform(transform.parent), transform.toMatrix())
+    } else {
+      return transform.toMatrix()
+    }
+  }
+
+  static calculateGlobalCameraTransform(transform: TransformComponent): Mat4 {
+    if (transform.parent != undefined) {
+      return mat4.multiply(transform.toMatrix(), this.calculateGlobalTransform(transform.parent))
+    } else {
+      return transform.toMatrix()
+    }
   }
 
   toMatrix() {

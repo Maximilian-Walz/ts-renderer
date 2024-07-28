@@ -1,12 +1,17 @@
-import { Mat4, mat4 } from 'wgpu-matrix'
-import simpleShader from '../../simple-shader'
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
-import { BufferDataComponentType, CameraComponent, MeshRendererComponent, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../components'
+import { CameraComponent, MeshRendererComponent, TransformComponent } from '../components/components'
 import { BasicMaterial, PbrMaterial } from '../material'
+import { ForwardRenderer } from '../rendering/forward-renderer'
+import { RenderStrategy } from '../rendering/render-strategy'
 
 export type CameraData = {
   transform: TransformComponent
   camera: CameraComponent
+}
+
+export type ModelData = {
+  transform: TransformComponent
+  meshRenderer: MeshRendererComponent
 }
 
 type GPUTextureData = {
@@ -16,23 +21,19 @@ type GPUTextureData = {
 
 export class Renderer {
   private assetManager: AssetManager
+  private renderStrategy: RenderStrategy
   private device!: GPUDevice
   private canvas!: HTMLCanvasElement
-  private canvasFormat!: GPUTextureFormat
-  private context!: GPUCanvasContext
-  private renderPassDescriptor!: GPURenderPassDescriptor
 
+  // TODO: Create some sort of GPU abstractions that holds all the gpu data and has methods to upload them
   private gpuBuffers: GPUBuffer[] = []
   private gpuTextures: GPUTextureData[] = []
   private defaultTexture!: GPUTextureData
   private whiteBitmap!: ImageBitmap
 
-  private pipeline!: GPURenderPipeline
-
-  private cameraData: CameraData | undefined
-
   constructor(assetManager: AssetManager) {
     this.assetManager = assetManager
+    this.renderStrategy = new ForwardRenderer(assetManager)
   }
 
   async init() {
@@ -53,164 +54,20 @@ export class Renderer {
     })
 
     this.whiteBitmap = await createImageBitmap(new ImageData(Uint8ClampedArray.from([255, 255, 255, 255]), 1, 1))
+
+    BasicMaterial.bindGroupLayout = this.device.createBindGroupLayout(BasicMaterial.bindGroupLayoutDescriptor)
+    PbrMaterial.bindGroupLayout = this.device.createBindGroupLayout(PbrMaterial.bindGroupLayoutDescriptor)
+    this.renderStrategy.setRenderingDevice(this.device)
   }
 
   setRenderTarget(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    this.context = canvas.getContext('webgpu')!
-    this.canvasFormat = navigator.gpu.getPreferredCanvasFormat()
-    this.context.configure({
+    const context = canvas.getContext('webgpu')!
+    context.configure({
       device: this.device,
-      format: this.canvasFormat,
+      format: navigator.gpu.getPreferredCanvasFormat(),
     })
-    this.createPipeline()
-    this.createRenderPassDescriptor()
-  }
-
-  createPipeline() {
-    const meshBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX,
-        },
-      ],
-    })
-
-    const primitiveBindGroupLayout = this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          texture: {},
-          visibility: GPUShaderStage.FRAGMENT,
-        },
-        {
-          binding: 1,
-          sampler: {},
-          visibility: GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
-
-    const module = this.device.createShaderModule({
-      code: simpleShader,
-    })
-
-    this.pipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [meshBindGroupLayout, primitiveBindGroupLayout],
-      }),
-      vertex: {
-        module,
-        buffers: [
-          {
-            arrayStride: 12,
-            attributes: [
-              {
-                shaderLocation: 0,
-                offset: 0,
-                format: 'float32x3',
-              },
-            ],
-          },
-          {
-            arrayStride: 12,
-            attributes: [
-              {
-                shaderLocation: 1,
-                offset: 0,
-                format: 'float32x3',
-              },
-            ],
-          },
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 2,
-                offset: 0,
-                format: 'float32x2',
-              },
-            ],
-          },
-        ],
-      },
-      fragment: {
-        module,
-        targets: [{ format: this.canvasFormat }],
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: 'less',
-        format: 'depth24plus',
-      },
-      primitive: {
-        // TODO: don't hardcode!
-        topology: 'triangle-list',
-        cullMode: 'back',
-      },
-    })
-  }
-
-  createRenderPassDescriptor() {
-    const depthTexture = this.device.createTexture({
-      size: [this.canvas.width, this.canvas.height],
-      format: 'depth24plus',
-      usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    })
-
-    this.renderPassDescriptor = {
-      colorAttachments: [
-        {
-          view: this.context.getCurrentTexture().createView(),
-
-          clearValue: [0.5, 0.5, 0.5, 1.0],
-          loadOp: 'clear',
-          storeOp: 'store',
-        },
-      ],
-      depthStencilAttachment: {
-        view: depthTexture.createView(),
-
-        depthClearValue: 1.0,
-        depthLoadOp: 'clear',
-        depthStoreOp: 'store',
-      },
-    }
-  }
-
-  private static calculateGlobalTransform(transform: TransformComponent): Mat4 {
-    if (transform.parent != undefined) {
-      return mat4.multiply(this.calculateGlobalTransform(transform.parent), transform.toMatrix())
-    } else {
-      return transform.toMatrix()
-    }
-  }
-
-  private static calculateGlobalCameraTransform(transform: TransformComponent): Mat4 {
-    if (transform.parent != undefined) {
-      return mat4.multiply(transform.toMatrix(), this.calculateGlobalTransform(transform.parent))
-    } else {
-      return transform.toMatrix()
-    }
-  }
-
-  setActiveCameraComponent([transform, camera]: [TransformComponent, CameraComponent]) {
-    this.cameraData = {
-      transform: transform,
-      camera: camera,
-    }
-  }
-
-  setActiveCamera(cameraData: CameraData) {
-    this.cameraData = cameraData
-  }
-
-  getActiveCamera() {
-    return this.cameraData
+    this.renderStrategy.setRenderingContext(context)
   }
 
   prepareGpuBuffers() {
@@ -228,6 +85,7 @@ export class Renderer {
       new Uint8Array(this.gpuBuffers[index].getMappedRange()).set(buffer.data)
       this.gpuBuffers[index].unmap()
     })
+    this.renderStrategy.setBuffers(this.gpuBuffers)
     console.log('Buffers loaded:', this.gpuBuffers.length)
   }
 
@@ -238,6 +96,7 @@ export class Renderer {
         addressModeV: 'repeat',
       }),
       texture: this.device.createTexture({
+        label: 'Default texture',
         size: [1, 1, 1],
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
@@ -247,6 +106,7 @@ export class Renderer {
 
     this.assetManager.textures.forEach((texture, index) => {
       const gpuTexture = this.device.createTexture({
+        label: 'Asset texture',
         size: [texture.image.width, texture.image.height, 1],
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
@@ -279,7 +139,10 @@ export class Renderer {
       })
 
       meshRenderer.bindGroup = this.device.createBindGroup({
-        layout: this.pipeline.getBindGroupLayout(0),
+        layout: this.device.createBindGroupLayout({
+          label: 'MeshRenderer Model Matrix',
+          entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} }],
+        }),
         entries: [
           {
             binding: 0,
@@ -291,16 +154,13 @@ export class Renderer {
     console.log('Models prepared for rendering:', components.length)
   }
 
-  preparePipelines() {}
-
   prepareMaterials() {
     this.assetManager.materials.forEach((material) => {
-      material.pipeline = this.pipeline
       if (material instanceof PbrMaterial) {
         const albedoIndex = material.albedoTexture?.textureId
         const albedoData = albedoIndex != undefined ? this.gpuTextures[albedoIndex] : this.defaultTexture
         material.bindGroup = this.device.createBindGroup({
-          layout: material.pipeline.getBindGroupLayout(1),
+          layout: material.getBindGroupLayout()!,
           entries: [
             {
               binding: 0,
@@ -318,56 +178,14 @@ export class Renderer {
     })
   }
 
-  render(models: [TransformComponent, MeshRendererComponent][]) {
-    if (!this.cameraData) {
-      return
-    }
-
+  render(modelsData: ModelData[], cameraData: CameraData) {
     const currentWidth = this.canvas.clientWidth
     const currentHeight = this.canvas.clientHeight
     if (currentWidth !== this.canvas.width || currentHeight !== this.canvas.height) {
       this.canvas.width = currentWidth
       this.canvas.height = currentHeight
-      this.createRenderPassDescriptor()
     }
 
-    const renderTexture = (this.renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0]
-    renderTexture.view = this.context.getCurrentTexture().createView()
-
-    const projectionMatrix = this.cameraData.camera.getProjection(currentWidth, currentHeight)
-    const viewProjectionMatrix = mat4.multiply(projectionMatrix, Renderer.calculateGlobalCameraTransform(this.cameraData.transform))
-
-    const commandEncoder = this.device.createCommandEncoder()
-    const passEncoder = commandEncoder.beginRenderPass(this.renderPassDescriptor)
-
-    models.forEach(([transform, meshRenderer]) => {
-      if (meshRenderer.modelMatrixBuffer == undefined) {
-        return
-      }
-      const mvpMatrix = mat4.multiply(viewProjectionMatrix, Renderer.calculateGlobalTransform(transform))
-      this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
-      passEncoder.setBindGroup(0, meshRenderer.bindGroup!)
-
-      meshRenderer.primitives.forEach((primitiveRenderData) => {
-        const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
-        passEncoder.setIndexBuffer(this.gpuBuffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
-
-        // TODO: don't hardcode which is which (i.e. that 0 is POSITION and 1 is NORMAL); somehow ask the asset manager / pipeline / shader where it should be
-        const vertexDataMapping = [VertexAttributeType.POSITION, VertexAttributeType.NORMAL, VertexAttributeType.TEXCOORD_0]
-        vertexDataMapping.forEach((attributeType, index) => {
-          const accessor = primitiveRenderData.vertexAttributes.get(attributeType)!
-          const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
-          passEncoder.setVertexBuffer(index, this.gpuBuffers[accessor.bufferIndex], accessor.offset, accessor.count * byteCount)
-        })
-
-        const material = this.assetManager.materials[primitiveRenderData.materialIndex!]
-        passEncoder.setPipeline(material.pipeline!)
-        passEncoder.setBindGroup(1, material.bindGroup!)
-        passEncoder.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
-      })
-    })
-
-    passEncoder.end()
-    this.device.queue.submit([commandEncoder.finish()])
+    this.renderStrategy.render(modelsData, cameraData)
   }
 }

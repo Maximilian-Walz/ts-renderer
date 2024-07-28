@@ -6,8 +6,8 @@ export type TextureIdentifier = {
 }
 
 export abstract class Material {
-  pipeline?: GPURenderPipeline
   bindGroup?: GPUBindGroup
+  abstract getBindGroupLayout(): GPUBindGroupLayout | undefined
 }
 
 export class BasicMaterial extends Material {
@@ -15,6 +15,16 @@ export class BasicMaterial extends Material {
   metallicFactor: number = 1
   roughnessFactor: number = 1
   emissiveFactor: Vec3 = vec3.fromValues(0, 0, 0)
+
+  static bindGroupLayout?: GPUBindGroupLayout
+  static bindGroupLayoutDescriptor: GPUBindGroupLayoutDescriptor = {
+    label: 'Basic Material',
+    entries: [],
+  }
+
+  getBindGroupLayout(): GPUBindGroupLayout | undefined {
+    return BasicMaterial.bindGroupLayout!
+  }
 }
 
 export class PbrMaterial extends BasicMaterial {
@@ -26,4 +36,17 @@ export class PbrMaterial extends BasicMaterial {
   occlusionTexture: TextureIdentifier | undefined
   occlusionFactor: number = 1
   emissiveTexture: TextureIdentifier | undefined
+
+  static bindGroupLayout?: GPUBindGroupLayout
+  static bindGroupLayoutDescriptor: GPUBindGroupLayoutDescriptor = {
+    label: 'PBR Material',
+    entries: [
+      { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {} }, // Albedo texture
+      { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {} }, // Albedo sampler
+    ],
+  }
+
+  getBindGroupLayout(): GPUBindGroupLayout | undefined {
+    return PbrMaterial.bindGroupLayout
+  }
 }

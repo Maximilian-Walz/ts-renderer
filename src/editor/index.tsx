@@ -1,7 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { mat4, quat, utils, vec3 } from 'wgpu-matrix'
-import { CameraComponent, CameraType, ComponentType, TransformComponent } from '../engine/components'
+import { CameraComponent, CameraType, ComponentType, TransformComponent } from '../engine/components/components'
 import { Engine, Scene } from '../engine/engine'
 import { EntityNode } from '../engine/entity-component-system'
 import { CameraData } from '../engine/systems/renderer'
@@ -55,13 +55,13 @@ export class GraphicEditor {
 
   async setActiveScene(sceneIndex: number) {
     await this.engine.loadScene(this.scenes[sceneIndex].source)
-    this.engine.renderer.setActiveCamera(this.editorCamera)
+    this.engine.setActiveCamera(this.editorCamera)
 
     const cameras = this.engine.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.CAMERA]) as [TransformComponent, CameraComponent][]
     if (cameras.length > 0 && false) {
     } else {
       console.log('Using default camera')
-      this.engine.renderer.setActiveCamera(this.editorCamera)
+      this.engine.setActiveCamera(this.editorCamera)
     }
   }
 
@@ -96,15 +96,9 @@ export class GraphicEditor {
       transform: this.engine.ecs.getComponentByEntityId(cameraEntityId, ComponentType.TRANSFORM) as TransformComponent,
     }
     // TODO: Clone camera data to editorCam (to mirror Blenders camera behaviour, when moving inside a scene camera)
-    this.engine.renderer.setActiveCamera(cameraData)
-    this.activeCameraEntityId = cameraEntityId
   }
 
   applyCameraPan(deltaX: number, deltaY: number) {
-    // Set ediorCamera as active
-    this.engine.renderer.setActiveCamera(this.editorCamera)
-    this.activeCameraEntityId = undefined
-
     const currentMatrix = this.editorCamera.transform.toMatrix()
     const cameraX = mat4.getAxis(mat4.transpose(currentMatrix), 0)
     const cameraZ = mat4.getAxis(mat4.transpose(currentMatrix), 1)
@@ -116,10 +110,6 @@ export class GraphicEditor {
   }
 
   applyCameraRotation(deltaX: number, deltaY: number) {
-    // Set ediorCamera as active
-    this.engine.renderer.setActiveCamera(this.editorCamera)
-    this.activeCameraEntityId = undefined
-
     const angleY = utils.degToRad(deltaX / 10)
     const angleX = utils.degToRad(deltaY / 10)
     const rotation = this.editorCamera.transform.rotation

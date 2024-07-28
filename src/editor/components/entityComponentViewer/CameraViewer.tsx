@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import { LuCamera } from 'react-icons/lu'
-import { CameraComponent, CameraType, ComponentType, OrthographicData, PerspectiveData } from '../../../engine/components'
+import { CameraComponent, CameraType, ComponentType, OrthographicData, PerspectiveData } from '../../../engine/components/components'
 import { EditorContext } from '../Editor'
 import { LabelInput } from '../data/LabelInput'
 import { NumberInput } from '../data/NumberInput'

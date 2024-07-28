@@ -1,8 +1,8 @@
 import Stats from 'stats.js'
 import { AssetManager } from './assets/asset-manager'
-import { AutoRotateComponent, ComponentType, MeshRendererComponent, TransformComponent } from './components'
+import { AutoRotateComponent, ComponentType, MeshRendererComponent, TransformComponent } from './components/components'
 import { EntityComponentSystem, SimpleEcs } from './entity-component-system'
-import { Renderer } from './systems/renderer'
+import { CameraData, Renderer } from './systems/renderer'
 import { Rotator } from './systems/rotator'
 
 export type Scene = {
@@ -16,6 +16,8 @@ export class Engine {
   renderer: Renderer
   rotator: Rotator
   private stats: Stats = new Stats()
+
+  private activeCamera?: CameraData
 
   constructor() {
     this.ecs = new SimpleEcs()
@@ -33,6 +35,10 @@ export class Engine {
     this.initRendering()
   }
 
+  setActiveCamera(cameraData: CameraData) {
+    this.activeCamera = cameraData
+  }
+
   private initRendering() {
     this.stats.showPanel(0)
     this.stats.dom.style.position = 'absolute'
@@ -46,11 +52,18 @@ export class Engine {
   private loop() {
     this.stats.begin()
 
-    const rotatableModels = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE]) as [TransformComponent, AutoRotateComponent][]
-    this.rotator.rotate(rotatableModels)
+    if (this.activeCamera) {
+      const rotatableModels = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE]) as [TransformComponent, AutoRotateComponent][]
+      this.rotator.rotate(rotatableModels)
 
-    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
-    this.renderer.render(models)
+      const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
+      this.renderer.render(
+        models.map((model) => {
+          return { transform: model[0], meshRenderer: model[1] }
+        }),
+        this.activeCamera
+      )
+    }
 
     this.stats.end()
     requestAnimationFrame(() => this.loop())
