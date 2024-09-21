@@ -1,6 +1,7 @@
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
 import { CameraComponent, MeshRendererComponent, TransformComponent } from '../components/components'
 import { BasicMaterial, PbrMaterial } from '../material'
+import { DeferredRenderer } from '../rendering/deferred-renderer'
 import { ForwardRenderer } from '../rendering/forward-renderer'
 import { RenderStrategy } from '../rendering/render-strategy'
 
@@ -33,7 +34,8 @@ export class Renderer {
 
   constructor(assetManager: AssetManager) {
     this.assetManager = assetManager
-    this.renderStrategy = new ForwardRenderer(assetManager)
+    this.renderStrategy = new DeferredRenderer(assetManager)
+    //this.renderStrategy = new ForwardRenderer(assetManager)
   }
 
   async init() {
@@ -138,15 +140,27 @@ export class Renderer {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       })
 
+      meshRenderer.normalmatrixBuffer = this.device.createBuffer({
+        size: meshRenderer.modelMatrixBuffer.size,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      })
+
       meshRenderer.bindGroup = this.device.createBindGroup({
         layout: this.device.createBindGroupLayout({
-          label: 'MeshRenderer Model Matrix',
-          entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }],
+          label: 'MeshRenderer',
+          entries: [
+            { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
+            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
+          ],
         }),
         entries: [
           {
             binding: 0,
             resource: { buffer: meshRenderer.modelMatrixBuffer },
+          },
+          {
+            binding: 1,
+            resource: { buffer: meshRenderer.normalmatrixBuffer },
           },
         ],
       })

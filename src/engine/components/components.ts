@@ -190,6 +190,7 @@ export class MeshRendererComponent extends Component {
   name?: string
   bindGroup: GPUBindGroup | undefined
   modelMatrixBuffer: GPUBuffer | undefined
+  normalmatrixBuffer: GPUBuffer | undefined
   primitives: PrimitiveRenderData[] = []
 
   constructor() {

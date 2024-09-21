@@ -1,5 +1,5 @@
 import { mat4 } from 'wgpu-matrix'
-import simpleShader from '../../simple-shader'
+import simpleShader from './simple-shader'
 import { AssetManager } from '../assets/asset-manager'
 import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../components/components'
 import { CameraData, ModelData } from '../systems/renderer'
