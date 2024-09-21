@@ -141,7 +141,7 @@ export class Renderer {
       meshRenderer.bindGroup = this.device.createBindGroup({
         layout: this.device.createBindGroupLayout({
           label: 'MeshRenderer Model Matrix',
-          entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} }],
+          entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }],
         }),
         entries: [
           {

@@ -14,6 +14,9 @@ export class ForwardRenderer implements RenderStrategy {
 
   private depthTexture: GPUTexture | undefined
 
+  private sceneBindGroup!: GPUBindGroup
+  private cameraBuffer!: GPUBuffer
+
   constructor(assetManager: AssetManager) {
     this.assetManager = assetManager
   }
@@ -31,6 +34,7 @@ export class ForwardRenderer implements RenderStrategy {
   setRenderingContext(context: GPUCanvasContext): void {
     this.context = context
     this.createPipeline()
+    this.createSceneBindGroup()
   }
 
   private createRenderPassDescriptor(target: GPUTexture): GPURenderPassDescriptor {
@@ -66,6 +70,18 @@ export class ForwardRenderer implements RenderStrategy {
       return
     }
 
+    const sceneBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          buffer: {
+            type: 'uniform',
+          },
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        },
+      ],
+    })
+
     const meshBindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
@@ -73,7 +89,7 @@ export class ForwardRenderer implements RenderStrategy {
           buffer: {
             type: 'uniform',
           },
-          visibility: GPUShaderStage.VERTEX,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
         },
       ],
     })
@@ -99,7 +115,7 @@ export class ForwardRenderer implements RenderStrategy {
 
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [meshBindGroupLayout, primitiveBindGroupLayout],
+        bindGroupLayouts: [sceneBindGroupLayout, meshBindGroupLayout, primitiveBindGroupLayout],
       }),
       vertex: {
         module,
@@ -153,6 +169,28 @@ export class ForwardRenderer implements RenderStrategy {
     })
   }
 
+  createSceneBindGroup() {
+    this.cameraBuffer = this.device.createBuffer({
+      label: 'Camera data',
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      size: 64,
+    })
+
+    this.sceneBindGroup = this.device.createBindGroup({
+      label: 'Scene',
+      layout: this.pipeline.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            label: 'Camera data',
+            buffer: this.cameraBuffer,
+          },
+        },
+      ],
+    })
+  }
+
   render(modelsData: ModelData[], cameraData: CameraData): void {
     if (!this.device || !this.buffers || !this.assetManager) {
       throw new Error('Rendering device, buffers and asset manager must be set before calling render.')
@@ -160,11 +198,15 @@ export class ForwardRenderer implements RenderStrategy {
     const target = this.context.getCurrentTexture()
 
     const projectionMatrix = cameraData.camera.getProjection(target.width, target.height)
-    const viewProjectionMatrix = mat4.multiply(projectionMatrix, TransformComponent.calculateGlobalCameraTransform(cameraData.transform))
+    const viewMatrix = TransformComponent.calculateGlobalCameraTransform(cameraData.transform)
+    const viewProjectionMatrix = mat4.multiply(projectionMatrix, viewMatrix)
 
     const commandEncoder = this.device.createCommandEncoder()
     const passEncoder = commandEncoder.beginRenderPass(this.createRenderPassDescriptor(target))
     passEncoder.setPipeline(this.pipeline!)
+
+    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewMatrix.buffer, viewMatrix.byteOffset, viewMatrix.byteLength)
+    passEncoder.setBindGroup(0, this.sceneBindGroup)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
       if (meshRenderer.modelMatrixBuffer == undefined) {
@@ -172,7 +214,7 @@ export class ForwardRenderer implements RenderStrategy {
       }
       const mvpMatrix = mat4.multiply(viewProjectionMatrix, TransformComponent.calculateGlobalTransform(transform))
       this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
-      passEncoder.setBindGroup(0, meshRenderer.bindGroup!)
+      passEncoder.setBindGroup(1, meshRenderer.bindGroup!)
 
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
@@ -187,7 +229,7 @@ export class ForwardRenderer implements RenderStrategy {
         })
 
         const material = this.assetManager.materials[primitiveRenderData.materialIndex!]
-        passEncoder.setBindGroup(1, material.bindGroup!)
+        passEncoder.setBindGroup(2, material.bindGroup!)
         passEncoder.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })
     })
