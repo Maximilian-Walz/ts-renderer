@@ -6,7 +6,8 @@ struct Camera {
 
 @group(0) @binding(0) var gBufferNormal: texture_2d<f32>;
 @group(0) @binding(1) var gBufferAlbedo: texture_2d<f32>;
-@group(0) @binding(2) var gBufferDepth: texture_depth_2d;
+@group(0) @binding(2) var gBufferORM: texture_2d<f32>;
+@group(0) @binding(3) var gBufferDepth: texture_depth_2d;
 
 @group(1) @binding(0) var<uniform> camera : Camera;
 
@@ -47,22 +48,41 @@ fn main(
     0
   ).rgb;
 
+  let orm = textureLoad(
+    gBufferORM,
+    vec2i(floor(coord.xy)),
+    0
+  ).rgb;
+
+  let occlusion = orm.x;
+  let roughness = orm.y;
+  let metallic = orm.z;
+
   let bufferSize = textureDimensions(gBufferDepth);
   let coordUV = coord.xy / vec2f(bufferSize);
   let position = world_from_screen_coord(coordUV, depth);
 
-  let radius = 200.0;
-  let lightPos = vec3(1.0, 10.0, 1.0);
+  let lightPos = vec3(1.0, 2.0, 1.0);
   let lightCol = vec3(1.0, 1.0, 1.0);
-  let L = lightPos - position;
-  let distance = length(L);
-  if (distance < radius) {
-    let lambert = max(dot(normal, normalize(L)), 0.0);
-    result += vec3f(
-      lambert * pow(1.0 - distance / radius, 2.0) * lightCol * albedo
-    );
-  }
+  let lightPow = 15.0;
 
-  return vec4(result, 1.0);
+  var L = lightPos - position;
+  var distance = length(L);
+  L = normalize(L);
+  distance = distance * distance;
+
+  let NdotL = dot(normal, L);
+  let diffuse = roughness * albedo * lightCol * lightPow / distance;
+  
+  let cameraPos = (camera.viewProjectionMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  let V = cameraPos - position;
+  let H = normalize(L + V);
+
+  let NdotH = dot(normal, H);
+  let specularIntensity = pow(saturate(NdotH), 4.0);
+
+  let specular = specularIntensity * lightCol * lightPow / distance;
+
+  return vec4(diffuse + specular, 1.0);
 }
 `

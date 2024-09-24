@@ -10,20 +10,23 @@ struct Camera {
 
 struct VertexOutput {
   @builtin(position) Position : vec4f,
-  @location(0) fragNormal: vec3f,    // normal in world space
-  @location(1) fragUV: vec2f,
+  @location(0) fragNormal: vec3f,
+  @location(1) fragTangent: vec3f,
+  @location(2) fragUV: vec2f,
 }
 
 @vertex
 fn main(
   @location(0) position : vec4f,
   @location(1) normal : vec3f,
-  @location(2) uv : vec2f
+  @location(2) tangent: vec3f,
+  @location(3) uv : vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
   let worldPosition = (modelMatrix * position);
   output.Position = worldPosition;
-  output.fragNormal = normalize((normalModelMatrix * vec4(normal, 1.0)).xyz); // TODO: Should use normalModelMatrix here!
+  output.fragNormal = normalize(normalModelMatrix * vec4f(normal, 1.0)).xyz;
+  output.fragTangent = normalize(normalModelMatrix * vec4f(tangent, 1.0)).xyz;
   output.fragUV = uv;
   return output;
 }

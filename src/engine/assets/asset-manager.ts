@@ -158,7 +158,6 @@ export class AssetManager {
       let material
       // TODO: remove '&& false'
       if (AssetManager.hasNoTexture(materialData) && false) {
-        material = new BasicMaterial()
       } else {
         material = new PbrMaterial()
         if (materialData.pbrMetallicRoughness) {
@@ -166,6 +165,7 @@ export class AssetManager {
           material.albedoTexture = AssetManager.parseTextureInfo(pbr.baseColorTexture)
           material.metallicRoughnessTexture = AssetManager.parseTextureInfo(pbr.metallicRoughnessTexture)
         }
+        material.normalTexture = AssetManager.parseTextureInfo(materialData.normalTexture as TextureInfo)
         material.occlusionTexture = AssetManager.parseTextureInfo(materialData.occlusionTexture as TextureInfo)
         material.emissiveTexture = AssetManager.parseTextureInfo(materialData.emissiveTexture as TextureInfo)
       }

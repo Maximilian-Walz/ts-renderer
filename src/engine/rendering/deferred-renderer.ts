@@ -1,13 +1,14 @@
-import { AssetManager } from '../assets/asset-manager'
-import { ModelData, CameraData } from '../systems/renderer'
-import { RenderStrategy } from './render-strategy'
 import { mat4 } from 'wgpu-matrix'
-import { BufferDataComponentType, getBufferDataTypeByteCount, TransformComponent, VertexAttributeType } from '../components/components'
+import { AssetManager } from '../assets/asset-manager'
+import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../components/components'
+import { CameraData, ModelData } from '../systems/renderer'
+import { RenderStrategy } from './render-strategy'
 
-import writeGBufferVert from './writeGBuffer.vert'
-import writeGBufferFrag from './writeGBuffer.frag'
-import deferredRenderingVert from './deferredRendering.vert'
+import { PbrMaterial } from '../material'
 import deferredRenderingFrag from './deferredRendering.frag'
+import deferredRenderingVert from './deferredRendering.vert'
+import writeGBufferFrag from './writeGBuffer.frag'
+import writeGBufferVert from './writeGBuffer.vert'
 
 export class DeferredRenderer implements RenderStrategy {
   private assetManager: AssetManager
@@ -18,7 +19,8 @@ export class DeferredRenderer implements RenderStrategy {
   private cameraBuffer!: GPUBuffer
   private sceneBindGroup!: GPUBindGroup
 
-  private gBufferTexture2DFloat16!: GPUTexture
+  private gBufferTextureNormal!: GPUTexture
+  private gBufferTextureORM!: GPUTexture
   private gBufferTextureAlbedo!: GPUTexture
   private depthTexture!: GPUTexture
   private gBufferTextureViews!: GPUTextureView[]
@@ -84,7 +86,7 @@ export class DeferredRenderer implements RenderStrategy {
 
     this.writeGBufferPipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [sceneBindGroupLayout, meshBindGroupLayout],
+        bindGroupLayouts: [sceneBindGroupLayout, meshBindGroupLayout, PbrMaterial.bindGroupLayout!],
       }),
       vertex: {
         module: this.device.createShaderModule({
@@ -112,10 +114,20 @@ export class DeferredRenderer implements RenderStrategy {
             ],
           },
           {
-            arrayStride: 8,
+            arrayStride: 12,
             attributes: [
               {
                 shaderLocation: 2,
+                offset: 0,
+                format: 'float32x3',
+              },
+            ],
+          },
+          {
+            arrayStride: 8,
+            attributes: [
+              {
+                shaderLocation: 3,
                 offset: 0,
                 format: 'float32x2',
               },
@@ -132,6 +144,8 @@ export class DeferredRenderer implements RenderStrategy {
           { format: 'rgba16float' },
           // albedo
           { format: 'bgra8unorm' },
+          // occlusion, metallic, roughness
+          { format: 'rgba16float' },
         ],
       },
       depthStencil: {
@@ -169,8 +183,8 @@ export class DeferredRenderer implements RenderStrategy {
   }
 
   createGBufferTextureViews(width: number, height: number): void {
-    this.gBufferTexture2DFloat16?.destroy()
-    this.gBufferTexture2DFloat16 = this.device.createTexture({
+    this.gBufferTextureNormal?.destroy()
+    this.gBufferTextureNormal = this.device.createTexture({
       size: [width, height],
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       format: 'rgba16float',
@@ -181,6 +195,12 @@ export class DeferredRenderer implements RenderStrategy {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       format: 'bgra8unorm',
     })
+    this.gBufferTextureORM?.destroy()
+    this.gBufferTextureORM = this.device.createTexture({
+      size: [width, height],
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      format: 'rgba16float',
+    })
     this.depthTexture?.destroy()
     this.depthTexture = this.device.createTexture({
       size: [width, height],
@@ -188,7 +208,7 @@ export class DeferredRenderer implements RenderStrategy {
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     })
 
-    this.gBufferTextureViews = [this.gBufferTexture2DFloat16.createView(), this.gBufferTextureAlbedo.createView(), this.depthTexture.createView()]
+    this.gBufferTextureViews = [this.gBufferTextureNormal.createView(), this.gBufferTextureAlbedo.createView(), this.gBufferTextureORM.createView(), this.depthTexture.createView()]
   }
 
   createWriteGBufferPassDescriptor(target: GPUTexture): void {
@@ -209,13 +229,20 @@ export class DeferredRenderer implements RenderStrategy {
         {
           view: this.gBufferTextureViews[1],
 
+          clearValue: [0.0, 0.0, 1.0, 1.0],
+          loadOp: 'clear',
+          storeOp: 'store',
+        },
+        {
+          view: this.gBufferTextureViews[2],
+
           clearValue: [0, 0, 0, 1],
           loadOp: 'clear',
           storeOp: 'store',
         },
       ],
       depthStencilAttachment: {
-        view: this.gBufferTextureViews[2],
+        view: this.gBufferTextureViews[3],
 
         depthClearValue: 1.0,
         depthLoadOp: 'clear',
@@ -259,17 +286,15 @@ export class DeferredRenderer implements RenderStrategy {
         gBufferPass.setIndexBuffer(this.buffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
 
         // TODO: don't hardcode which is which (i.e. that 0 is POSITION and 1 is NORMAL); somehow ask the asset manager / pipeline / shader where it should be
-        const vertexDataMapping = [VertexAttributeType.POSITION, VertexAttributeType.NORMAL, VertexAttributeType.TEXCOORD_0]
+        const vertexDataMapping = [VertexAttributeType.POSITION, VertexAttributeType.NORMAL, VertexAttributeType.TANGENT, VertexAttributeType.TEXCOORD_0]
         vertexDataMapping.forEach((attributeType, index) => {
           const accessor = primitiveRenderData.vertexAttributes.get(attributeType)!
           const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
           gBufferPass.setVertexBuffer(index, this.buffers[accessor.bufferIndex], accessor.offset, accessor.count * byteCount)
         })
 
-        /*
         const material = this.assetManager.materials[primitiveRenderData.materialIndex!]
-        passEncoder.setBindGroup(2, material.bindGroup!)
-        */
+        gBufferPass.setBindGroup(2, material.bindGroup!)
 
         gBufferPass.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })
@@ -312,6 +337,13 @@ export class DeferredRenderer implements RenderStrategy {
           binding: 2,
           visibility: GPUShaderStage.FRAGMENT,
           texture: {
+            sampleType: 'unfilterable-float',
+          },
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
             sampleType: 'depth',
           },
         },
@@ -347,20 +379,12 @@ export class DeferredRenderer implements RenderStrategy {
   createGBufferTexturesBindGroup(): void {
     this.gBufferTexturesBindGroup = this.device.createBindGroup({
       layout: this.deferredRenderPipeline.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: this.gBufferTextureViews[0],
-        },
-        {
-          binding: 1,
-          resource: this.gBufferTextureViews[1],
-        },
-        {
-          binding: 2,
-          resource: this.gBufferTextureViews[2],
-        },
-      ],
+      entries: this.gBufferTextureViews.map((textureView, index) => {
+        return {
+          binding: index,
+          resource: textureView,
+        } as GPUBindGroupEntry
+      }),
     })
   }
 

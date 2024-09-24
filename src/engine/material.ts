@@ -43,6 +43,14 @@ export class PbrMaterial extends BasicMaterial {
     entries: [
       { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: {} }, // Albedo texture
       { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: {} }, // Albedo sampler
+      { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: {} }, // Metallic-roughness texture
+      { binding: 3, visibility: GPUShaderStage.FRAGMENT, sampler: {} }, // Metallic-roughness sampler
+      { binding: 4, visibility: GPUShaderStage.FRAGMENT, texture: {} }, // Normal texture
+      { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {} }, // Normal sampler
+      { binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: {} }, // Occlusion texture
+      { binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: {} }, // Occlusion sampler
+      { binding: 8, visibility: GPUShaderStage.FRAGMENT, texture: {} }, // Emissive texture
+      { binding: 9, visibility: GPUShaderStage.FRAGMENT, sampler: {} }, // Emissive sampler
     ],
   }
 

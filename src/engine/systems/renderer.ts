@@ -1,8 +1,7 @@
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
 import { CameraComponent, MeshRendererComponent, TransformComponent } from '../components/components'
-import { BasicMaterial, PbrMaterial } from '../material'
+import { BasicMaterial, PbrMaterial, TextureIdentifier } from '../material'
 import { DeferredRenderer } from '../rendering/deferred-renderer'
-import { ForwardRenderer } from '../rendering/forward-renderer'
 import { RenderStrategy } from '../rendering/render-strategy'
 
 export type CameraData = {
@@ -168,23 +167,33 @@ export class Renderer {
     console.log('Models prepared for rendering:', components.length)
   }
 
+  getTextureAndSampler(textureIdentifier?: TextureIdentifier): GPUTextureData {
+    const textureId = textureIdentifier?.textureId
+    return textureId != undefined ? this.gpuTextures[textureId] : this.defaultTexture
+  }
+
   prepareMaterials() {
     this.assetManager.materials.forEach((material) => {
       if (material instanceof PbrMaterial) {
-        const albedoIndex = material.albedoTexture?.textureId
-        const albedoData = albedoIndex != undefined ? this.gpuTextures[albedoIndex] : this.defaultTexture
+        let lastBinding = 0
+        const bindingEntries: GPUBindGroupEntry[] = [] // TODO: Insert binding for additional material info (normal factor, occlusion strength etc.)
+        Array.of(material.albedoTexture, material.metallicRoughnessTexture, material.normalTexture, material.occlusionTexture, material.emissiveTexture).forEach(
+          (textureIdentifier) => {
+            const textureData = this.getTextureAndSampler(textureIdentifier)
+            bindingEntries.push({
+              binding: lastBinding++,
+              resource: textureData.texture.createView(),
+            })
+            bindingEntries.push({
+              binding: lastBinding++,
+              resource: textureData.sampler,
+            })
+          }
+        )
+
         material.bindGroup = this.device.createBindGroup({
           layout: material.getBindGroupLayout()!,
-          entries: [
-            {
-              binding: 0,
-              resource: albedoData.texture.createView(),
-            },
-            {
-              binding: 1,
-              resource: albedoData.sampler,
-            },
-          ],
+          entries: bindingEntries,
         })
       } else if (material instanceof BasicMaterial) {
         throw Error('Basic material not implemented yet')

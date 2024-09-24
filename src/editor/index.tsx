@@ -14,8 +14,8 @@ export class GraphicEditor {
   private engine: Engine
   private initialized: boolean = false
   private scenes: Scene[] = [
-    { name: 'Hierarchy', source: '/assets/gltf/hirarchy.glb' },
     { name: 'Water Bottle', source: '/assets/gltf/WaterBottle.glb' },
+    { name: 'Hierarchy', source: '/assets/gltf/hirarchy.glb' },
     { name: 'BoxTextured', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/BoxTextured/glTF-Embedded/BoxTextured.gltf' },
     { name: 'BoomBox', source: '/assets/gltf/BoomBox.glb' },
     { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
@@ -34,7 +34,7 @@ export class GraphicEditor {
 
     let targetTransform = new TransformComponent()
     this.editorCamera = {
-      transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -4), undefined, undefined, targetTransform),
+      transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -0.3), undefined, undefined, targetTransform),
       camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1),
     }
   }
