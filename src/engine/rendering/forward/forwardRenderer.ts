@@ -1,9 +1,9 @@
 import { mat4 } from 'wgpu-matrix'
-import simpleShader from './simple-shader'
-import { AssetManager } from '../assets/asset-manager'
-import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../components/components'
-import { CameraData, ModelData } from '../systems/renderer'
-import { RenderStrategy } from './render-strategy'
+import { AssetManager } from '../../assets/asset-manager'
+import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
+import { CameraData, ModelData } from '../../systems/renderer'
+import { RenderStrategy } from '../render-strategy'
+import simpleShader from './simpleShader'
 
 export class ForwardRenderer implements RenderStrategy {
   private assetManager: AssetManager

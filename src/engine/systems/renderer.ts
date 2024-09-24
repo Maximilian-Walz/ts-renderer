@@ -1,7 +1,7 @@
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
 import { CameraComponent, MeshRendererComponent, TransformComponent } from '../components/components'
 import { BasicMaterial, PbrMaterial, TextureIdentifier } from '../material'
-import { DeferredRenderer } from '../rendering/deferred-renderer'
+import { DeferredRenderer } from '../rendering/deferred/deferredRenderer'
 import { RenderStrategy } from '../rendering/render-strategy'
 
 export type CameraData = {

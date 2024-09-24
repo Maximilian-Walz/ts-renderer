@@ -22,10 +22,9 @@ struct Camera {
 
 struct GBufferOutput {
   @location(0) normal : vec4f,
-
-  // Textures: diffuse color, specular color, smoothness, emissive etc. could go here
   @location(1) albedo : vec4f,
   @location(2) orm: vec4f,
+  @location(3) emission: vec4f,
 }
 
 @fragment
@@ -46,6 +45,8 @@ fn main(
   let metallicRoughness = textureSample(metallicRoughnessTexture, metallicRoughnessSampler, fragUV).yz;
   let occlusion = textureSample(occlusionTexture, occlusionSampler, fragUV).x;
   output.orm = vec4f(occlusion, metallicRoughness, 1.0);
+
+  output.emission = textureSample(emissiveTexture, emissiveSampler, fragUV);
 
   return output;
 }
