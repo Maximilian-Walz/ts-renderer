@@ -15,14 +15,9 @@ export class GraphicEditor {
   private initialized: boolean = false
   private scenes: Scene[] = [
     { name: 'Water Bottle', source: '/assets/gltf/WaterBottle.glb' },
-    { name: 'Hierarchy', source: '/assets/gltf/hirarchy.glb' },
-    { name: 'BoxTextured', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/BoxTextured/glTF-Embedded/BoxTextured.gltf' },
     { name: 'BoomBox', source: '/assets/gltf/BoomBox.glb' },
-    { name: 'Sponza', source: '/assets/gltf/Sponza/Sponza.gltf' },
-    { name: 'Helmet', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf' },
-    { name: 'Box', source: '/assets/gltf/Box.gltf' },
-    { name: 'Duck', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Duck/glTF-Embedded/Duck.gltf' },
-    { name: 'CylinderEngine', source: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/2CylinderEngine/glTF-Embedded/2CylinderEngine.gltf' },
+    { name: 'Sponza', source: '/assets/gltf/Sponza.glb' },
+    { name: 'DamagedHelmet', source: '/assets/gltf/DamagedHelmet.glb' },
   ]
 
   private editorCamera: CameraData

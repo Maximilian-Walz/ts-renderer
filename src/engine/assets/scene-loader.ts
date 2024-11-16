@@ -1,3 +1,4 @@
+import { GltfAsset } from 'gltf-loader-ts'
 import { GlTf } from 'gltf-loader-ts/lib/gltf'
 import { mat4, quat, vec3 } from 'wgpu-matrix'
 import {
@@ -13,22 +14,30 @@ import {
 import { EntityComponentSystem, EntityId } from '../entity-component-system'
 
 export class SceneLoader {
-  static createEntitiesFromGltf(ecs: EntityComponentSystem, gltf: GlTf) {
-    const sceneIndex = gltf.scene ?? 0
-    if (gltf.scenes) {
-      SceneLoader.loadScene(ecs, gltf, sceneIndex)
+  private ecs: EntityComponentSystem
+  private gltf: GlTf
+
+  public constructor(ecs: EntityComponentSystem, asset: GltfAsset) {
+    this.ecs = ecs
+    this.gltf = asset.gltf
+  }
+
+  public createEntities() {
+    const sceneIndex = this.gltf.scene ?? 0
+    if (this.gltf.scenes) {
+      this.loadScene(sceneIndex)
     }
   }
 
-  private static loadScene(ecs: EntityComponentSystem, gltf: GlTf, sceneIndex: number) {
-    const scene = gltf.scenes![sceneIndex]
+  private loadScene(sceneIndex: number) {
+    const scene = this.gltf.scenes![sceneIndex]
     for (const nodeIndex of scene.nodes!) {
-      SceneLoader.loadNode(ecs, gltf, nodeIndex)
+      this.loadNode(nodeIndex)
     }
   }
 
-  private static loadNode(ecs: EntityComponentSystem, gltf: GlTf, nodeIndex: number, parentTransform?: TransformComponent) {
-    const node = gltf.nodes![nodeIndex]
+  private loadNode(nodeIndex: number, parentTransform?: TransformComponent) {
+    const node = this.gltf.nodes![nodeIndex]
 
     let transformComponent: TransformComponent
     if (node.matrix) {
@@ -41,10 +50,10 @@ export class SceneLoader {
     }
 
     transformComponent.name = node.name
-    const entityId = ecs.createEntity(transformComponent)
-    if (node.mesh != undefined) SceneLoader.loadMesh(ecs, gltf, entityId, node.mesh)
-    if (node.camera != undefined) SceneLoader.loadCamera(ecs, gltf, entityId, node.camera)
-    if (node.children != undefined) node.children.forEach((childIndex: number) => this.loadNode(ecs, gltf, childIndex, transformComponent))
+    const entityId = this.ecs.createEntity(transformComponent)
+    if (node.mesh != undefined) this.loadMesh(entityId, node.mesh)
+    if (node.camera != undefined) this.loadCamera(entityId, node.camera)
+    if (node.children != undefined) node.children.forEach((childIndex: number) => this.loadNode(childIndex, transformComponent))
 
     // Add auto rotator to mesh renderer components for debugging purposes
     if (node.mesh != undefined) {
@@ -52,8 +61,8 @@ export class SceneLoader {
     }
   }
 
-  private static loadCamera(ecs: EntityComponentSystem, gltf: GlTf, entityId: EntityId, cameraIndex: number) {
-    const camera = gltf.cameras![cameraIndex]
+  private loadCamera(entityId: EntityId, cameraIndex: number) {
+    const camera = this.gltf.cameras![cameraIndex]
 
     let cameraComponent: CameraComponent
     if (camera.type == 'perspective') {
@@ -73,32 +82,53 @@ export class SceneLoader {
       cameraComponent = new CameraComponent(CameraType.ORTHOGRAPHIC, cameraData, orthographicData.znear, orthographicData.zfar)
     }
     cameraComponent.name = camera.name
-    ecs.addComponentToEntity(entityId, cameraComponent)
+    this.ecs.addComponentToEntity(entityId, cameraComponent)
   }
 
-  private static loadMesh(ecs: EntityComponentSystem, gltf: GlTf, entityId: EntityId, meshIndex: number) {
-    const mesh = gltf.meshes![meshIndex]
+  private loadMesh(entityId: EntityId, meshIndex: number) {
+    const mesh = this.gltf.meshes![meshIndex]
     const meshRendererComponent = new MeshRendererComponent()
     meshRendererComponent.name = mesh.name
     mesh.primitives.forEach((primitive) => {
       const vertexAttributes = new Map<VertexAttributeType, BufferAccessor>()
-      Object.entries(primitive.attributes).forEach(([key, accessorIndex]) => {
-        vertexAttributes.set(VertexAttributeType[key as keyof typeof VertexAttributeType], SceneLoader.createAccessor(gltf, accessorIndex))
-      })
+
+      const loadAttributeIfPresent = (attributeType: VertexAttributeType): Boolean => {
+        const attributeIndex = primitive.attributes[attributeType]
+        if (attributeIndex != undefined) {
+          vertexAttributes.set(attributeType, this.createAccessor(attributeIndex))
+          return true
+        }
+        return false
+      }
+
+      const requiredAttributesLoaded = loadAttributeIfPresent(VertexAttributeType.POSITION) && loadAttributeIfPresent(VertexAttributeType.NORMAL)
+      if (!requiredAttributesLoaded) {
+        console.error(`Could not load primitive of mesh ${mesh.name}`)
+        return
+      }
+
+      if (!loadAttributeIfPresent(VertexAttributeType.TEXCOORD_0)) {
+        console.warn(`No texcoords found for primitive of mesh ${mesh.name}`)
+      }
+
+      if (!loadAttributeIfPresent(VertexAttributeType.TANGENT)) {
+        console.warn(`No tangents found. Calculating tangents not implemented yet. Skipping primitive of mesh ${mesh.name}.`)
+        return
+      }
 
       const primitiveRenderData: PrimitiveRenderData = {
-        indexBufferAccessor: SceneLoader.createAccessor(gltf, primitive.indices!),
+        indexBufferAccessor: this.createAccessor(primitive.indices!),
         vertexAttributes: vertexAttributes,
         materialIndex: primitive.material,
         mode: primitive.mode,
       }
       meshRendererComponent.primitives.push(primitiveRenderData)
     })
-    ecs.addComponentToEntity(entityId, meshRendererComponent)
+    this.ecs.addComponentToEntity(entityId, meshRendererComponent)
   }
 
-  private static createAccessor(gltf: GlTf, accessorIndex: number): BufferAccessor {
-    const accessor = gltf.accessors![accessorIndex]
+  private createAccessor(accessorIndex: number): BufferAccessor {
+    const accessor = this.gltf.accessors![accessorIndex]
     return {
       bufferIndex: accessor.bufferView!,
       componentType: accessor.componentType,

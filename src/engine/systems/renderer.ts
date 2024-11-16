@@ -29,7 +29,7 @@ export class Renderer {
   private gpuBuffers: GPUBuffer[] = []
   private gpuTextures: GPUTextureData[] = []
   private defaultTexture!: GPUTextureData
-  private whiteBitmap!: ImageBitmap
+  private blackBitmap!: ImageBitmap
 
   constructor(assetManager: AssetManager) {
     this.assetManager = assetManager
@@ -54,7 +54,7 @@ export class Renderer {
       }
     })
 
-    this.whiteBitmap = await createImageBitmap(new ImageData(Uint8ClampedArray.from([255, 255, 255, 255]), 1, 1))
+    this.blackBitmap = await createImageBitmap(new ImageData(Uint8ClampedArray.from([0, 0, 0, 0]), 1, 1))
 
     BasicMaterial.bindGroupLayout = this.device.createBindGroupLayout(BasicMaterial.bindGroupLayoutDescriptor)
     PbrMaterial.bindGroupLayout = this.device.createBindGroupLayout(PbrMaterial.bindGroupLayoutDescriptor)
@@ -103,7 +103,7 @@ export class Renderer {
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
       }),
     }
-    this.device.queue.copyExternalImageToTexture({ source: this.whiteBitmap }, { texture: this.defaultTexture.texture }, [this.whiteBitmap.width, this.whiteBitmap.height])
+    this.device.queue.copyExternalImageToTexture({ source: this.blackBitmap }, { texture: this.defaultTexture.texture }, [this.blackBitmap.width, this.blackBitmap.height])
 
     this.assetManager.textures.forEach((texture, index) => {
       const gpuTexture = this.device.createTexture({

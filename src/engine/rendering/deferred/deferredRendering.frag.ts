@@ -67,9 +67,9 @@ fn main(
   let roughness = orm.y;
   let metallic = orm.z;
 
-  let lightPos = vec3(20.0, 2.0, 20.0);
+  let lightPos = vec3(10.0, 2.0, 10.0);
   let lightCol = vec3(1.0, 1.0, 1.0);
-  let lightPow = 4.0;
+  let lightPow = 5.0;
   let cameraPos = (camera.invViewProjectionMatrix * vec4f(0.0, 0.0, 0.0, 1.0)).xyz;
 
   let N = normalize(normal);

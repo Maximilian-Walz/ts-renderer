@@ -98,7 +98,7 @@ export class TransformComponent extends Component {
 export enum VertexAttributeType {
   POSITION = 'POSITION',
   NORMAL = 'NORMAL',
-  TANGENT = 'TANGEN',
+  TANGENT = 'TANGENT',
   TEXCOORD_0 = 'TEXCOORD_0',
 }
 

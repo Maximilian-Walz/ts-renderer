@@ -104,12 +104,13 @@ export class AssetManager {
 
   async loadSceneFromGltf(path: string) {
     const asset = await this.gltfLoader.load(path)
-    console.log('Finished loading ' + path)
-    SceneLoader.createEntitiesFromGltf(this.ecs, asset.gltf)
-
     await this.loadBuffers(asset)
     await this.loadTextures(asset)
     this.createMaterials(asset)
+
+    const sceneLoader = new SceneLoader(this.ecs, asset)
+    sceneLoader.createEntities()
+    console.log('Finished loading ' + path)
   }
 
   async loadBuffers(asset: GltfAsset) {
