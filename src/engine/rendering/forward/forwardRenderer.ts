@@ -1,7 +1,7 @@
 import { mat4 } from 'wgpu-matrix'
 import { AssetManager } from '../../assets/asset-manager'
 import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
-import { CameraData, ModelData } from '../../systems/renderer'
+import { CameraData, LightData, ModelData } from '../../systems/renderer'
 import { RenderStrategy } from '../render-strategy'
 import simpleShader from './simpleShader'
 
@@ -191,7 +191,7 @@ export class ForwardRenderer implements RenderStrategy {
     })
   }
 
-  render(modelsData: ModelData[], cameraData: CameraData): void {
+  render(modelsData: ModelData[], lightData: LightData[], cameraData: CameraData): void {
     if (!this.device || !this.buffers || !this.assetManager) {
       throw new Error('Rendering device, buffers and asset manager must be set before calling render.')
     }

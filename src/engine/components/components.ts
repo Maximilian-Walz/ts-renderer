@@ -1,11 +1,12 @@
 import { Mat4, Quat, Vec3, mat3, mat4, quat, vec3 } from 'wgpu-matrix'
 import { EntityId } from '../entity-component-system'
 
-export const NUM_OF_ENTITY_TYPES = 4
+export const NUM_OF_ENTITY_TYPES = 5
 export enum ComponentType {
   TRANSFORM,
   CAMERA,
   MESH_RENDERER,
+  LIGHT,
   AUTO_ROTATE,
 }
 
@@ -238,8 +239,8 @@ export class CameraComponent extends Component {
     this.cameraType = cameraType
     this.useCanvasAspect = true
     this.data = data
-    this.zNear = zNear ??= 1
-    this.zFar = zFar ??= 100
+    this.zNear = zNear ?? 1
+    this.zFar = zFar ?? 100
   }
 
   getProjection(cavasWidth?: number, canvasHeight?: number): Mat4 {
@@ -247,7 +248,7 @@ export class CameraComponent extends Component {
     switch (this.cameraType) {
       case CameraType.PERSPECTIVE:
         data = this.data as PerspectiveData
-        if (this.useCanvasAspect && (!cavasWidth || !canvasHeight)) throw Error('Camera is canvas constrained but no canvas width or height is not provided.')
+        if (this.useCanvasAspect && (!cavasWidth || !canvasHeight)) throw Error('Camera is canvas constrained but no canvas width or height is provided.')
         const aspect = this.useCanvasAspect ? cavasWidth! / canvasHeight! : data.aspect
         return mat4.perspective(data.fov, aspect, this.zNear, this.zFar)
       case CameraType.ORTHOGRAPHIC:
@@ -265,6 +266,24 @@ export class CameraComponent extends Component {
       useCanvasAspect: this.useCanvasAspect,
       zNear: this.zNear,
       zFar: this.zFar,
+    }
+  }
+}
+
+export class LightComponent extends Component {
+  color: Vec3
+  power: number
+
+  constructor(color?: Vec3, power?: number) {
+    super(ComponentType.LIGHT)
+    this.color = color ?? vec3.fromValues(1.0, 1.0, 1.0)
+    this.power = power ?? 3
+  }
+
+  toJson(): Object {
+    return {
+      color: this.color,
+      power: this.power,
     }
   }
 }

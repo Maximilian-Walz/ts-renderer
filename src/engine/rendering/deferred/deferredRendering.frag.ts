@@ -1,10 +1,17 @@
 export default /*wgsl*/ `
 
 const PI = 3.14159265;
+const NUM_LIGHTS = 10;
 
 struct Camera {
     viewProjectionMatrix : mat4x4f,
     invViewProjectionMatrix : mat4x4f,
+}
+
+struct Light {
+  position: mat4x4f,
+  color: vec3f,
+  power: f32
 }
 
 @group(0) @binding(0) var gBufferNormal: texture_2d<f32>;
@@ -14,6 +21,8 @@ struct Camera {
 @group(0) @binding(4) var gBufferDepth: texture_depth_2d;
 
 @group(1) @binding(0) var<uniform> camera : Camera;
+@group(2) @binding(0) var<uniform> lights: array<Light, NUM_LIGHTS>;
+
 
 fn loadGBufferTexture(texture: texture_2d<f32>, coord: vec4f) -> vec4f {
   return textureLoad(texture, vec2i(floor(coord.xy)), 0);
@@ -67,31 +76,36 @@ fn main(
   let roughness = orm.y;
   let metallic = orm.z;
 
-  let lightPos = vec3(10.0, 2.0, 10.0);
-  let lightCol = vec3(1.0, 1.0, 1.0);
-  let lightPow = 5.0;
   let cameraPos = (camera.invViewProjectionMatrix * vec4f(0.0, 0.0, 0.0, 1.0)).xyz;
 
   let N = normalize(normal);
-  let L = normalize(lightPos);
   let V = normalize(cameraPos - position);
-  let H = normalize(V + L);
-  
-  let nDotL = max(dot(N, L), 0);
-  let nDotH = max(dot(N, H), 0);
   let nDotV = max(dot(N, V), 0);
-  let vDotH = max(dot(V, H), 0);
-
-  let lambert = albedo / PI;
-  let fresnel = schlickFresnel(vDotH, albedo, metallic);
-  let kD = (1.0 - fresnel) * (1.0 - metallic);
   
-  let normalDistribution = ggxDistribution(nDotH, roughness);
-  let geometryTerm = geomSmith(nDotL, roughness) * geomSmith(nDotV, roughness);
+  let lambert = albedo / PI;
 
-  let diffuse = kD * lambert;
-  let specular = normalDistribution * geometryTerm * fresnel / (4.0 * nDotV * nDotL + 0.000001);
-  let result = emission + (diffuse + specular) * lightCol * lightPow * nDotL;
+  var result = vec3f(0.0, 0.0, 0.0);
+  for (var i: i32 = 0; i < NUM_LIGHTS; i++) {
+    let lightPos = (lights[i].position * vec4f(0.0, 0.0, 0.0, 1.0)).xyz;
+    let lightCol = lights[i].color;
+    let lightPow = lights[i].power;
+    
+    let L = normalize(lightPos);
+    let H = normalize(V + L);
+    let nDotL = max(dot(N, L), 0);
+    let nDotH = max(dot(N, H), 0);
+    let vDotH = max(dot(V, H), 0);
+    
+    let fresnel = schlickFresnel(vDotH, albedo, metallic);
+    let kD = (1.0 - fresnel) * (1.0 - metallic);
+    
+    let normalDistribution = ggxDistribution(nDotH, roughness);
+    let geometryTerm = geomSmith(nDotL, roughness) * geomSmith(nDotV, roughness);
+    
+    let diffuse = kD * lambert;
+    let specular = normalDistribution * geometryTerm * fresnel / (4.0 * nDotV * nDotL + 0.000001);
+    result += emission + (diffuse + specular) * lightCol * lightPow * nDotL;
+  }
 
   return vec4(result, 1.0);
 }

@@ -1,7 +1,7 @@
 import { mat4 } from 'wgpu-matrix'
 import { AssetManager } from '../../assets/asset-manager'
 import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
-import { CameraData, ModelData } from '../../systems/renderer'
+import { CameraData, LightData, ModelData } from '../../systems/renderer'
 import { RenderStrategy } from '../render-strategy'
 
 import { PbrMaterial } from '../../material'
@@ -19,6 +19,9 @@ export class DeferredRenderer implements RenderStrategy {
 
   private cameraBuffer!: GPUBuffer
   private sceneBindGroup!: GPUBindGroup
+
+  private lightsBuffer!: GPUBuffer
+  private lightsBindGroup!: GPUBindGroup
 
   private gBuffer!: GBuffer
   private writeGBufferPassDescriptor!: GPURenderPassDescriptor
@@ -52,6 +55,7 @@ export class DeferredRenderer implements RenderStrategy {
     this.createSceneBindGroup()
 
     this.createDeferredRenderPipeline()
+    this.createLightsBindGroup()
   }
 
   createWriteGBufferPipeline(): void {
@@ -179,6 +183,28 @@ export class DeferredRenderer implements RenderStrategy {
     })
   }
 
+  createLightsBindGroup() {
+    this.lightsBuffer = this.device.createBuffer({
+      label: 'Lights data',
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      size: 800, // 10 lights for now
+    })
+
+    this.lightsBindGroup = this.device.createBindGroup({
+      label: 'Lights',
+      layout: this.deferredRenderPipeline.getBindGroupLayout(2),
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            label: 'Lights data',
+            buffer: this.lightsBuffer,
+          },
+        },
+      ],
+    })
+  }
+
   createWriteGBufferPassDescriptor(target: GPUTexture): void {
     this.gBuffer.createTextureViews(target.width, target.height)
     this.writeGBufferPassDescriptor = {
@@ -253,9 +279,21 @@ export class DeferredRenderer implements RenderStrategy {
       ],
     })
 
+    const lightsBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          buffer: {
+            type: 'uniform',
+          },
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        },
+      ],
+    })
+
     this.deferredRenderPipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [this.gBuffer.getBindGroupLayout(), sceneBindGroupLayout],
+        bindGroupLayouts: [this.gBuffer.getBindGroupLayout(), sceneBindGroupLayout, lightsBindGroupLayout],
       }),
       vertex: {
         module: this.device.createShaderModule({
@@ -292,25 +330,32 @@ export class DeferredRenderer implements RenderStrategy {
     }
   }
 
-  doShading(commandEncoder: GPUCommandEncoder): void {
+  doShading(commandEncoder: GPUCommandEncoder, lightsData: LightData[]): void {
     this.createDeferredRenderPassDescriptor()
     const deferredRenderingPass = commandEncoder.beginRenderPass(this.deferredRenderPassDescriptor)
     deferredRenderingPass.setPipeline(this.deferredRenderPipeline)
     deferredRenderingPass.setBindGroup(0, this.gBuffer.getBindGroup())
     // reuse scene bind group for now
     deferredRenderingPass.setBindGroup(1, this.sceneBindGroup)
+
+    // could do this per light type or even per light in the future
+    let lightDataArray = new Float32Array(lightsData.flatMap((lightData) => [...lightData.transform.toMatrix(), ...lightData.light.color, lightData.light.power]))
+    this.device.queue.writeBuffer(this.lightsBuffer, 0, lightDataArray.buffer, lightDataArray.byteOffset, lightDataArray.byteLength)
+
+    deferredRenderingPass.setBindGroup(2, this.lightsBindGroup)
     deferredRenderingPass.draw(6)
+
     deferredRenderingPass.end()
   }
 
-  render(modelsData: ModelData[], cameraData: CameraData): void {
+  render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData): void {
     if (!this.device || !this.buffers || !this.assetManager) {
       throw new Error('Rendering device, buffers and asset manager must be set before calling render.')
     }
 
     const commandEncoder = this.device.createCommandEncoder()
     this.writeGBuffer(commandEncoder, modelsData, cameraData)
-    this.doShading(commandEncoder)
+    this.doShading(commandEncoder, lightsData)
     this.device.queue.submit([commandEncoder.finish()])
   }
 }

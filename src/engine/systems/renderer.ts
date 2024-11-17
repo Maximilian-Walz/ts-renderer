@@ -1,5 +1,5 @@
 import { AssetManager, BufferTarget } from '../assets/asset-manager'
-import { CameraComponent, MeshRendererComponent, TransformComponent } from '../components/components'
+import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../components/components'
 import { BasicMaterial, PbrMaterial, TextureIdentifier } from '../material'
 import { DeferredRenderer } from '../rendering/deferred/deferredRenderer'
 import { RenderStrategy } from '../rendering/render-strategy'
@@ -12,6 +12,11 @@ export type CameraData = {
 export type ModelData = {
   transform: TransformComponent
   meshRenderer: MeshRendererComponent
+}
+
+export type LightData = {
+  transform: TransformComponent
+  light: LightComponent
 }
 
 type GPUTextureData = {
@@ -201,7 +206,7 @@ export class Renderer {
     })
   }
 
-  render(modelsData: ModelData[], cameraData: CameraData) {
+  render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData) {
     const currentWidth = this.canvas.clientWidth
     const currentHeight = this.canvas.clientHeight
     if (currentWidth !== this.canvas.width || currentHeight !== this.canvas.height) {
@@ -209,6 +214,6 @@ export class Renderer {
       this.canvas.height = currentHeight
     }
 
-    this.renderStrategy.render(modelsData, cameraData)
+    this.renderStrategy.render(modelsData, lightsData, cameraData)
   }
 }
