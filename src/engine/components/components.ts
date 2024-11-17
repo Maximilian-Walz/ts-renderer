@@ -282,6 +282,7 @@ export class LightComponent extends Component {
 
   toJson(): Object {
     return {
+      type: this.type,
       color: this.color,
       power: this.power,
     }

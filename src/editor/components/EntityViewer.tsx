@@ -4,6 +4,7 @@ import { ComponentType } from '../../engine/components/components'
 import { EditorContext } from './Editor'
 import { AutoRotateViewer } from './entityComponentViewer/AutoRotateViewer'
 import { CameraViewer } from './entityComponentViewer/CameraViewer'
+import { LightViewer } from './entityComponentViewer/LightViewer'
 import { MeshRendererViewer } from './entityComponentViewer/MeshRendererViewer'
 import { TransformViewer } from './entityComponentViewer/TransformViewer'
 
@@ -20,6 +21,8 @@ function componentSwitch(componentType: ComponentType, activeEntityId: number, c
       return <CameraViewer entityId={activeEntityId} cameraData={componentData} />
     case ComponentType.MESH_RENDERER:
       return <MeshRendererViewer entityId={activeEntityId} meshRendererData={componentData} />
+    case ComponentType.LIGHT:
+      return <LightViewer entityId={activeEntityId} lightData={componentData} />
     case ComponentType.AUTO_ROTATE:
       return <AutoRotateViewer entityId={activeEntityId} autoRotateData={componentData} />
   }

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react'
-import { LuAxis3D, LuBox, LuCamera } from 'react-icons/lu'
+import { LuAxis3D, LuBox, LuCamera, LuLightbulb } from 'react-icons/lu'
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md'
 import { ComponentType } from '../../engine/components/components'
 import { EntityId, EntityNode } from '../../engine/entity-component-system'
@@ -18,6 +18,7 @@ type Props = {
 
 function getIcon(componentTypes: ComponentType[]): JSX.Element {
   if (componentTypes.includes(ComponentType.CAMERA)) return <LuCamera />
+  else if (componentTypes.includes(ComponentType.LIGHT)) return <LuLightbulb />
   else if (componentTypes.includes(ComponentType.MESH_RENDERER)) return <LuBox />
   else return <LuAxis3D />
 }
