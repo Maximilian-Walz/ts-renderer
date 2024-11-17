@@ -84,7 +84,7 @@ fn main(
   
   let lambert = albedo / PI;
 
-  var result = vec3f(0.0, 0.0, 0.0);
+  var result = emission;
   for (var i: i32 = 0; i < NUM_LIGHTS; i++) {
     let lightPos = (lights[i].position * vec4f(0.0, 0.0, 0.0, 1.0)).xyz;
     let lightCol = lights[i].color;
@@ -104,7 +104,7 @@ fn main(
     
     let diffuse = kD * lambert;
     let specular = normalDistribution * geometryTerm * fresnel / (4.0 * nDotV * nDotL + 0.000001);
-    result += emission + (diffuse + specular) * lightCol * lightPow * nDotL;
+    result += (diffuse + specular) * lightCol * lightPow * nDotL;
   }
 
   return vec4(result, 1.0);
