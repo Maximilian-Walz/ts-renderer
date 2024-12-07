@@ -3,7 +3,7 @@ import { Material as GltfMaterial, TextureInfo } from 'gltf-loader-ts/lib/gltf'
 import { vec3, vec4 } from 'wgpu-matrix'
 import { EntityComponentSystem } from '../entity-component-system'
 import { BasicMaterial, Material, PbrMaterial, TextureIdentifier } from '../material'
-import { SceneLoader } from './scene-loader'
+import { SceneLoader } from './SceneLoader'
 
 export enum BufferTarget {
   ARRAY_BUFFER = 34962,

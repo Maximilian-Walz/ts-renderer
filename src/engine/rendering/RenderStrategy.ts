@@ -1,4 +1,4 @@
-import { CameraData, LightData, ModelData } from '../systems/renderer'
+import { CameraData, LightData, ModelData } from '../systems/Renderer'
 
 export interface RenderStrategy {
   setRenderingDevice(device: GPUDevice): void

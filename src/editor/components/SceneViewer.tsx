@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useState } from 'react'
-import { Scene } from '../../engine/engine'
+import { Scene } from '../../engine/Engine'
 
 type Props = {
   scenes: Scene[]
@@ -17,7 +17,7 @@ export function SceneViewer({ scenes, activeSceneIndex, setActiveScene }: Props)
 
   return (
     <div className="form-control">
-      <select className="select select-sm select-bordered focus:outline-none" value={selectedSceneIndex} onChange={selectScene}>
+      <select className="select select-bordered select-sm focus:outline-none" value={selectedSceneIndex} onChange={selectScene}>
         {scenes.map((scene, index) => (
           <option key={index} value={index}>
             {scene.name}

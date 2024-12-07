@@ -1,8 +1,8 @@
 import { mat4 } from 'wgpu-matrix'
-import { AssetManager } from '../../assets/asset-manager'
+import { AssetManager } from '../../assets/AssetManager'
 import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
-import { CameraData, LightData, ModelData } from '../../systems/renderer'
-import { RenderStrategy } from '../render-strategy'
+import { CameraData, LightData, ModelData } from '../../systems/Renderer'
+import { RenderStrategy } from '../RenderStrategy'
 import simpleShader from './simpleShader'
 
 export class ForwardRenderer implements RenderStrategy {

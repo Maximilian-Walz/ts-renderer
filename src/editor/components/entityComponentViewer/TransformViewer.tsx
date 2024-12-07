@@ -41,7 +41,7 @@ export function TransformViewer({ entityId, transformData }: Props) {
           <LabelInput label="Name" initialValue={(transformData.name ??= '')} onChange={(value) => (getTransform().name = value)} />
         </div>
         <VectorInput label="Position" icon={<LuMove3D />} initialValue={position} targetValue={() => getTransform().position} />
-        <VectorInput label="Rotation" icon={<LuRotate3D />} initialValue={rotation} targetValue={() => getTransform().rotation} />
+        <VectorInput label="Rotation" icon={<LuRotate3D />} initialValue={rotation} minValue={-1} maxValue={1} targetValue={() => getTransform().rotation} />
         <VectorInput label="Scale" icon={<LuScale3D />} initialValue={scale} targetValue={() => getTransform().scale} />
       </div>
     </ComponentViewer>

@@ -1,13 +1,15 @@
 import { mat4 } from 'wgpu-matrix'
-import { AssetManager } from '../../assets/asset-manager'
+import { AssetManager } from '../../assets/AssetManager'
 import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
-import { CameraData, LightData, ModelData } from '../../systems/renderer'
-import { RenderStrategy } from '../render-strategy'
+import { CameraData, LightData, ModelData } from '../../systems/Renderer'
+import { RenderStrategy } from '../RenderStrategy'
 
 import { PbrMaterial } from '../../material'
+import { ShadowMapper } from '../shadows/ShadowMapper'
+import { SunLightShadowMapper } from '../shadows/SunLightShadowMapper'
 import deferredRenderingFrag from './deferredRendering.frag'
 import deferredRenderingVert from './deferredRendering.vert'
-import { GBuffer } from './gBuffer'
+import { GBuffer } from './GBuffer'
 import writeGBufferFrag from './writeGBuffer.frag'
 import writeGBufferVert from './writeGBuffer.vert'
 
@@ -30,6 +32,8 @@ export class DeferredRenderer implements RenderStrategy {
   private deferredRenderPassDescriptor!: GPURenderPassDescriptor
   private deferredRenderPipeline!: GPURenderPipeline
 
+  private shadowMapper!: ShadowMapper
+
   constructor(assetManager: AssetManager) {
     this.assetManager = assetManager
   }
@@ -47,6 +51,9 @@ export class DeferredRenderer implements RenderStrategy {
 
   setBuffers(buffers: GPUBuffer[]): void {
     this.buffers = buffers
+
+    // TODO: move this somewhere better
+    this.shadowMapper = new SunLightShadowMapper(this.device, this.buffers)
   }
 
   setRenderingContext(context: GPUCanvasContext): void {
@@ -98,6 +105,7 @@ export class DeferredRenderer implements RenderStrategy {
         module: this.device.createShaderModule({
           code: writeGBufferVert,
         }),
+        // TODO: Generate buffer info out of VertexAttributeTypes
         buffers: [
           {
             arrayStride: 12,
@@ -213,6 +221,17 @@ export class DeferredRenderer implements RenderStrategy {
     }
   }
 
+  writeModelBuffers(modelsData: ModelData[]) {
+    modelsData.forEach(({ transform, meshRenderer }) => {
+      const modelMatrix = TransformComponent.calculateGlobalTransform(transform)
+      this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength)
+
+      const normalMatrix = mat4.invert(modelMatrix)
+      mat4.transpose(normalMatrix, normalMatrix)
+      this.device.queue.writeBuffer(meshRenderer.normalmatrixBuffer!, 0, normalMatrix.buffer, normalMatrix.byteOffset, normalMatrix.byteLength)
+    })
+  }
+
   writeGBuffer(commandEncoder: GPUCommandEncoder, modelsData: ModelData[], cameraData: CameraData): void {
     const target = this.context.getCurrentTexture()
 
@@ -233,16 +252,7 @@ export class DeferredRenderer implements RenderStrategy {
       if (meshRenderer.modelMatrixBuffer == undefined) {
         return
       }
-
-      const modelMatrix = TransformComponent.calculateGlobalTransform(transform)
-      const mvpMatrix = mat4.multiply(viewProjectionMatrix, modelMatrix)
-      this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
-
-      const normalMatrix = mat4.invert(modelMatrix)
-      mat4.transpose(normalMatrix, normalMatrix)
-      this.device.queue.writeBuffer(meshRenderer.normalmatrixBuffer!, 0, normalMatrix.buffer, normalMatrix.byteOffset, normalMatrix.byteLength)
       gBufferPass.setBindGroup(1, meshRenderer.bindGroup!)
-
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
         gBufferPass.setIndexBuffer(this.buffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
@@ -353,7 +363,10 @@ export class DeferredRenderer implements RenderStrategy {
       throw new Error('Rendering device, buffers and asset manager must be set before calling render.')
     }
 
+    this.writeModelBuffers(modelsData)
+
     const commandEncoder = this.device.createCommandEncoder()
+    this.shadowMapper.renderShadowMap(commandEncoder, modelsData, lightsData[0], cameraData)
     this.writeGBuffer(commandEncoder, modelsData, cameraData)
     this.doShading(commandEncoder, lightsData)
     this.device.queue.submit([commandEncoder.finish()])

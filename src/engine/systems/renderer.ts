@@ -1,8 +1,8 @@
-import { AssetManager, BufferTarget } from '../assets/asset-manager'
+import { AssetManager, BufferTarget } from '../assets/AssetManager'
 import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../components/components'
 import { BasicMaterial, PbrMaterial, TextureIdentifier } from '../material'
-import { DeferredRenderer } from '../rendering/deferred/deferredRenderer'
-import { RenderStrategy } from '../rendering/render-strategy'
+import { DeferredRenderer } from '../rendering/deferred/DeferredRenderer'
+import { RenderStrategy } from '../rendering/RenderStrategy'
 
 export type CameraData = {
   transform: TransformComponent
@@ -66,7 +66,7 @@ export class Renderer {
     this.renderStrategy.setRenderingDevice(this.device)
   }
 
-  setRenderTarget(canvas: HTMLCanvasElement) {
+  public setRenderTarget(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     const context = canvas.getContext('webgpu')!
     context.configure({
@@ -76,7 +76,7 @@ export class Renderer {
     this.renderStrategy.setRenderingContext(context)
   }
 
-  prepareGpuBuffers() {
+  public prepareGpuBuffers() {
     this.assetManager.buffers.forEach((buffer, index) => {
       // TODO: Can I set less as default? Counter example: BoomBox
       let usage = GPUBufferUsage.UNIFORM | GPUBufferUsage.VERTEX | GPUBufferUsage.INDEX
@@ -95,7 +95,7 @@ export class Renderer {
     console.log('Buffers loaded:', this.gpuBuffers.length)
   }
 
-  prepareGpuTextures() {
+  public prepareGpuTextures() {
     this.defaultTexture = {
       sampler: this.device.createSampler({
         addressModeU: 'repeat',
@@ -137,7 +137,7 @@ export class Renderer {
     console.log('Textures loaded:', this.gpuTextures.length)
   }
 
-  prepareMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
+  public prepareMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
     components.forEach(([transform, meshRenderer]) => {
       meshRenderer.modelMatrixBuffer = this.device.createBuffer({
         size: transform.toMatrix().byteLength,
@@ -172,12 +172,12 @@ export class Renderer {
     console.log('Models prepared for rendering:', components.length)
   }
 
-  getTextureAndSampler(textureIdentifier?: TextureIdentifier): GPUTextureData {
+  private getTextureAndSampler(textureIdentifier?: TextureIdentifier): GPUTextureData {
     const textureId = textureIdentifier?.textureId
     return textureId != undefined ? this.gpuTextures[textureId] : this.defaultTexture
   }
 
-  prepareMaterials() {
+  public prepareMaterials() {
     this.assetManager.materials.forEach((material) => {
       if (material instanceof PbrMaterial) {
         let lastBinding = 0
@@ -206,7 +206,19 @@ export class Renderer {
     })
   }
 
-  render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData) {
+  public prepareShadowMaps(lightData: LightData[]) {
+    lightData
+      .filter((lightDatum) => lightDatum.light.castsShadow)
+      .forEach((lightDatum) => {
+        lightDatum.light.shadowMap = this.device.createTexture({
+          size: [200, 200, 1],
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+          format: 'depth32float',
+        })
+      })
+  }
+
+  public renderScene(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData) {
     const currentWidth = this.canvas.clientWidth
     const currentHeight = this.canvas.clientHeight
     if (currentWidth !== this.canvas.width || currentHeight !== this.canvas.height) {
@@ -216,4 +228,6 @@ export class Renderer {
 
     this.renderStrategy.render(modelsData, lightsData, cameraData)
   }
+
+  public renderDebugOverlay(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData) {}
 }

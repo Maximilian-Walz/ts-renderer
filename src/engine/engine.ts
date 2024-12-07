@@ -1,11 +1,10 @@
 import Stats from 'stats.js'
 import { vec3 } from 'wgpu-matrix'
-import { AssetManager } from './assets/asset-manager'
+import { AssetManager } from './assets/AssetManager'
 import { AutoRotateComponent, ComponentType, LightComponent, MeshRendererComponent, TransformComponent } from './components/components'
 import { EntityComponentSystem, SimpleEcs } from './entity-component-system'
-import { CameraData, Renderer } from './systems/renderer'
-import { Rotator } from './systems/rotator'
-
+import { CameraData, Renderer } from './systems/Renderer'
+import { Rotator } from './systems/Rotator'
 export type Scene = {
   name?: string
   source: string
@@ -59,7 +58,7 @@ export class Engine {
 
       const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
       const lights = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.LIGHT]) as [TransformComponent, LightComponent][]
-      this.renderer.render(
+      this.renderer.renderScene(
         models.map((model) => {
           return { transform: model[0], meshRenderer: model[1] }
         }),
@@ -78,13 +77,24 @@ export class Engine {
     this.ecs.clear()
     await this.assetManager.loadSceneFromGltf(source)
 
-    this.ecs.addComponentToEntity(this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(10.0, 2.0, 10.0))), new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 5.0))
+    this.ecs.addComponentToEntity(
+      this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(0.0, 0.0, -1.0))),
+      new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 5.0, true)
+    )
     this.ecs.addComponentToEntity(this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(10.0, 200.0, 10.0))), new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 5.0))
 
-    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
     this.renderer.prepareGpuBuffers()
     this.renderer.prepareGpuTextures()
     this.renderer.prepareMaterials()
+
+    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
     this.renderer.prepareMeshRenderers(models)
+
+    const lights = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.LIGHT]) as [TransformComponent, LightComponent][]
+    this.renderer.prepareShadowMaps(
+      lights.map((light) => {
+        return { transform: light[0], light: light[1] }
+      })
+    )
   }
 }

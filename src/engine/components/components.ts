@@ -273,11 +273,18 @@ export class CameraComponent extends Component {
 export class LightComponent extends Component {
   color: Vec3
   power: number
+  castsShadow: Boolean
+  shadowMap: GPUTexture | undefined
 
-  constructor(color?: Vec3, power?: number) {
+  constructor(color?: Vec3, power?: number, castsShadow?: Boolean) {
     super(ComponentType.LIGHT)
     this.color = color ?? vec3.fromValues(1.0, 1.0, 1.0)
     this.power = power ?? 3
+    this.castsShadow = castsShadow ?? false
+  }
+
+  getProjection(): Mat4 {
+    return mat4.ortho(-1, 1, -1, 1, 0.1, 10)
   }
 
   toJson(): Object {
@@ -285,6 +292,7 @@ export class LightComponent extends Component {
       type: this.type,
       color: this.color,
       power: this.power,
+      castsShadow: this.castsShadow,
     }
   }
 }

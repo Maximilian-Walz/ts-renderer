@@ -23,7 +23,7 @@ fn main(
   @location(3) uv : vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
-  let worldPosition = (modelMatrix * position);
+  let worldPosition = (camera.viewProjectionMatrix * modelMatrix * position);
   output.Position = worldPosition;
   output.fragNormal = normalize(normalModelMatrix * vec4f(normal, 1.0)).xyz;
   output.fragTangent = normalize(normalModelMatrix * vec4f(tangent, 1.0)).xyz;
