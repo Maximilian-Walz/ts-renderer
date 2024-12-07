@@ -41,6 +41,9 @@ fn main(
   output.normal = vec4((TBN * normalize(sampledNormal - 0.5)), 1.0);
 
   output.albedo = textureSample(albedoTexture, albedoSampler, fragUV);
+  if (output.albedo.a == 0) {
+    discard;
+  }
   
   let metallicRoughness = textureSample(metallicRoughnessTexture, metallicRoughnessSampler, fragUV).yz;
   let occlusion = textureSample(occlusionTexture, occlusionSampler, fragUV).x;
