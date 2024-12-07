@@ -24,9 +24,9 @@ export function LightViewer({ entityId, lightData }: Props) {
   return (
     <ComponentViewer title="Light" icon={<LuLightbulb />}>
       <div className="self-end">
-        <NumberInput label="Power" initialValue={lightData.power} onChange={(value) => (getLight().power = value)} />
+        <NumberInput label="Power" initialValue={lightData.power} minValue={0} onChange={(value) => (getLight().power = value)} />
       </div>
-      <VectorInput label="Color" icon={<LuPalette />} initialValue={color} targetValue={() => getLight().color} />
+      <VectorInput label="Color" icon={<LuPalette />} initialValue={color} minValue={0} maxValue={1} targetValue={() => getLight().color} />
     </ComponentViewer>
   )
 }

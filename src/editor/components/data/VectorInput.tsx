@@ -6,9 +6,11 @@ type Props = {
   initialValue: any[]
   targetValue: any
   icon?: JSX.Element
+  minValue?: number
+  maxValue?: number
 }
 
-export function VectorInput({ label, initialValue, targetValue, icon }: Props) {
+export function VectorInput({ label, initialValue, targetValue, icon, minValue, maxValue }: Props) {
   return (
     <div className="form-control mt-5">
       <div className="join label-text items-center">
@@ -18,7 +20,14 @@ export function VectorInput({ label, initialValue, targetValue, icon }: Props) {
       <div className="ml-1">
         {initialValue.map((axis, index) => (
           <div className="my-[1px]" key={index}>
-            <NumberInput label={axis.label} initialValue={axis.value} precision={4} labelContained onChange={(value) => (targetValue()[index] = value)} />
+            <NumberInput
+              label={axis.label}
+              initialValue={axis.value}
+              precision={4}
+              labelContained
+              onChange={(value) => (targetValue()[index] = value)}
+              {...{ minValue, maxValue }}
+            />
           </div>
         ))}
       </div>

@@ -9,9 +9,11 @@ type Props = {
   labelContained?: boolean
   precision?: number
   step?: number
+  minValue?: number
+  maxValue?: number
 }
 
-export function NumberInput({ initialValue, onChange, label, labelContained = false, precision = 2, step = 1 }: Props) {
+export function NumberInput({ initialValue, onChange, label, labelContained = false, precision = 2, step = 1, minValue = -Number.MAX_VALUE, maxValue = Number.MAX_VALUE }: Props) {
   const [value, setValue] = useState<string>(initialValue.toString())
   const [valid, setValid] = useState<boolean>(true)
   const [editing, setEditing] = useState<boolean>(false)
@@ -28,22 +30,23 @@ export function NumberInput({ initialValue, onChange, label, labelContained = fa
     }
   }, [initialValue])
 
+  const isValid = (number: number) => {
+    return !isNaN(number) && number <= maxValue && number >= minValue
+  }
+
   const parse = (value: string) => Number.parseFloat(value == '' ? '0' : value)
 
   const handleChange = (value: string) => {
     const number = parse(value)
-    if (!isNaN(number)) {
+    if (isValid(number)) {
       setValid(true)
       onChange(number)
       setValue(number.toFixed(precision))
-    } else {
-      setValid(false)
-      setValue(value)
     }
   }
 
   const handleUpdate = (value: string) => {
-    setValid(!isNaN(parse(value)))
+    setValid(isValid(parse(value)))
     setValue(value)
   }
 
@@ -134,7 +137,13 @@ export function NumberInput({ initialValue, onChange, label, labelContained = fa
   return (
     <div className="form-control indicator join join-horizontal self-end" ref={numberInputRef}>
       {!labelContained && <span className="label-text inline self-center pr-3">{label}</span>}
-      {!valid && <span className="badge indicator-item badge-error">!</span>}
+      {!valid && (
+        <span className="badge indicator-item badge-error">
+          <div className="tooltip z-40" data-tip="Invalid input">
+            <div className="label">!</div>
+          </div>
+        </span>
+      )}
       <div className="join join-horizontal mr-auto bg-gray-700" ref={inputRef}>
         <button
           tabIndex={-1}
