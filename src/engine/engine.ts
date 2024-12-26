@@ -1,6 +1,7 @@
 import Stats from 'stats.js'
 import { vec3 } from 'wgpu-matrix'
-import { AssetManager } from './assets/AssetManager'
+import { GltfAssetManager } from './assets/GltfAssetManager'
+import { StaticAssetManager } from './assets/StaticAssetsManager'
 import { AutoRotateComponent, ComponentType, LightComponent, MeshRendererComponent, TransformComponent } from './components/components'
 import { EntityComponentSystem, SimpleEcs } from './entity-component-system'
 import { CameraData, Renderer } from './systems/Renderer'
@@ -11,18 +12,21 @@ export type Scene = {
 }
 
 export class Engine {
-  ecs: EntityComponentSystem
-  assetManager: AssetManager
-  renderer: Renderer
-  rotator: Rotator
+  public ecs: EntityComponentSystem
+
+  private assetManager: GltfAssetManager
+  private staticAssetManager: StaticAssetManager
+  private renderer: Renderer
+  private rotator: Rotator
   private stats: Stats = new Stats()
 
   private activeCamera?: CameraData
 
   constructor() {
     this.ecs = new SimpleEcs()
-    this.assetManager = new AssetManager(this.ecs)
-    this.renderer = new Renderer(this.assetManager)
+    this.assetManager = new GltfAssetManager(this.ecs)
+    this.staticAssetManager = new StaticAssetManager()
+    this.renderer = new Renderer(this.assetManager, this.staticAssetManager)
     this.rotator = new Rotator()
   }
 
@@ -37,6 +41,7 @@ export class Engine {
 
   setActiveCamera(cameraData: CameraData) {
     this.activeCamera = cameraData
+    this.renderer.prepareCameras([this.activeCamera!])
   }
 
   private initRendering() {
@@ -56,9 +61,14 @@ export class Engine {
       const rotatableModels = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE]) as [TransformComponent, AutoRotateComponent][]
       this.rotator.rotate(rotatableModels)
 
+      const transforms = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM]).flat() as TransformComponent[]
+      this.renderer.writeTransformBuffers(transforms)
+
+      this.renderer.writeCamraBuffers([this.activeCamera])
+
       const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
       const lights = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.LIGHT]) as [TransformComponent, LightComponent][]
-      this.renderer.renderScene(
+      this.renderer.render(
         models.map((model) => {
           return { transform: model[0], meshRenderer: model[1] }
         }),
@@ -78,17 +88,17 @@ export class Engine {
     await this.assetManager.loadSceneFromGltf(source)
 
     this.ecs.addComponentToEntity(
-      this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(0.0, 0.0, -1.0))),
+      this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(0.1, 0.1, -0.1))),
       new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 5.0, true)
     )
-    this.ecs.addComponentToEntity(this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(10.0, 200.0, 10.0))), new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 5.0))
+    this.ecs.addComponentToEntity(this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(10.0, 20.0, 10.0))), new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 2.0))
 
     this.renderer.prepareGpuBuffers()
     this.renderer.prepareGpuTextures()
     this.renderer.prepareMaterials()
 
-    const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
-    this.renderer.prepareMeshRenderers(models)
+    const transforms = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM]).flat() as TransformComponent[]
+    this.renderer.prepareTransforms(transforms)
 
     const lights = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.LIGHT]) as [TransformComponent, LightComponent][]
     this.renderer.prepareShadowMaps(

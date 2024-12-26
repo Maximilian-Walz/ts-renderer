@@ -27,6 +27,10 @@ export class TransformComponent extends Component {
   entityId?: EntityId
   parent?: TransformComponent
 
+  bindGroup: GPUBindGroup | undefined
+  modelMatrixBuffer: GPUBuffer | undefined
+  normalmatrixBuffer: GPUBuffer | undefined
+
   constructor(parentTransform?: TransformComponent) {
     super(ComponentType.TRANSFORM)
     this.parent = parentTransform
@@ -189,9 +193,6 @@ export type PrimitiveRenderData = {
 
 export class MeshRendererComponent extends Component {
   name?: string
-  bindGroup: GPUBindGroup | undefined
-  modelMatrixBuffer: GPUBuffer | undefined
-  normalmatrixBuffer: GPUBuffer | undefined
   primitives: PrimitiveRenderData[] = []
 
   constructor() {
@@ -233,6 +234,10 @@ export class CameraComponent extends Component {
   data: PerspectiveData | OrthographicData
   zNear: number
   zFar: number
+
+  bindGroup: GPUBindGroup | undefined
+  bindGroupLayout: GPUBindGroupLayout | undefined
+  viewProjectionsBuffer: GPUBuffer | undefined
 
   constructor(cameraType: CameraType, data: PerspectiveData | OrthographicData, zNear?: number, zFar?: number) {
     super(ComponentType.CAMERA)

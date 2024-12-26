@@ -1,12 +1,12 @@
 import { mat4 } from 'wgpu-matrix'
-import { AssetManager } from '../../assets/AssetManager'
+import { GltfAssetManager } from '../../assets/GltfAssetManager'
 import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { RenderStrategy } from '../RenderStrategy'
 import simpleShader from './simpleShader'
 
 export class ForwardRenderer implements RenderStrategy {
-  private assetManager: AssetManager
+  private assetManager: GltfAssetManager
   private device!: GPUDevice
   private buffers!: GPUBuffer[]
   private pipeline!: GPURenderPipeline
@@ -17,7 +17,7 @@ export class ForwardRenderer implements RenderStrategy {
   private sceneBindGroup!: GPUBindGroup
   private cameraBuffer!: GPUBuffer
 
-  constructor(assetManager: AssetManager) {
+  constructor(assetManager: GltfAssetManager) {
     this.assetManager = assetManager
   }
   setRenderTarget(target: GPUTexture): void {
@@ -209,12 +209,12 @@ export class ForwardRenderer implements RenderStrategy {
     passEncoder.setBindGroup(0, this.sceneBindGroup)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
-      if (meshRenderer.modelMatrixBuffer == undefined) {
+      if (transform.modelMatrixBuffer == undefined) {
         return
       }
       const mvpMatrix = mat4.multiply(viewProjectionMatrix, TransformComponent.calculateGlobalTransform(transform))
-      this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
-      passEncoder.setBindGroup(1, meshRenderer.bindGroup!)
+      this.device.queue.writeBuffer(transform.modelMatrixBuffer!, 0, mvpMatrix.buffer, mvpMatrix.byteOffset, mvpMatrix.byteLength)
+      passEncoder.setBindGroup(1, transform.bindGroup!)
 
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'

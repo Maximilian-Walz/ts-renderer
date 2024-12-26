@@ -30,7 +30,7 @@ export class GraphicEditor {
     let targetTransform = new TransformComponent()
     this.editorCamera = {
       transform: TransformComponent.fromValues(vec3.fromValues(0, 0, -0.3), undefined, undefined, targetTransform),
-      camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1),
+      camera: new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.001),
     }
   }
 

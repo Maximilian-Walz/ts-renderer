@@ -39,7 +39,7 @@ export type TextureData = {
   sampler?: SamplerData
 }
 
-export class AssetManager {
+export class GltfAssetManager {
   private ecs: EntityComponentSystem
   private gltfLoader: GltfLoader
 
@@ -137,11 +137,11 @@ export class AssetManager {
             if (texture.sampler) {
               const sampler = asset.gltf.samplers![texture.sampler]
               samplerData = {
-                wrapS: AssetManager.mapTextureWrapMode(sampler.wrapS),
-                wrapT: AssetManager.mapTextureWrapMode(sampler.wrapT),
-                magFilter: AssetManager.mapTextureFilterMode(sampler.magFilter),
-                minFilter: AssetManager.mapTextureFilterMode(sampler.minFilter),
-                mipMapFilter: AssetManager.mapMipMapFilterMode(sampler.minFilter),
+                wrapS: GltfAssetManager.mapTextureWrapMode(sampler.wrapS),
+                wrapT: GltfAssetManager.mapTextureWrapMode(sampler.wrapT),
+                magFilter: GltfAssetManager.mapTextureFilterMode(sampler.magFilter),
+                minFilter: GltfAssetManager.mapTextureFilterMode(sampler.minFilter),
+                mipMapFilter: GltfAssetManager.mapMipMapFilterMode(sampler.minFilter),
               }
             }
             this.textures[index] = {
@@ -158,17 +158,17 @@ export class AssetManager {
     asset.gltf.materials?.forEach((materialData, index) => {
       let material
       // TODO: remove '&& false'
-      if (AssetManager.hasNoTexture(materialData) && false) {
+      if (GltfAssetManager.hasNoTexture(materialData) && false) {
       } else {
         material = new PbrMaterial()
         if (materialData.pbrMetallicRoughness) {
           const pbr = materialData.pbrMetallicRoughness
-          material.albedoTexture = AssetManager.parseTextureInfo(pbr.baseColorTexture)
-          material.metallicRoughnessTexture = AssetManager.parseTextureInfo(pbr.metallicRoughnessTexture)
+          material.albedoTexture = GltfAssetManager.parseTextureInfo(pbr.baseColorTexture)
+          material.metallicRoughnessTexture = GltfAssetManager.parseTextureInfo(pbr.metallicRoughnessTexture)
         }
-        material.normalTexture = AssetManager.parseTextureInfo(materialData.normalTexture as TextureInfo)
-        material.occlusionTexture = AssetManager.parseTextureInfo(materialData.occlusionTexture as TextureInfo)
-        material.emissiveTexture = AssetManager.parseTextureInfo(materialData.emissiveTexture as TextureInfo)
+        material.normalTexture = GltfAssetManager.parseTextureInfo(materialData.normalTexture as TextureInfo)
+        material.occlusionTexture = GltfAssetManager.parseTextureInfo(materialData.occlusionTexture as TextureInfo)
+        material.emissiveTexture = GltfAssetManager.parseTextureInfo(materialData.emissiveTexture as TextureInfo)
       }
       // In both cases, set factors
       if (materialData.pbrMetallicRoughness) {

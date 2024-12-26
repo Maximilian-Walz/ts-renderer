@@ -1,10 +1,11 @@
-import { mat4 } from 'wgpu-matrix'
-import { AssetManager } from '../../assets/AssetManager'
-import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
+import { GltfAssetManager } from '../../assets/GltfAssetManager'
+import { BufferDataComponentType, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { RenderStrategy } from '../RenderStrategy'
 
+import { StaticAssetManager } from '../../assets/StaticAssetsManager'
 import { PbrMaterial } from '../../material'
+import { DebugRenderer } from '../debug/DebugRenderer'
 import { ShadowMapper } from '../shadows/ShadowMapper'
 import { SunLightShadowMapper } from '../shadows/SunLightShadowMapper'
 import deferredRenderingFrag from './deferredRendering.frag'
@@ -14,13 +15,11 @@ import writeGBufferFrag from './writeGBuffer.frag'
 import writeGBufferVert from './writeGBuffer.vert'
 
 export class DeferredRenderer implements RenderStrategy {
-  private assetManager: AssetManager
+  private gltfAssetManager: GltfAssetManager
+  private staticAssetManager: StaticAssetManager
   private device!: GPUDevice
   private buffers!: GPUBuffer[]
   private context!: GPUCanvasContext
-
-  private cameraBuffer!: GPUBuffer
-  private sceneBindGroup!: GPUBindGroup
 
   private lightsBuffer!: GPUBuffer
   private lightsBindGroup!: GPUBindGroup
@@ -33,12 +32,14 @@ export class DeferredRenderer implements RenderStrategy {
   private deferredRenderPipeline!: GPURenderPipeline
 
   private shadowMapper!: ShadowMapper
+  private debugRenderer!: DebugRenderer
 
-  constructor(assetManager: AssetManager) {
-    this.assetManager = assetManager
+  constructor(assetManager: GltfAssetManager, staticAssetManager: StaticAssetManager) {
+    this.gltfAssetManager = assetManager
+    this.staticAssetManager = staticAssetManager
   }
 
-  setRenderingDevice(device: GPUDevice): void {
+  public setRenderingDevice(device: GPUDevice): void {
     this.device = device
 
     this.gBuffer = new GBuffer(device)
@@ -49,23 +50,23 @@ export class DeferredRenderer implements RenderStrategy {
     this.gBuffer.addTexture('depth', 'depth24plus', 1.0, 'depth')
   }
 
-  setBuffers(buffers: GPUBuffer[]): void {
+  public setBuffers(buffers: GPUBuffer[]): void {
     this.buffers = buffers
 
     // TODO: move this somewhere better
     this.shadowMapper = new SunLightShadowMapper(this.device, this.buffers)
   }
 
-  setRenderingContext(context: GPUCanvasContext): void {
+  public setRenderingContext(context: GPUCanvasContext): void {
     this.context = context
+    this.debugRenderer = new DebugRenderer(this.device, this.context, this.staticAssetManager)
     this.createWriteGBufferPipeline()
-    this.createSceneBindGroup()
 
     this.createDeferredRenderPipeline()
     this.createLightsBindGroup()
   }
 
-  createWriteGBufferPipeline(): void {
+  private createWriteGBufferPipeline(): void {
     const sceneBindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
@@ -169,29 +170,7 @@ export class DeferredRenderer implements RenderStrategy {
     })
   }
 
-  createSceneBindGroup() {
-    this.cameraBuffer = this.device.createBuffer({
-      label: 'Camera data',
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      size: 128,
-    })
-
-    this.sceneBindGroup = this.device.createBindGroup({
-      label: 'Scene',
-      layout: this.writeGBufferPipeline.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            label: 'Camera data',
-            buffer: this.cameraBuffer,
-          },
-        },
-      ],
-    })
-  }
-
-  createLightsBindGroup() {
+  private createLightsBindGroup() {
     this.lightsBuffer = this.device.createBuffer({
       label: 'Lights data',
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -213,7 +192,7 @@ export class DeferredRenderer implements RenderStrategy {
     })
   }
 
-  createWriteGBufferPassDescriptor(target: GPUTexture): void {
+  private createWriteGBufferPassDescriptor(target: GPUTexture): void {
     this.gBuffer.createTextureViews(target.width, target.height)
     this.writeGBufferPassDescriptor = {
       colorAttachments: ['normal', 'albedo', 'orm', 'emission'].map((textureName) => this.gBuffer.getColorAttachment(textureName)),
@@ -221,38 +200,18 @@ export class DeferredRenderer implements RenderStrategy {
     }
   }
 
-  writeModelBuffers(modelsData: ModelData[]) {
-    modelsData.forEach(({ transform, meshRenderer }) => {
-      const modelMatrix = TransformComponent.calculateGlobalTransform(transform)
-      this.device.queue.writeBuffer(meshRenderer.modelMatrixBuffer!, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength)
-
-      const normalMatrix = mat4.invert(modelMatrix)
-      mat4.transpose(normalMatrix, normalMatrix)
-      this.device.queue.writeBuffer(meshRenderer.normalmatrixBuffer!, 0, normalMatrix.buffer, normalMatrix.byteOffset, normalMatrix.byteLength)
-    })
-  }
-
-  writeGBuffer(commandEncoder: GPUCommandEncoder, modelsData: ModelData[], cameraData: CameraData): void {
+  private writeGBuffer(commandEncoder: GPUCommandEncoder, modelsData: ModelData[], cameraData: CameraData): void {
     const target = this.context.getCurrentTexture()
-
-    const projectionMatrix = cameraData.camera.getProjection(target.width, target.height)
-    const viewMatrix = TransformComponent.calculateGlobalCameraTransform(cameraData.transform)
-    const viewProjectionMatrix = mat4.multiply(projectionMatrix, viewMatrix)
-
-    this.device.queue.writeBuffer(this.cameraBuffer, 0, viewProjectionMatrix.buffer, viewProjectionMatrix.byteOffset, viewProjectionMatrix.byteLength)
-    const cameraInvViewProj = mat4.invert(viewProjectionMatrix)
-    this.device.queue.writeBuffer(this.cameraBuffer, 64, cameraInvViewProj.buffer, cameraInvViewProj.byteOffset, cameraInvViewProj.byteLength)
-
     this.createWriteGBufferPassDescriptor(target)
     const gBufferPass = commandEncoder.beginRenderPass(this.writeGBufferPassDescriptor)
     gBufferPass.setPipeline(this.writeGBufferPipeline)
-    gBufferPass.setBindGroup(0, this.sceneBindGroup)
+    gBufferPass.setBindGroup(0, cameraData.camera.bindGroup!)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
-      if (meshRenderer.modelMatrixBuffer == undefined) {
+      if (transform.modelMatrixBuffer == undefined) {
         return
       }
-      gBufferPass.setBindGroup(1, meshRenderer.bindGroup!)
+      gBufferPass.setBindGroup(1, transform.bindGroup!)
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
         gBufferPass.setIndexBuffer(this.buffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
@@ -265,7 +224,7 @@ export class DeferredRenderer implements RenderStrategy {
           gBufferPass.setVertexBuffer(index, this.buffers[accessor.bufferIndex], accessor.offset, accessor.count * byteCount)
         })
 
-        const material = this.assetManager.materials[primitiveRenderData.materialIndex!]
+        const material = this.gltfAssetManager.materials[primitiveRenderData.materialIndex!]
         gBufferPass.setBindGroup(2, material.bindGroup!)
 
         gBufferPass.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
@@ -275,7 +234,7 @@ export class DeferredRenderer implements RenderStrategy {
     gBufferPass.end()
   }
 
-  createDeferredRenderPipeline(): void {
+  private createDeferredRenderPipeline(): void {
     // TODO: reuse sceneBindGroupLayout from other pipeline creation (if I actually want to reuse that here in the future)
     const sceneBindGroupLayout = this.device.createBindGroupLayout({
       entries: [
@@ -327,7 +286,7 @@ export class DeferredRenderer implements RenderStrategy {
     })
   }
 
-  createDeferredRenderPassDescriptor(): void {
+  private createDeferredRenderPassDescriptor(): void {
     this.deferredRenderPassDescriptor = {
       colorAttachments: [
         {
@@ -340,13 +299,13 @@ export class DeferredRenderer implements RenderStrategy {
     }
   }
 
-  doShading(commandEncoder: GPUCommandEncoder, lightsData: LightData[]): void {
+  private doShading(commandEncoder: GPUCommandEncoder, lightsData: LightData[], cameraData: CameraData): void {
     this.createDeferredRenderPassDescriptor()
     const deferredRenderingPass = commandEncoder.beginRenderPass(this.deferredRenderPassDescriptor)
     deferredRenderingPass.setPipeline(this.deferredRenderPipeline)
     deferredRenderingPass.setBindGroup(0, this.gBuffer.getBindGroup())
     // reuse scene bind group for now
-    deferredRenderingPass.setBindGroup(1, this.sceneBindGroup)
+    deferredRenderingPass.setBindGroup(1, cameraData.camera.bindGroup!)
 
     // could do this per light type or even per light in the future
     let lightDataArray = new Float32Array(lightsData.flatMap((lightData) => [...lightData.transform.toMatrix(), ...lightData.light.color, lightData.light.power]))
@@ -358,17 +317,18 @@ export class DeferredRenderer implements RenderStrategy {
     deferredRenderingPass.end()
   }
 
-  render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData): void {
-    if (!this.device || !this.buffers || !this.assetManager) {
+  public render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData): void {
+    if (!this.device || !this.buffers || !this.gltfAssetManager) {
       throw new Error('Rendering device, buffers and asset manager must be set before calling render.')
     }
-
-    this.writeModelBuffers(modelsData)
-
     const commandEncoder = this.device.createCommandEncoder()
+
     this.shadowMapper.renderShadowMap(commandEncoder, modelsData, lightsData[0], cameraData)
     this.writeGBuffer(commandEncoder, modelsData, cameraData)
-    this.doShading(commandEncoder, lightsData)
+    this.doShading(commandEncoder, lightsData, cameraData)
+
+    this.debugRenderer.renderDebugOverlay(commandEncoder, this.gBuffer.getDepthAttachment().view, lightsData, [cameraData], cameraData)
+
     this.device.queue.submit([commandEncoder.finish()])
   }
 }

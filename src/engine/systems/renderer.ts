@@ -1,4 +1,6 @@
-import { AssetManager, BufferTarget } from '../assets/AssetManager'
+import { mat4 } from 'wgpu-matrix'
+import { BufferTarget, GltfAssetManager } from '../assets/GltfAssetManager'
+import { StaticAssetManager } from '../assets/StaticAssetsManager'
 import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../components/components'
 import { BasicMaterial, PbrMaterial, TextureIdentifier } from '../material'
 import { DeferredRenderer } from '../rendering/deferred/DeferredRenderer'
@@ -19,16 +21,18 @@ export type LightData = {
   light: LightComponent
 }
 
-type GPUTextureData = {
+export type GPUTextureData = {
   texture: GPUTexture
   sampler: GPUSampler
 }
 
 export class Renderer {
-  private assetManager: AssetManager
+  private gltfAssetManager: GltfAssetManager
+  private staticAssetManager: StaticAssetManager
   private renderStrategy: RenderStrategy
   private device!: GPUDevice
   private canvas!: HTMLCanvasElement
+  private context!: GPUCanvasContext
 
   // TODO: Create some sort of GPU abstractions that holds all the gpu data and has methods to upload them
   private gpuBuffers: GPUBuffer[] = []
@@ -36,10 +40,10 @@ export class Renderer {
   private defaultTexture!: GPUTextureData
   private blackBitmap!: ImageBitmap
 
-  constructor(assetManager: AssetManager) {
-    this.assetManager = assetManager
-    this.renderStrategy = new DeferredRenderer(assetManager)
-    //this.renderStrategy = new ForwardRenderer(assetManager)
+  constructor(gltfAssetManager: GltfAssetManager, staticAssetManager: StaticAssetManager) {
+    this.gltfAssetManager = gltfAssetManager
+    this.staticAssetManager = staticAssetManager
+    this.renderStrategy = new DeferredRenderer(gltfAssetManager, staticAssetManager)
   }
 
   async init() {
@@ -59,6 +63,8 @@ export class Renderer {
       }
     })
 
+    await this.staticAssetManager.loadStaticAssets(this.device)
+
     this.blackBitmap = await createImageBitmap(new ImageData(Uint8ClampedArray.from([0, 0, 0, 0]), 1, 1))
 
     BasicMaterial.bindGroupLayout = this.device.createBindGroupLayout(BasicMaterial.bindGroupLayoutDescriptor)
@@ -68,16 +74,16 @@ export class Renderer {
 
   public setRenderTarget(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    const context = canvas.getContext('webgpu')!
-    context.configure({
+    this.context = canvas.getContext('webgpu')!
+    this.context.configure({
       device: this.device,
       format: navigator.gpu.getPreferredCanvasFormat(),
     })
-    this.renderStrategy.setRenderingContext(context)
+    this.renderStrategy.setRenderingContext(this.context)
   }
 
   public prepareGpuBuffers() {
-    this.assetManager.buffers.forEach((buffer, index) => {
+    this.gltfAssetManager.buffers.forEach((buffer, index) => {
       // TODO: Can I set less as default? Counter example: BoomBox
       let usage = GPUBufferUsage.UNIFORM | GPUBufferUsage.VERTEX | GPUBufferUsage.INDEX
       if (buffer.target == BufferTarget.ARRAY_BUFFER) usage = GPUBufferUsage.VERTEX
@@ -110,7 +116,7 @@ export class Renderer {
     }
     this.device.queue.copyExternalImageToTexture({ source: this.blackBitmap }, { texture: this.defaultTexture.texture }, [this.blackBitmap.width, this.blackBitmap.height])
 
-    this.assetManager.textures.forEach((texture, index) => {
+    this.gltfAssetManager.textures.forEach((texture, index) => {
       const gpuTexture = this.device.createTexture({
         label: 'Asset texture',
         size: [texture.image.width, texture.image.height, 1],
@@ -137,21 +143,21 @@ export class Renderer {
     console.log('Textures loaded:', this.gpuTextures.length)
   }
 
-  public prepareMeshRenderers(components: [TransformComponent, MeshRendererComponent][]) {
-    components.forEach(([transform, meshRenderer]) => {
-      meshRenderer.modelMatrixBuffer = this.device.createBuffer({
+  public prepareTransforms(transforms: TransformComponent[]) {
+    transforms.forEach((transform) => {
+      transform.modelMatrixBuffer = this.device.createBuffer({
         size: transform.toMatrix().byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       })
 
-      meshRenderer.normalmatrixBuffer = this.device.createBuffer({
-        size: meshRenderer.modelMatrixBuffer.size,
+      transform.normalmatrixBuffer = this.device.createBuffer({
+        size: transform.modelMatrixBuffer.size,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       })
 
-      meshRenderer.bindGroup = this.device.createBindGroup({
+      transform.bindGroup = this.device.createBindGroup({
         layout: this.device.createBindGroupLayout({
-          label: 'MeshRenderer',
+          label: 'Transform',
           entries: [
             { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
             { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
@@ -160,16 +166,15 @@ export class Renderer {
         entries: [
           {
             binding: 0,
-            resource: { buffer: meshRenderer.modelMatrixBuffer },
+            resource: { buffer: transform.modelMatrixBuffer },
           },
           {
             binding: 1,
-            resource: { buffer: meshRenderer.normalmatrixBuffer },
+            resource: { buffer: transform.normalmatrixBuffer },
           },
         ],
       })
     })
-    console.log('Models prepared for rendering:', components.length)
   }
 
   private getTextureAndSampler(textureIdentifier?: TextureIdentifier): GPUTextureData {
@@ -178,7 +183,7 @@ export class Renderer {
   }
 
   public prepareMaterials() {
-    this.assetManager.materials.forEach((material) => {
+    this.gltfAssetManager.materials.forEach((material) => {
       if (material instanceof PbrMaterial) {
         let lastBinding = 0
         const bindingEntries: GPUBindGroupEntry[] = [] // TODO: Insert binding for additional material info (normal factor, occlusion strength etc.)
@@ -218,7 +223,55 @@ export class Renderer {
       })
   }
 
-  public renderScene(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData) {
+  public prepareCameras(cameraData: CameraData[]) {
+    cameraData.forEach(({ transform, camera }) => {
+      camera.viewProjectionsBuffer = this.device.createBuffer({
+        size: 256,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      })
+
+      camera.bindGroupLayout = this.device.createBindGroupLayout({
+        label: 'Camera',
+        entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }],
+      })
+      camera.bindGroup = this.device.createBindGroup({
+        layout: camera.bindGroupLayout,
+        entries: [
+          {
+            binding: 0,
+            resource: { buffer: camera.viewProjectionsBuffer },
+          },
+        ],
+      })
+    })
+  }
+
+  public writeTransformBuffers(transforms: TransformComponent[]) {
+    transforms.forEach((transform) => {
+      const modelMatrix = TransformComponent.calculateGlobalTransform(transform)
+      this.device.queue.writeBuffer(transform.modelMatrixBuffer!, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength)
+
+      const normalMatrix = mat4.invert(modelMatrix)
+      mat4.transpose(normalMatrix, normalMatrix)
+      this.device.queue.writeBuffer(transform.normalmatrixBuffer!, 0, normalMatrix.buffer, normalMatrix.byteOffset, normalMatrix.byteLength)
+    })
+  }
+
+  public writeCamraBuffers(cameraData: CameraData[]) {
+    cameraData.forEach(({ transform, camera }) => {
+      const projectionMatrix = camera.getProjection(this.canvas.clientWidth, this.canvas.clientHeight)
+      const viewMatrix = TransformComponent.calculateGlobalCameraTransform(transform)
+      const viewProjectionMatrix = mat4.multiply(projectionMatrix, viewMatrix)
+
+      this.device.queue.writeBuffer(camera.viewProjectionsBuffer!, 0, viewProjectionMatrix.buffer, viewProjectionMatrix.byteOffset, viewProjectionMatrix.byteLength)
+      const cameraInvViewProj = mat4.invert(viewProjectionMatrix)
+      this.device.queue.writeBuffer(camera.viewProjectionsBuffer!, 64, cameraInvViewProj.buffer, cameraInvViewProj.byteOffset, cameraInvViewProj.byteLength)
+      this.device.queue.writeBuffer(camera.viewProjectionsBuffer!, 128, viewMatrix.buffer, viewMatrix.byteOffset, viewMatrix.byteLength)
+      this.device.queue.writeBuffer(camera.viewProjectionsBuffer!, 192, projectionMatrix.buffer, projectionMatrix.byteOffset, projectionMatrix.byteLength)
+    })
+  }
+
+  public render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData) {
     const currentWidth = this.canvas.clientWidth
     const currentHeight = this.canvas.clientHeight
     if (currentWidth !== this.canvas.width || currentHeight !== this.canvas.height) {
@@ -228,6 +281,4 @@ export class Renderer {
 
     this.renderStrategy.render(modelsData, lightsData, cameraData)
   }
-
-  public renderDebugOverlay(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData) {}
 }

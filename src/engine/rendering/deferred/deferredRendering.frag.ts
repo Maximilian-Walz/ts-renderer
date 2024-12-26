@@ -90,7 +90,12 @@ fn main(
     let lightCol = lights[i].color;
     let lightPow = lights[i].power;
     
-    let L = normalize(lightPos);
+    // Point light
+    let L = normalize(lightPos-position);
+
+    // Sun light
+    //let L = normalize(lightPos);
+    
     let H = normalize(V + L);
     let nDotL = max(dot(N, L), 0);
     let nDotH = max(dot(N, H), 0);

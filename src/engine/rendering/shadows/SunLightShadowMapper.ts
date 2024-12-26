@@ -126,10 +126,10 @@ export class SunLightShadowMapper extends ShadowMapper {
     shadowPass.setBindGroup(0, this.sceneBindGroup)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
-      if (meshRenderer.modelMatrixBuffer == undefined) {
+      if (transform.modelMatrixBuffer == undefined) {
         return
       }
-      shadowPass.setBindGroup(1, meshRenderer.bindGroup!)
+      shadowPass.setBindGroup(1, transform.bindGroup!)
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
         shadowPass.setIndexBuffer(this.buffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
