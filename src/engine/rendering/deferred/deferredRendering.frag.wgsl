@@ -1,5 +1,3 @@
-export default /*wgsl*/ `
-
 const PI = 3.14159265;
 const NUM_LIGHTS = 10;
 
@@ -114,4 +112,3 @@ fn main(
 
   return vec4(result, 1.0);
 }
-`

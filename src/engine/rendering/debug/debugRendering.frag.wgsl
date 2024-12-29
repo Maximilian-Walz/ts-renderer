@@ -1,4 +1,3 @@
-export default /*wgsl*/ `
 struct Camera {
     viewProjectionMatrix : mat4x4f,
     invViewProjectionMatrix : mat4x4f,
@@ -20,4 +19,3 @@ fn main(
 
   return sampledBillboard;
 }
-`

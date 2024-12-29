@@ -1,4 +1,3 @@
-export default /*wgsl*/ `
 struct Camera {
     viewProjectionMatrix : mat4x4f,
     invViewProjectionMatrix : mat4x4f,
@@ -26,5 +25,4 @@ fn main(@location(0) position : vec4f) -> Output {
 
     output.uv = position.xy;
     return output;
-}   
-`
+}

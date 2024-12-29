@@ -8,11 +8,11 @@ import { PbrMaterial } from '../../material'
 import { DebugRenderer } from '../debug/DebugRenderer'
 import { ShadowMapper } from '../shadows/ShadowMapper'
 import { SunLightShadowMapper } from '../shadows/SunLightShadowMapper'
-import deferredRenderingFrag from './deferredRendering.frag'
-import deferredRenderingVert from './deferredRendering.vert'
+import deferredRenderingFrag from './deferredRendering.frag.wgsl'
+import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
-import writeGBufferFrag from './writeGBuffer.frag'
-import writeGBufferVert from './writeGBuffer.vert'
+import writeGBufferFrag from './writeGBuffer.frag.wgsl'
+import writeGBufferVert from './writeGBuffer.vert.wgsl'
 
 export class DeferredRenderer implements RenderStrategy {
   private gltfAssetManager: GltfAssetManager

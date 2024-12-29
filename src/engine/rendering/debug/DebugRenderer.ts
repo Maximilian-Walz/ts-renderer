@@ -1,7 +1,7 @@
 import { StaticAssetManager } from '../../assets/StaticAssetsManager'
 import { CameraData, LightData } from '../../systems/Renderer'
-import debugOverlayFrag from './debugRendering.frag'
-import debugOverlayVert from './debugRendering.vert'
+import debugOverlayFrag from './debugRendering.frag.wgsl'
+import debugOverlayVert from './debugRendering.vert.wgsl'
 
 export class DebugRenderer {
   private device: GPUDevice

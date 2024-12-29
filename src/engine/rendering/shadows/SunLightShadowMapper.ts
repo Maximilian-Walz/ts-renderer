@@ -2,7 +2,7 @@ import { mat4 } from 'wgpu-matrix'
 import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { ShadowMapper } from './ShadowMapper'
-import shadowMapperVert from './shadowMapper.vert'
+import shadowMapperVert from './shadowMapper.vert.wgsl'
 
 export class SunLightShadowMapper extends ShadowMapper {
   private sceneBindGroup!: GPUBindGroup

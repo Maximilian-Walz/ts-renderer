@@ -31,6 +31,7 @@ module.exports = {
         use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
       { test: /\.(png|jpe?g|gif|jp2|webp)$/, type: 'asset/resource' },
+      { test: /\.wgsl$/, loader: 'raw-loader' },
     ],
   },
   optimization: {
