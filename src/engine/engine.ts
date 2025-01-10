@@ -26,12 +26,12 @@ export class Engine {
     this.ecs = new SimpleEcs()
     this.assetManager = new GltfAssetManager(this.ecs)
     this.staticAssetManager = new StaticAssetManager()
-    this.renderer = new Renderer(this.assetManager, this.staticAssetManager)
+    this.renderer = new Renderer()
     this.rotator = new Rotator()
   }
 
   async init() {
-    await this.renderer.init()
+    await this.renderer.init(this.assetManager, this.staticAssetManager)
   }
 
   setRenderTarget(canvas: HTMLCanvasElement) {

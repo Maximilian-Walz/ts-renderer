@@ -1,6 +1,8 @@
 const PI = 3.14159265;
 const NUM_LIGHTS = 10;
 
+override isSunLight = false;
+
 struct Camera {
     viewProjectionMatrix : mat4x4f,
     invViewProjectionMatrix : mat4x4f,
@@ -88,12 +90,8 @@ fn main(
     let lightCol = lights[i].color;
     let lightPow = lights[i].power;
     
-    // Point light
-    let L = normalize(lightPos-position);
-
-    // Sun light
-    //let L = normalize(lightPos);
-    
+    // Sun light or Point light
+    var L = select(normalize(lightPos-position), normalize(lightPos), isSunLight);
     let H = normalize(V + L);
     let nDotL = max(dot(N, L), 0);
     let nDotH = max(dot(N, H), 0);

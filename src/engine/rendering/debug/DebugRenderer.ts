@@ -1,40 +1,46 @@
-import { StaticAssetManager } from '../../assets/StaticAssetsManager'
+import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData } from '../../systems/Renderer'
 import debugOverlayFrag from './debugRendering.frag.wgsl'
 import debugOverlayVert from './debugRendering.vert.wgsl'
 
 export class DebugRenderer {
   private device: GPUDevice
+  private gpuDataInterface: GPUDataInterface
   private context: GPUCanvasContext
-  private staticAssetManager: StaticAssetManager
 
-  private quadBuffer!: GPUBuffer
-  private pipeline!: GPURenderPipeline
-  private billboardBindGroup!: GPUBindGroup
+  private quadBuffer: GPUBuffer
+  private pipeline: GPURenderPipeline
+  private billboardBindGroup: GPUBindGroup
 
-  constructor(device: GPUDevice, context: GPUCanvasContext, staticAssetManager: StaticAssetManager) {
+  constructor(device: GPUDevice, context: GPUCanvasContext, gpuDataInterface: GPUDataInterface) {
     this.device = device
     this.context = context
-    this.staticAssetManager = staticAssetManager
-    this.createQuadBuffer()
-    this.createPipeline()
-    this.createBillboardBindGroup()
+    this.gpuDataInterface = gpuDataInterface
+
+    this.quadBuffer = this.createQuadBuffer()
+
+    const cameraBindGroupLayout = this.createCameraBindGroupLayout()
+    const sceneBindGroupLayout = this.createSceneBindGroupLayout()
+    const billboardBindGroupLayout = this.createBillboardBindGroupLayout()
+    this.pipeline = this.createPipeline([cameraBindGroupLayout, sceneBindGroupLayout, billboardBindGroupLayout])
+    this.billboardBindGroup = this.createBillboardBindGroup(billboardBindGroupLayout)
   }
 
   private createQuadBuffer() {
-    this.quadBuffer = this.device.createBuffer({
+    const quadBuffer = this.device.createBuffer({
       label: 'Quad vertices',
       usage: GPUBufferUsage.VERTEX,
       size: Float32Array.BYTES_PER_ELEMENT * 3 * 4,
       mappedAtCreation: true,
     })
-    const quadData = new Float32Array(this.quadBuffer.getMappedRange())
+    const quadData = new Float32Array(quadBuffer.getMappedRange())
     quadData.set([0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, -0.5, 0, -0.5, 0.5, 0])
-    this.quadBuffer.unmap()
+    quadBuffer.unmap()
+    return quadBuffer
   }
 
-  private createPipeline() {
-    const cameraBindGroupLayout = this.device.createBindGroupLayout({
+  private createCameraBindGroupLayout(): GPUBindGroupLayout {
+    return this.device.createBindGroupLayout({
       label: 'Camera data',
       entries: [
         {
@@ -46,8 +52,10 @@ export class DebugRenderer {
         },
       ],
     })
+  }
 
-    const sceneBindGroupLayout = this.device.createBindGroupLayout({
+  private createSceneBindGroupLayout(): GPUBindGroupLayout {
+    return this.device.createBindGroupLayout({
       label: 'Debug scene data',
       entries: [
         {
@@ -66,8 +74,10 @@ export class DebugRenderer {
         },
       ],
     })
+  }
 
-    const billboardBindGroupLayout = this.device.createBindGroupLayout({
+  private createBillboardBindGroupLayout(): GPUBindGroupLayout {
+    return this.device.createBindGroupLayout({
       label: 'Billboard data',
       entries: [
         {
@@ -84,11 +94,13 @@ export class DebugRenderer {
         },
       ],
     })
+  }
 
-    this.pipeline = this.device.createRenderPipeline({
+  private createPipeline(bindGroupLayouts: GPUBindGroupLayout[]): GPURenderPipeline {
+    return this.device.createRenderPipeline({
       label: 'Debug overlay',
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [cameraBindGroupLayout, sceneBindGroupLayout, billboardBindGroupLayout],
+        bindGroupLayouts: bindGroupLayouts,
       }),
       vertex: {
         module: this.device.createShaderModule({
@@ -141,11 +153,11 @@ export class DebugRenderer {
     })
   }
 
-  public createBillboardBindGroup() {
-    const billboardTexture = this.staticAssetManager.getTextureData('lightbulb').texture.createView()
-    const billboardSampler = this.staticAssetManager.getTextureData('lightbulb').sampler
-    this.billboardBindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(2),
+  private createBillboardBindGroup(billboardBindGroupLayout: GPUBindGroupLayout): GPUBindGroup {
+    const billboardTexture = this.gpuDataInterface.getStaticTextureData('lightbulb').texture.createView()
+    const billboardSampler = this.gpuDataInterface.getStaticTextureData('lightbulb').sampler
+    return this.device.createBindGroup({
+      layout: billboardBindGroupLayout,
       entries: [
         {
           binding: 0,

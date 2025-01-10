@@ -1,24 +1,28 @@
 import { mat4 } from 'wgpu-matrix'
 import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
+import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { ShadowMapper } from './ShadowMapper'
 import shadowMapperVert from './shadowMapper.vert.wgsl'
 
 export class SunLightShadowMapper extends ShadowMapper {
-  private sceneBindGroup!: GPUBindGroup
-  private lightBuffer!: GPUBuffer
+  private shadowPipeline: GPURenderPipeline
+  private sceneBindGroup: GPUBindGroup
+  private lightBuffer: GPUBuffer
 
-  private shadowPipeline!: GPURenderPipeline
+  constructor(device: GPUDevice, gpuDataInterface: GPUDataInterface) {
+    super(device, gpuDataInterface)
 
-  constructor(device: GPUDevice, buffers: GPUBuffer[]) {
-    super(device, buffers)
+    this.lightBuffer = this.createLightsBuffer()
 
-    this.createPipeline()
-    this.createSceneBindGroup()
+    const sceneBindGroupLayout = this.createSceneBindGroupLayout()
+    const meshBindGroupLayout = this.createMeshBindGroupLayout()
+    this.shadowPipeline = this.createPipeline([sceneBindGroupLayout, meshBindGroupLayout])
+    this.sceneBindGroup = this.createSceneBindGroup(sceneBindGroupLayout)
   }
 
-  private createPipeline() {
-    const sceneBindGroupLayout = this.device.createBindGroupLayout({
+  private createSceneBindGroupLayout(): GPUBindGroupLayout {
+    return this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -29,8 +33,10 @@ export class SunLightShadowMapper extends ShadowMapper {
         },
       ],
     })
+  }
 
-    const meshBindGroupLayout = this.device.createBindGroupLayout({
+  private createMeshBindGroupLayout(): GPUBindGroupLayout {
+    return this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -48,10 +54,12 @@ export class SunLightShadowMapper extends ShadowMapper {
         },
       ],
     })
+  }
 
-    this.shadowPipeline = this.device.createRenderPipeline({
+  private createPipeline(bindGroupLayouts: GPUBindGroupLayout[]): GPURenderPipeline {
+    return this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [sceneBindGroupLayout, meshBindGroupLayout],
+        bindGroupLayouts: bindGroupLayouts,
       }),
       vertex: {
         module: this.device.createShaderModule({
@@ -82,16 +90,18 @@ export class SunLightShadowMapper extends ShadowMapper {
     })
   }
 
-  createSceneBindGroup() {
-    this.lightBuffer = this.device.createBuffer({
+  private createLightsBuffer(): GPUBuffer {
+    return this.device.createBuffer({
       label: 'Light ViewProjection data',
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       size: 64,
     })
+  }
 
-    this.sceneBindGroup = this.device.createBindGroup({
+  private createSceneBindGroup(sceneBindGroupLayout: GPUBindGroupLayout): GPUBindGroup {
+    return this.device.createBindGroup({
       label: 'Scene',
-      layout: this.shadowPipeline.getBindGroupLayout(0),
+      layout: sceneBindGroupLayout,
       entries: [
         {
           binding: 0,
@@ -132,11 +142,11 @@ export class SunLightShadowMapper extends ShadowMapper {
       shadowPass.setBindGroup(1, transform.bindGroup!)
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
-        shadowPass.setIndexBuffer(this.buffers[primitiveRenderData.indexBufferAccessor.bufferIndex], type)
+        shadowPass.setIndexBuffer(this.gpuDataInterface.getBuffer(primitiveRenderData.indexBufferAccessor.bufferIndex), type)
 
         const accessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.POSITION)!
         const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
-        shadowPass.setVertexBuffer(0, this.buffers[accessor.bufferIndex], accessor.offset, accessor.count * byteCount)
+        shadowPass.setVertexBuffer(0, this.gpuDataInterface.getBuffer(accessor.bufferIndex), accessor.offset, accessor.count * byteCount)
 
         shadowPass.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })
