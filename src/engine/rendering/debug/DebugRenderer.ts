@@ -1,3 +1,4 @@
+import { LightType } from '../../components/components'
 import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData } from '../../systems/Renderer'
 import debugOverlayFrag from './debugRendering.frag.wgsl'
@@ -10,7 +11,7 @@ export class DebugRenderer {
 
   private quadBuffer: GPUBuffer
   private pipeline: GPURenderPipeline
-  private billboardBindGroup: GPUBindGroup
+  private billboardBindGroups: Map<string, GPUBindGroup>
 
   constructor(device: GPUDevice, context: GPUCanvasContext, gpuDataInterface: GPUDataInterface) {
     this.device = device
@@ -23,7 +24,12 @@ export class DebugRenderer {
     const sceneBindGroupLayout = this.createSceneBindGroupLayout()
     const billboardBindGroupLayout = this.createBillboardBindGroupLayout()
     this.pipeline = this.createPipeline([cameraBindGroupLayout, sceneBindGroupLayout, billboardBindGroupLayout])
-    this.billboardBindGroup = this.createBillboardBindGroup(billboardBindGroupLayout)
+
+    const billboardTextureIdentifiers = ['lightbulb', 'sun']
+    this.billboardBindGroups = new Map()
+    billboardTextureIdentifiers.forEach((textureIdentifier) =>
+      this.billboardBindGroups.set(textureIdentifier, this.createBillboardBindGroup(billboardBindGroupLayout, textureIdentifier))
+    )
   }
 
   private createQuadBuffer() {
@@ -153,19 +159,18 @@ export class DebugRenderer {
     })
   }
 
-  private createBillboardBindGroup(billboardBindGroupLayout: GPUBindGroupLayout): GPUBindGroup {
-    const billboardTexture = this.gpuDataInterface.getStaticTextureData('lightbulb').texture.createView()
-    const billboardSampler = this.gpuDataInterface.getStaticTextureData('lightbulb').sampler
+  private createBillboardBindGroup(billboardBindGroupLayout: GPUBindGroupLayout, textureIndentifier: string): GPUBindGroup {
+    let textureData = this.gpuDataInterface.getStaticTextureData(textureIndentifier)
     return this.device.createBindGroup({
       layout: billboardBindGroupLayout,
       entries: [
         {
           binding: 0,
-          resource: billboardTexture,
+          resource: textureData.texture.createView(),
         },
         {
           binding: 1,
-          resource: billboardSampler,
+          resource: textureData.sampler,
         },
       ],
     })
@@ -192,8 +197,19 @@ export class DebugRenderer {
 
     debugPass.setPipeline(this.pipeline)
     debugPass.setBindGroup(0, activeCamera.camera.bindGroup!)
-    debugPass.setBindGroup(2, this.billboardBindGroup)
     lightsData.forEach((lightData) => {
+      const textureIdentifier = (() => {
+        switch (lightData.light.lightType) {
+          case LightType.SUN:
+            return 'sun'
+          case LightType.POINT:
+            return 'lightbulb'
+          default:
+            return 'lightbulb'
+        }
+      })()
+
+      debugPass.setBindGroup(2, this.billboardBindGroups.get(textureIdentifier)!)
       debugPass.setBindGroup(1, lightData.transform.bindGroup!)
       debugPass.setVertexBuffer(0, this.quadBuffer)
       debugPass.draw(4)

@@ -4,11 +4,15 @@ export class StaticAssetManager {
   private texturesData: Map<string, GPUTextureData> = new Map()
 
   public getTextureData(identifier: string): GPUTextureData {
+    if (!this.texturesData.has(identifier)) {
+      throw `Texture with identifier "${identifier}" not found`
+    }
     return this.texturesData.get(identifier)!
   }
 
   public async loadStaticAssets(device: GPUDevice) {
     await this.loadTextureData('lightbulb', '/assets/textures/lightbulb.png', device)
+    await this.loadTextureData('sun', '/assets/textures/sun.png', device)
   }
 
   private async loadTextureData(identifier: string, url: string, device: GPUDevice) {
