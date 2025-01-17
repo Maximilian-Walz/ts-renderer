@@ -1,5 +1,4 @@
 const PI = 3.14159265;
-const NUM_LIGHTS = 10;
 
 override isSunLight = false;
 
@@ -63,7 +62,7 @@ fn main(
 
   // Background
   if (depth >= 1.0) {
-    return vec4(0.2);
+    discard;
   }
   
   let bufferSize = textureDimensions(gBufferDepth);
@@ -86,8 +85,6 @@ fn main(
   let nDotV = max(dot(N, V), 0);
   
   let lambert = albedo / PI;
-
-  var result = emission;
   let lightCol = light.color;
   let lightPow = light.power;
   
@@ -109,7 +106,7 @@ fn main(
   
   let diffuse = kD * lambert;
   let specular = normalDistribution * geometryTerm * fresnel / (4.0 * nDotV * nDotL + 0.000001);
-  result += (diffuse + specular) * lightCol * lightPow * nDotL;
+  let result = (diffuse + specular) * lightCol * lightPow * nDotL;
 
 
   return vec4(result, 1.0);

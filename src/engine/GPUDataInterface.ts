@@ -176,7 +176,6 @@ export class GPUDataInterface {
   }
 
   public prepareMaterials() {
-    console.log(this.gltfAssetManager.defaultMaterial)
     this.preparePbrMaterial(this.gltfAssetManager.defaultMaterial as PbrMaterial)
 
     this.gltfAssetManager.materials.forEach((material) => {
@@ -205,7 +204,7 @@ export class GPUDataInterface {
 
       if (light.castsShadow) {
         light.shadowMap = this.device.createTexture({
-          size: [2000, 2000, 1],
+          size: [4096, 4096, 1],
           usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
           format: 'depth32float',
         })

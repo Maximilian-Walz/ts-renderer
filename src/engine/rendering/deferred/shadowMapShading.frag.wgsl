@@ -1,5 +1,6 @@
 const PI = 3.14159265;
-const NUM_LIGHTS = 10;
+const PCF_SIZE = 5;
+const PCF_OFFSET = 0.0001;
 
 override isSunLight = false;
 
@@ -67,16 +68,22 @@ fn main(
   let uv = coord.xy / vec2f(bufferSize);
   let position = screenToWorld(uv, depth);
   
-  let positionLightSpaceW = light.viewProjectionMatrix * vec4f(position, 1.0);
-  
+  let positionLightSpaceW = light.viewProjectionMatrix * vec4f(position, 1.0);  
   var positionLightSpace = positionLightSpaceW.xyz;
   positionLightSpace = vec3f(positionLightSpace.xy * vec2(0.5, -0.5) + vec2(0.5), positionLightSpace.z);
-  let shadowMapValue = textureSampleCompare(shadowMapTexture, shadowMapSampler, positionLightSpace.xy, positionLightSpace.z - 0.007);
 
+  var shadowMapValue = 0.0;
+  for (var y = -PCF_SIZE; y <= PCF_SIZE; y++) {
+    for (var x = -PCF_SIZE; x <= PCF_SIZE; x++) {
+      let offset = vec2f(vec2(x, y)) * PCF_OFFSET;
+      shadowMapValue += textureSampleCompare(shadowMapTexture, shadowMapSampler,positionLightSpace.xy + offset, positionLightSpace.z - 0.007);
+    }
+  }
+  shadowMapValue /= (1 + PCF_SIZE + PCF_SIZE) * (1 + PCF_SIZE + PCF_SIZE);
 
   // Background
   if (depth >= 1.0) {
-    return vec4(0.2);
+    discard;
   }
 
   if (shadowMapValue == 0) {
@@ -86,7 +93,6 @@ fn main(
   let normal = loadGBufferTexture(gBufferNormal, coord).xyz;
   let albedo = loadGBufferTexture(gBufferAlbedo, coord).rgb;
   let orm = loadGBufferTexture(gBufferORM, coord).rgb;
-  let emission = loadGBufferTexture(gBufferEmission, coord).rgb;
 
   let occlusion = orm.x;
   let roughness = orm.y;
@@ -99,8 +105,6 @@ fn main(
   let nDotV = max(dot(N, V), 0);
   
   let lambert = albedo / PI;
-
-  var result = emission;
   
   // Sun light or Point light
   let lightPos = (light.viewMatrix * vec4f(0.0, 0.0, 0.0, 1.0)).xyz;
@@ -120,8 +124,8 @@ fn main(
   
   let diffuse = kD * lambert;
   let specular = normalDistribution * geometryTerm * fresnel / (4.0 * nDotV * nDotL + 0.000001);
-  result += (diffuse + specular) * light.color * light.power * nDotL;
+  let result = (diffuse + specular) * light.color * light.power * nDotL;
 
 
-  return vec4(result, 1.0);
+  return vec4(shadowMapValue * result, 1.0);
 }

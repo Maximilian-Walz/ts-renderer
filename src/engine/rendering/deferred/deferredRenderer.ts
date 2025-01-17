@@ -18,6 +18,7 @@ import { SunLightShadowMapper } from '../shadows/SunLightShadowMapper'
 import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
 
+import ambientFrag from './ambient.frag.wgsl'
 import nonShadowMapShadingFrag from './nonShadowMapShading.wgsl'
 import shadowMapShadingFrag from './shadowMapShading.frag.wgsl'
 import writeGBufferFrag from './writeGBuffer.frag.wgsl'
@@ -34,6 +35,7 @@ export class DeferredRenderer implements RenderStrategy {
   private gBuffer: GBuffer
   private writeGBufferPipeline: GPURenderPipeline
   private deferredSunLightRenderPipeline: GPURenderPipeline
+  private ambientRenderPipeline: GPURenderPipeline
   private deferredPointLightRenderPipeline: GPURenderPipeline
 
   constructor(device: GPUDevice, gpuDataInterface: GPUDataInterface, context: GPUCanvasContext) {
@@ -45,13 +47,20 @@ export class DeferredRenderer implements RenderStrategy {
     this.debugRenderer = new DebugRenderer(this.device, this.context, this.gpuDataInterface)
     this.gBuffer = this.createGBuffer()
 
+    const deferredShadingVertexModule = this.device.createShaderModule({
+      code: deferredRenderingVert,
+    })
+
     this.writeGBufferPipeline = this.createWriteGBufferPipeline()
+    this.ambientRenderPipeline = this.createAmbientRenderPipeline(deferredShadingVertexModule)
     this.deferredSunLightRenderPipeline = this.createDeferredRenderPipeline(
       [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.shadowCastingBindGroupLayout],
+      deferredShadingVertexModule,
       true
     )
     this.deferredPointLightRenderPipeline = this.createDeferredRenderPipeline(
       [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.nonShadowCastingBindGroupLayout],
+      deferredShadingVertexModule,
       false
     )
   }
@@ -180,16 +189,56 @@ export class DeferredRenderer implements RenderStrategy {
     gBufferPass.end()
   }
 
-  private createDeferredRenderPipeline(bindGroupLayouts: GPUBindGroupLayout[], isSunLight: boolean): GPURenderPipeline {
+  private createAmbientRenderPipeline(deferredShadingVertexModule: GPUShaderModule): GPURenderPipeline {
+    return this.device.createRenderPipeline({
+      label: 'Ambient',
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [this.gBuffer.getBindGroupLayout()],
+      }),
+      vertex: {
+        module: deferredShadingVertexModule,
+      },
+      fragment: {
+        module: this.device.createShaderModule({
+          code: ambientFrag,
+        }),
+        targets: [
+          {
+            format: this.context.getCurrentTexture().format,
+            blend: {
+              color: {
+                srcFactor: 'one',
+                dstFactor: 'one',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one',
+              },
+            },
+          },
+        ],
+      },
+      primitive: {
+        topology: 'triangle-list',
+        cullMode: 'back',
+      },
+    })
+  }
+
+  private doAmbient(renderPass: GPURenderPassEncoder): void {
+    renderPass.setPipeline(this.ambientRenderPipeline)
+    renderPass.setBindGroup(0, this.gBuffer.getBindGroup())
+    renderPass.draw(6)
+  }
+
+  private createDeferredRenderPipeline(bindGroupLayouts: GPUBindGroupLayout[], deferredShadingVertexModule: GPUShaderModule, isSunLight: boolean): GPURenderPipeline {
     return this.device.createRenderPipeline({
       label: isSunLight ? 'Sun light shading' : 'Point light shading',
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: bindGroupLayouts,
       }),
       vertex: {
-        module: this.device.createShaderModule({
-          code: deferredRenderingVert,
-        }),
+        module: deferredShadingVertexModule,
       },
       fragment: {
         module: this.device.createShaderModule({
@@ -253,6 +302,7 @@ export class DeferredRenderer implements RenderStrategy {
     const sunLightsData = lightsData.filter((lightData) => lightData.light.lightType == LightType.SUN)
 
     // For now, sun light <=> has shadow map
+    this.doAmbient(deferredRenderingPass)
     this.doShadingForLightType(deferredRenderingPass, this.deferredPointLightRenderPipeline, pointLightsData, cameraData)
     this.doShadingForLightType(deferredRenderingPass, this.deferredSunLightRenderPipeline, sunLightsData, cameraData)
     deferredRenderingPass.end()

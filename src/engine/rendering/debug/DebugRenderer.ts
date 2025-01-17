@@ -1,4 +1,4 @@
-import { LightType, TransformComponent } from '../../components/components'
+import { CameraComponent, LightType, TransformComponent } from '../../components/components'
 import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData } from '../../systems/Renderer'
 import debugOverlayFrag from './debugRendering.frag.wgsl'
@@ -19,11 +19,8 @@ export class DebugRenderer {
     this.gpuDataInterface = gpuDataInterface
 
     this.quadBuffer = this.createQuadBuffer()
-
-    const cameraBindGroupLayout = this.createCameraBindGroupLayout()
-    const sceneBindGroupLayout = this.createSceneBindGroupLayout()
     const billboardBindGroupLayout = this.createBillboardBindGroupLayout()
-    this.pipeline = this.createPipeline([cameraBindGroupLayout, TransformComponent.bindGroupLayout, billboardBindGroupLayout])
+    this.pipeline = this.createPipeline([CameraComponent.bindGroupLayout, TransformComponent.bindGroupLayout, billboardBindGroupLayout])
 
     const billboardTextureIdentifiers = ['lightbulb', 'sun']
     this.billboardBindGroups = new Map()
@@ -43,43 +40,6 @@ export class DebugRenderer {
     quadData.set([0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, -0.5, 0, -0.5, 0.5, 0])
     quadBuffer.unmap()
     return quadBuffer
-  }
-
-  private createCameraBindGroupLayout(): GPUBindGroupLayout {
-    return this.device.createBindGroupLayout({
-      label: 'Camera data',
-      entries: [
-        {
-          binding: 0,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
-  }
-
-  private createSceneBindGroupLayout(): GPUBindGroupLayout {
-    return this.device.createBindGroupLayout({
-      label: 'Debug scene data',
-      entries: [
-        {
-          binding: 0,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-        {
-          binding: 1,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
   }
 
   private createBillboardBindGroupLayout(): GPUBindGroupLayout {
