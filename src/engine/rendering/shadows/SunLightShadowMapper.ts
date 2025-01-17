@@ -1,5 +1,4 @@
-import { mat4 } from 'wgpu-matrix'
-import { BufferDataComponentType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
+import { BufferDataComponentType, LightComponent, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
 import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { ShadowMapper } from './ShadowMapper'
@@ -7,59 +6,17 @@ import shadowMapperVert from './shadowMapper.vert.wgsl'
 
 export class SunLightShadowMapper extends ShadowMapper {
   private shadowPipeline: GPURenderPipeline
-  private sceneBindGroup: GPUBindGroup
-  private lightBuffer: GPUBuffer
 
   constructor(device: GPUDevice, gpuDataInterface: GPUDataInterface) {
     super(device, gpuDataInterface)
-
-    this.lightBuffer = this.createLightsBuffer()
-
-    const sceneBindGroupLayout = this.createSceneBindGroupLayout()
-    const meshBindGroupLayout = this.createMeshBindGroupLayout()
-    this.shadowPipeline = this.createPipeline([sceneBindGroupLayout, meshBindGroupLayout])
-    this.sceneBindGroup = this.createSceneBindGroup(sceneBindGroupLayout)
+    this.shadowPipeline = this.createPipeline()
   }
 
-  private createSceneBindGroupLayout(): GPUBindGroupLayout {
-    return this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
-  }
-
-  private createMeshBindGroupLayout(): GPUBindGroupLayout {
-    return this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-        {
-          binding: 1,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
-  }
-
-  private createPipeline(bindGroupLayouts: GPUBindGroupLayout[]): GPURenderPipeline {
+  private createPipeline(): GPURenderPipeline {
     return this.device.createRenderPipeline({
+      label: 'Shadow mapping',
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: bindGroupLayouts,
+        bindGroupLayouts: [LightComponent.shadowMappingBindGroupLayout, TransformComponent.bindGroupLayout],
       }),
       vertex: {
         module: this.device.createShaderModule({
@@ -90,38 +47,10 @@ export class SunLightShadowMapper extends ShadowMapper {
     })
   }
 
-  private createLightsBuffer(): GPUBuffer {
-    return this.device.createBuffer({
-      label: 'Light ViewProjection data',
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      size: 64,
-    })
-  }
-
-  private createSceneBindGroup(sceneBindGroupLayout: GPUBindGroupLayout): GPUBindGroup {
-    return this.device.createBindGroup({
-      label: 'Scene',
-      layout: sceneBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            label: 'Camera data',
-            buffer: this.lightBuffer,
-          },
-        },
-      ],
-    })
-  }
-
   public renderShadowMap(commandEncoder: GPUCommandEncoder, modelsData: ModelData[], lightData: LightData, cameraData: CameraData) {
     if (lightData == undefined || !lightData.light.castsShadow) {
       return
     }
-
-    const viewMatrix = TransformComponent.calculateGlobalCameraTransform(lightData.transform)
-    const viewProjectionMatrix = mat4.multiply(lightData.light.getProjection(), viewMatrix)
-    this.device.queue.writeBuffer(this.lightBuffer, 0, viewProjectionMatrix.buffer, viewProjectionMatrix.byteOffset, viewProjectionMatrix.byteLength)
 
     const shadowPass = commandEncoder.beginRenderPass({
       colorAttachments: [],
@@ -133,10 +62,10 @@ export class SunLightShadowMapper extends ShadowMapper {
       },
     })
     shadowPass.setPipeline(this.shadowPipeline)
-    shadowPass.setBindGroup(0, this.sceneBindGroup)
+    shadowPass.setBindGroup(0, lightData.light.shadowMappingBindGroup!)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
-      if (transform.modelMatrixBuffer == undefined) {
+      if (transform.matricesBuffer == undefined) {
         return
       }
       shadowPass.setBindGroup(1, transform.bindGroup!)

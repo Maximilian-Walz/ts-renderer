@@ -1,8 +1,8 @@
 import { mat4 } from 'wgpu-matrix'
 import { BufferTarget, GltfAssetManager } from './assets/GltfAssetManager'
 import { StaticAssetManager } from './assets/StaticAssetsManager'
-import { TransformComponent } from './components/components'
-import { BasicMaterial, PbrMaterial, TextureIdentifier } from './material'
+import { CameraComponent, LightComponent, TransformComponent } from './components/components'
+import { BasicMaterial, Material, PbrMaterial, TextureIdentifier } from './material'
 import { CameraData, GPUTextureData, LightData } from './systems/Renderer'
 
 export class GPUDataInterface {
@@ -13,31 +13,67 @@ export class GPUDataInterface {
   private gpuBuffers: GPUBuffer[] = []
   private gpuTextures: GPUTextureData[] = []
 
-  private defaultTexture: GPUTextureData
-
-  constructor(device: GPUDevice, staticAssetManager: StaticAssetManager, gltfAssetManger: GltfAssetManager, blackBitmap: ImageBitmap) {
+  constructor(device: GPUDevice, staticAssetManager: StaticAssetManager, gltfAssetManger: GltfAssetManager) {
     this.device = device
     this.staticAssetManager = staticAssetManager
     this.gltfAssetManager = gltfAssetManger
-
-    this.defaultTexture = this.createAndUploadDefaultTexture(blackBitmap)
+    this.createStaticBindGroupLayouts()
   }
 
-  private createAndUploadDefaultTexture(blackBitmap: ImageBitmap): GPUTextureData {
-    const defaultTexture = {
-      sampler: this.device.createSampler({
-        addressModeU: 'repeat',
-        addressModeV: 'repeat',
-      }),
-      texture: this.device.createTexture({
-        label: 'Default texture',
-        size: [1, 1, 1],
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-      }),
+  private createStaticBindGroupLayouts() {
+    // Cameras
+    CameraComponent.bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Camera',
+      entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }],
+    })
+
+    // Transforms
+    TransformComponent.bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Transform',
+      entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }],
+    })
+
+    // Materials
+    BasicMaterial.bindGroupLayout = this.device.createBindGroupLayout(BasicMaterial.bindGroupLayoutDescriptor)
+    PbrMaterial.bindGroupLayout = this.device.createBindGroupLayout(PbrMaterial.bindGroupLayoutDescriptor)
+
+    // Lights
+    let lightBaseDataLayoutEntry = {
+      binding: 0,
+      visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+      buffer: {},
     }
-    this.device.queue.copyExternalImageToTexture({ source: blackBitmap }, { texture: defaultTexture.texture }, [blackBitmap.width, blackBitmap.height])
-    return defaultTexture
+
+    LightComponent.nonShadowCastingBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Non shadow casting',
+      entries: [lightBaseDataLayoutEntry],
+    })
+
+    LightComponent.shadowCastingBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Shadow casting',
+      entries: [
+        lightBaseDataLayoutEntry,
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {
+            sampleType: 'depth',
+          },
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {
+            type: 'comparison',
+          },
+        },
+      ],
+    })
+
+    LightComponent.shadowMappingBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Shadow mapping',
+      entries: [lightBaseDataLayoutEntry],
+    })
   }
 
   public prepareGpuBuffers() {
@@ -75,7 +111,7 @@ export class GPUDataInterface {
             minFilter: texture.sampler.minFilter as GPUFilterMode,
             mipmapFilter: texture.sampler.mipMapFilter as GPUFilterMode,
           })
-        : this.defaultTexture.sampler
+        : this.staticAssetManager.getTextureData('1x1_white').sampler
 
       this.device.queue.copyExternalImageToTexture({ source: texture.image }, { texture: gpuTexture }, [texture.image.width, texture.image.height])
       this.gpuTextures[index] = {
@@ -88,97 +124,130 @@ export class GPUDataInterface {
 
   public prepareTransforms(transforms: TransformComponent[]) {
     transforms.forEach((transform) => {
-      transform.modelMatrixBuffer = this.device.createBuffer({
-        size: transform.toMatrix().byteLength,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      })
-
-      transform.normalmatrixBuffer = this.device.createBuffer({
-        size: transform.modelMatrixBuffer.size,
+      transform.matricesBuffer = this.device.createBuffer({
+        size: 64 * 3,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       })
 
       transform.bindGroup = this.device.createBindGroup({
-        layout: this.device.createBindGroupLayout({
-          label: 'Transform',
-          entries: [
-            { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
-            { binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
-          ],
-        }),
+        layout: TransformComponent.bindGroupLayout,
         entries: [
           {
             binding: 0,
-            resource: { buffer: transform.modelMatrixBuffer },
-          },
-          {
-            binding: 1,
-            resource: { buffer: transform.normalmatrixBuffer },
+            resource: { buffer: transform.matricesBuffer },
           },
         ],
       })
     })
   }
 
-  private getTextureAndSampler(textureIdentifier?: TextureIdentifier): GPUTextureData {
-    const textureId = textureIdentifier?.textureId
-    return textureId != undefined ? this.gpuTextures[textureId] : this.defaultTexture
+  private getTextureAndSampler(textureIdentifier: TextureIdentifier): GPUTextureData {
+    const textureId = textureIdentifier.textureId
+    if (typeof textureId == 'number' && textureId <= this.gpuTextures.length) {
+      return this.gpuTextures[textureId]
+    } else if (typeof textureId == 'string') {
+      return this.staticAssetManager.getTextureData(textureId)
+    } else {
+      return this.staticAssetManager.getTextureData('error')
+    }
+  }
+
+  private preparePbrMaterial(material: PbrMaterial) {
+    // TODO: Insert binding for additional material info (normal factor, occlusion strength etc.)
+    material.bindGroup = this.device.createBindGroup({
+      layout: material.getBindGroupLayout()!,
+      entries: Array.of(material.albedoTexture, material.metallicRoughnessTexture, material.normalTexture, material.occlusionTexture, material.emissiveTexture).flatMap(
+        (textureIdentifier, i) => {
+          // TODO: ERROR: textureIdentifier should never be undefined here, since we set a fallback in GltfAssetManager::createMaterials
+          const textureData = this.getTextureAndSampler(textureIdentifier!)
+          return [
+            {
+              binding: 2 * i,
+              resource: textureData.texture.createView(),
+            },
+            {
+              binding: 2 * i + 1,
+              resource: textureData.sampler,
+            },
+          ]
+        }
+      ),
+    })
   }
 
   public prepareMaterials() {
+    console.log(this.gltfAssetManager.defaultMaterial)
+    this.preparePbrMaterial(this.gltfAssetManager.defaultMaterial as PbrMaterial)
+
     this.gltfAssetManager.materials.forEach((material) => {
       if (material instanceof PbrMaterial) {
-        let lastBinding = 0
-        const bindingEntries: GPUBindGroupEntry[] = [] // TODO: Insert binding for additional material info (normal factor, occlusion strength etc.)
-        Array.of(material.albedoTexture, material.metallicRoughnessTexture, material.normalTexture, material.occlusionTexture, material.emissiveTexture).forEach(
-          (textureIdentifier) => {
-            const textureData = this.getTextureAndSampler(textureIdentifier)
-            bindingEntries.push({
-              binding: lastBinding++,
-              resource: textureData.texture.createView(),
-            })
-            bindingEntries.push({
-              binding: lastBinding++,
-              resource: textureData.sampler,
-            })
-          }
-        )
-
-        material.bindGroup = this.device.createBindGroup({
-          layout: material.getBindGroupLayout()!,
-          entries: bindingEntries,
-        })
+        this.preparePbrMaterial(material)
       } else if (material instanceof BasicMaterial) {
         throw Error('Basic material not implemented yet')
       }
     })
   }
 
-  public prepareShadowMaps(lightData: LightData[]) {
-    lightData
-      .filter((lightDatum) => lightDatum.light.castsShadow)
-      .forEach((lightDatum) => {
-        lightDatum.light.shadowMap = this.device.createTexture({
-          size: [200, 200, 1],
+  public prepareLights(lightsData: LightData[]) {
+    lightsData.forEach(({ light }) => {
+      light.buffer = this.device.createBuffer({
+        size: 208,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        label: 'Light buffer',
+      })
+
+      let lightBaseDataEntry = {
+        binding: 0,
+        resource: {
+          buffer: light.buffer,
+        },
+      }
+
+      if (light.castsShadow) {
+        light.shadowMap = this.device.createTexture({
+          size: [2000, 2000, 1],
           usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
           format: 'depth32float',
         })
-      })
+
+        light.shadingBindGroup = this.device.createBindGroup({
+          layout: LightComponent.shadowCastingBindGroupLayout,
+          entries: [
+            lightBaseDataEntry,
+            {
+              binding: 1,
+              resource: light.shadowMap.createView(),
+            },
+            {
+              binding: 2,
+              resource: this.device.createSampler({
+                compare: 'less',
+              }),
+            },
+          ],
+        })
+
+        light.shadowMappingBindGroup = this.device.createBindGroup({
+          layout: LightComponent.shadowMappingBindGroupLayout,
+          entries: [lightBaseDataEntry],
+        })
+      } else {
+        light.shadingBindGroup = this.device.createBindGroup({
+          layout: LightComponent.nonShadowCastingBindGroupLayout,
+          entries: [lightBaseDataEntry],
+        })
+      }
+    })
   }
 
   public prepareCameras(cameraData: CameraData[]) {
-    cameraData.forEach(({ transform, camera }) => {
+    cameraData.forEach(({ camera }) => {
       camera.viewProjectionsBuffer = this.device.createBuffer({
         size: 256,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       })
-
-      camera.bindGroupLayout = this.device.createBindGroupLayout({
-        label: 'Camera',
-        entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }],
-      })
       camera.bindGroup = this.device.createBindGroup({
-        layout: camera.bindGroupLayout,
+        layout: CameraComponent.bindGroupLayout,
         entries: [
           {
             binding: 0,
@@ -192,11 +261,20 @@ export class GPUDataInterface {
   public writeTransformBuffers(transforms: TransformComponent[]) {
     transforms.forEach((transform) => {
       const modelMatrix = TransformComponent.calculateGlobalTransform(transform)
-      this.device.queue.writeBuffer(transform.modelMatrixBuffer!, 0, modelMatrix.buffer, modelMatrix.byteOffset, modelMatrix.byteLength)
+      const invModelMatrix = mat4.invert(modelMatrix)
+      const normalModelMatrix = mat4.transpose(invModelMatrix)
+      const matrices = new Float32Array([...modelMatrix, ...invModelMatrix, ...normalModelMatrix])
+      this.device.queue.writeBuffer(transform.matricesBuffer!, 0, matrices.buffer, matrices.byteOffset, matrices.byteLength)
+    })
+  }
 
-      const normalMatrix = mat4.invert(modelMatrix)
-      mat4.transpose(normalMatrix, normalMatrix)
-      this.device.queue.writeBuffer(transform.normalmatrixBuffer!, 0, normalMatrix.buffer, normalMatrix.byteOffset, normalMatrix.byteLength)
+  public writeLightBuffers(lightsData: LightData[]) {
+    lightsData.forEach((lightData) => {
+      const viewMatrix = TransformComponent.calculateGlobalCameraTransform(lightData.transform)
+      const viewProjectionMatrix = mat4.multiply(lightData.light.getProjection(), viewMatrix)
+      const invViewProjectionMatrix = mat4.inverse(viewProjectionMatrix)
+      const lightBaseData = new Float32Array([...viewMatrix, ...viewProjectionMatrix, ...invViewProjectionMatrix, ...lightData.light.color, lightData.light.power])
+      this.device.queue.writeBuffer(lightData.light.buffer!, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
     })
   }
 
@@ -222,7 +300,11 @@ export class GPUDataInterface {
     return this.gpuBuffers[bufferIndex]
   }
 
-  public getMaterial(materialIndex: number) {
+  public getMaterial(materialIndex?: number): Material {
+    if (materialIndex == undefined || materialIndex >= this.gltfAssetManager.materials.length) {
+      return this.gltfAssetManager.defaultMaterial
+    }
+
     return this.gltfAssetManager.materials[materialIndex]
   }
 }

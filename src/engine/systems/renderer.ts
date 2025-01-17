@@ -2,7 +2,6 @@ import { GltfAssetManager } from '../assets/GltfAssetManager'
 import { StaticAssetManager } from '../assets/StaticAssetsManager'
 import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../components/components'
 import { GPUDataInterface } from '../GPUDataInterface'
-import { BasicMaterial, PbrMaterial } from '../material'
 import { DeferredRenderer } from '../rendering/deferred/DeferredRenderer'
 import { RenderStrategy } from '../rendering/RenderStrategy'
 
@@ -52,12 +51,7 @@ export class Renderer {
     })
 
     await staticAssetManager.loadStaticAssets(this.device)
-
-    const blackBitmap = await createImageBitmap(new ImageData(Uint8ClampedArray.from([0, 0, 0, 0]), 1, 1))
-    this.gpuDataInterface = new GPUDataInterface(this.device, staticAssetManager, gltfAssetManager, blackBitmap)
-
-    BasicMaterial.bindGroupLayout = this.device.createBindGroupLayout(BasicMaterial.bindGroupLayoutDescriptor)
-    PbrMaterial.bindGroupLayout = this.device.createBindGroupLayout(PbrMaterial.bindGroupLayoutDescriptor)
+    this.gpuDataInterface = new GPUDataInterface(this.device, staticAssetManager, gltfAssetManager)
   }
 
   public setRenderTarget(canvas: HTMLCanvasElement) {
@@ -87,8 +81,8 @@ export class Renderer {
     this.gpuDataInterface.prepareMaterials()
   }
 
-  public prepareShadowMaps(lightData: LightData[]) {
-    this.gpuDataInterface.prepareShadowMaps(lightData)
+  public prepareLights(lightData: LightData[]) {
+    this.gpuDataInterface.prepareLights(lightData)
   }
 
   public prepareCameras(cameraData: CameraData[]) {
@@ -97,6 +91,10 @@ export class Renderer {
 
   public writeTransformBuffers(transforms: TransformComponent[]) {
     this.gpuDataInterface.writeTransformBuffers(transforms)
+  }
+
+  public writeLightBuffers(lightData: LightData[]) {
+    this.gpuDataInterface.writeLightBuffers(lightData)
   }
 
   public writeCamraBuffers(cameraData: CameraData[]) {

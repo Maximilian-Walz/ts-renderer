@@ -1,8 +1,8 @@
 import Stats from 'stats.js'
-import { vec3 } from 'wgpu-matrix'
+import { quat, vec3 } from 'wgpu-matrix'
 import { GltfAssetManager } from './assets/GltfAssetManager'
 import { StaticAssetManager } from './assets/StaticAssetsManager'
-import { AutoRotateComponent, ComponentType, LightComponent, MeshRendererComponent, TransformComponent } from './components/components'
+import { AutoRotateComponent, ComponentType, LightComponent, LightType, MeshRendererComponent, TransformComponent } from './components/components'
 import { EntityComponentSystem, SimpleEcs } from './entity-component-system'
 import { CameraData, Renderer } from './systems/Renderer'
 import { Rotator } from './systems/Rotator'
@@ -68,6 +68,12 @@ export class Engine {
 
       const models = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as [TransformComponent, MeshRendererComponent][]
       const lights = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.LIGHT]) as [TransformComponent, LightComponent][]
+      this.renderer.writeLightBuffers(
+        lights.map((light) => {
+          return { transform: light[0], light: light[1] }
+        })
+      )
+
       this.renderer.render(
         models.map((model) => {
           return { transform: model[0], meshRenderer: model[1] }
@@ -87,11 +93,15 @@ export class Engine {
     this.ecs.clear()
     await this.assetManager.loadSceneFromGltf(source)
 
+    // Hardcode some test lights
     this.ecs.addComponentToEntity(
       this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(0.1, 0.1, -0.1))),
-      new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 5.0, true)
+      new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 5.0, LightType.POINT, false)
     )
-    this.ecs.addComponentToEntity(this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(10.0, 20.0, 10.0))), new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 2.0))
+
+    const sunTransform = TransformComponent.fromValues(vec3.fromValues(0.0, 0.0, -20.0))
+    quat.mul(sunTransform.rotation, quat.fromAxisAngle(vec3.fromValues(1.0, 0.0, 0.0), Math.PI / 2), sunTransform.rotation)
+    this.ecs.addComponentToEntity(this.ecs.createEntity(sunTransform), new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 2.0, LightType.SUN, true))
 
     this.renderer.prepareGpuBuffers()
     this.renderer.prepareGpuTextures()
@@ -101,7 +111,7 @@ export class Engine {
     this.renderer.prepareTransforms(transforms)
 
     const lights = this.ecs.getComponentsAsTuple([ComponentType.TRANSFORM, ComponentType.LIGHT]) as [TransformComponent, LightComponent][]
-    this.renderer.prepareShadowMaps(
+    this.renderer.prepareLights(
       lights.map((light) => {
         return { transform: light[0], light: light[1] }
       })

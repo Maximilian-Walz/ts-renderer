@@ -1,4 +1,4 @@
-import { LightType } from '../../components/components'
+import { LightType, TransformComponent } from '../../components/components'
 import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData } from '../../systems/Renderer'
 import debugOverlayFrag from './debugRendering.frag.wgsl'
@@ -23,7 +23,7 @@ export class DebugRenderer {
     const cameraBindGroupLayout = this.createCameraBindGroupLayout()
     const sceneBindGroupLayout = this.createSceneBindGroupLayout()
     const billboardBindGroupLayout = this.createBillboardBindGroupLayout()
-    this.pipeline = this.createPipeline([cameraBindGroupLayout, sceneBindGroupLayout, billboardBindGroupLayout])
+    this.pipeline = this.createPipeline([cameraBindGroupLayout, TransformComponent.bindGroupLayout, billboardBindGroupLayout])
 
     const billboardTextureIdentifiers = ['lightbulb', 'sun']
     this.billboardBindGroups = new Map()

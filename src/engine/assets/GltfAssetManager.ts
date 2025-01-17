@@ -2,7 +2,7 @@ import { GltfAsset, GltfLoader } from 'gltf-loader-ts'
 import { Material as GltfMaterial, TextureInfo } from 'gltf-loader-ts/lib/gltf'
 import { vec3, vec4 } from 'wgpu-matrix'
 import { EntityComponentSystem } from '../entity-component-system'
-import { BasicMaterial, Material, PbrMaterial, TextureIdentifier } from '../material'
+import { allBlackTextureIdentifier, allWhiteTextureIdentifier, Material, PbrMaterial, TextureIdentifier } from '../material'
 import { SceneLoader } from './SceneLoader'
 
 export enum BufferTarget {
@@ -52,7 +52,7 @@ export class GltfAssetManager {
   constructor(ecs: EntityComponentSystem) {
     this.ecs = ecs
     this.gltfLoader = new GltfLoader()
-    this.defaultMaterial = new BasicMaterial()
+    this.defaultMaterial = new PbrMaterial()
   }
 
   static mapTextureWrapMode(wrapMode?: number): TextureWrapMode {
@@ -163,12 +163,12 @@ export class GltfAssetManager {
         material = new PbrMaterial()
         if (materialData.pbrMetallicRoughness) {
           const pbr = materialData.pbrMetallicRoughness
-          material.albedoTexture = GltfAssetManager.parseTextureInfo(pbr.baseColorTexture)
-          material.metallicRoughnessTexture = GltfAssetManager.parseTextureInfo(pbr.metallicRoughnessTexture)
+          material.albedoTexture = GltfAssetManager.parseTextureInfo(pbr.baseColorTexture) ?? allWhiteTextureIdentifier
+          material.metallicRoughnessTexture = GltfAssetManager.parseTextureInfo(pbr.metallicRoughnessTexture) ?? allWhiteTextureIdentifier
         }
-        material.normalTexture = GltfAssetManager.parseTextureInfo(materialData.normalTexture as TextureInfo)
-        material.occlusionTexture = GltfAssetManager.parseTextureInfo(materialData.occlusionTexture as TextureInfo)
-        material.emissiveTexture = GltfAssetManager.parseTextureInfo(materialData.emissiveTexture as TextureInfo)
+        material.normalTexture = GltfAssetManager.parseTextureInfo(materialData.normalTexture as TextureInfo) ?? allWhiteTextureIdentifier
+        material.occlusionTexture = GltfAssetManager.parseTextureInfo(materialData.occlusionTexture as TextureInfo) ?? allWhiteTextureIdentifier
+        material.emissiveTexture = GltfAssetManager.parseTextureInfo(materialData.emissiveTexture as TextureInfo) ?? allBlackTextureIdentifier
       }
       // In both cases, set factors
       if (materialData.pbrMetallicRoughness) {

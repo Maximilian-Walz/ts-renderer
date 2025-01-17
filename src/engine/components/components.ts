@@ -28,8 +28,8 @@ export class TransformComponent extends Component {
   parent?: TransformComponent
 
   bindGroup: GPUBindGroup | undefined
-  modelMatrixBuffer: GPUBuffer | undefined
-  normalmatrixBuffer: GPUBuffer | undefined
+  matricesBuffer: GPUBuffer | undefined
+  static bindGroupLayout: GPUBindGroupLayout
 
   constructor(parentTransform?: TransformComponent) {
     super(ComponentType.TRANSFORM)
@@ -236,7 +236,7 @@ export class CameraComponent extends Component {
   zFar: number
 
   bindGroup: GPUBindGroup | undefined
-  bindGroupLayout: GPUBindGroupLayout | undefined
+  static bindGroupLayout: GPUBindGroupLayout
   viewProjectionsBuffer: GPUBuffer | undefined
 
   constructor(cameraType: CameraType, data: PerspectiveData | OrthographicData, zNear?: number, zFar?: number) {
@@ -275,21 +275,34 @@ export class CameraComponent extends Component {
   }
 }
 
+export enum LightType {
+  SUN,
+  POINT,
+}
+
 export class LightComponent extends Component {
   color: Vec3
   power: number
   castsShadow: Boolean
+  buffer: GPUBuffer | undefined
   shadowMap: GPUTexture | undefined
+  shadingBindGroup: GPUBindGroup | undefined
+  shadowMappingBindGroup: GPUBindGroup | undefined
+  static nonShadowCastingBindGroupLayout: GPUBindGroupLayout
+  static shadowCastingBindGroupLayout: GPUBindGroupLayout
+  static shadowMappingBindGroupLayout: GPUBindGroupLayout
+  lightType: LightType
 
-  constructor(color?: Vec3, power?: number, castsShadow?: Boolean) {
+  constructor(color?: Vec3, power?: number, lightType?: LightType, castsShadow?: Boolean) {
     super(ComponentType.LIGHT)
     this.color = color ?? vec3.fromValues(1.0, 1.0, 1.0)
     this.power = power ?? 3
+    this.lightType = lightType ?? LightType.POINT
     this.castsShadow = castsShadow ?? false
   }
 
   getProjection(): Mat4 {
-    return mat4.ortho(-1, 1, -1, 1, 0.1, 10)
+    return mat4.ortho(-10, 10, -10, 10, 0.1, 100)
   }
 
   toJson(): Object {

@@ -3,9 +3,14 @@ struct Camera {
   invViewProjectionMatrix : mat4x4f,
 }
 
+struct Transform {
+  modelMatrix: mat4x4f,
+  invModelMatrix: mat4x4f,
+  normalModelMatrix : mat4x4f,
+}
+
 @group(0) @binding(0) var<uniform> camera : Camera;
-@group(1) @binding(0) var<uniform> modelMatrix : mat4x4f;
-@group(1) @binding(1) var<uniform> normalModelMatrix : mat4x4f;
+@group(1) @binding(0) var<uniform> transform : Transform;
 
 struct VertexOutput {
   @builtin(position) Position : vec4f,
@@ -22,10 +27,10 @@ fn main(
   @location(3) uv : vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
-  let worldPosition = (camera.viewProjectionMatrix * modelMatrix * position);
-  output.Position = worldPosition;
-  output.fragNormal = normalize(normalModelMatrix * vec4f(normal, 1.0)).xyz;
-  output.fragTangent = normalize(normalModelMatrix * vec4f(tangent, 1.0)).xyz;
+  let positionScreenSpace = (camera.viewProjectionMatrix * transform.modelMatrix * position);
+  output.Position = positionScreenSpace;
+  output.fragNormal = normalize(transform.normalModelMatrix * vec4f(normal, 1.0)).xyz;
+  output.fragTangent = normalize(transform.normalModelMatrix * vec4f(tangent, 1.0)).xyz;
   output.fragUV = uv;
   return output;
 }

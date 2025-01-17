@@ -5,9 +5,14 @@ struct Camera {
     projectionMatrix: mat4x4f,
 }
 
+struct Transform {
+  modelMatrix: mat4x4f,
+  invModelMatrix: mat4x4f,
+  normalModelMatrix : mat4x4f,
+}
+
 @group(0) @binding(0) var<uniform> camera: Camera;
-@group(1) @binding(0) var<uniform> modelMatrix : mat4x4f;
-@group(1) @binding(1) var<uniform> normalModelMatrix : mat4x4f;
+@group(1) @binding(0) var<uniform> trasform: Transform;
 
 struct Output {
     @builtin(position) position : vec4f,
@@ -19,7 +24,7 @@ fn main(@location(0) position : vec4f) -> Output {
     let size = 4.0;
 
     var output : Output;
-    let viewPos = camera.viewMatrix * modelMatrix * vec4f(0, 0, 0, 1);
+    let viewPos = camera.viewMatrix * transpose(trasform.normalModelMatrix) * vec4f(0, 0, 0, 1);
     let dist = -viewPos.z * size / 100;
     output.position = camera.projectionMatrix * (viewPos + vec4f(position.xy * dist, 0, 0));
 

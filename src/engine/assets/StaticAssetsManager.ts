@@ -11,19 +11,36 @@ export class StaticAssetManager {
   }
 
   public async loadStaticAssets(device: GPUDevice) {
-    await this.loadTextureData('lightbulb', '/assets/textures/lightbulb.png', device)
-    await this.loadTextureData('sun', '/assets/textures/sun.png', device)
+    const smoothSampler = device.createSampler({
+      addressModeU: 'repeat',
+      addressModeV: 'repeat',
+      magFilter: 'linear',
+      minFilter: 'linear',
+    })
+
+    const basicSampler = device.createSampler({
+      addressModeU: 'repeat',
+      addressModeV: 'repeat',
+      magFilter: 'nearest',
+      minFilter: 'nearest',
+    })
+
+    await this.loadTextureData('error', '/assets/textures/error.png', device, basicSampler)
+    await this.loadTextureData('1x1_white', '/assets/textures/1x1_white.png', device, basicSampler)
+    await this.loadTextureData('1x1_black', '/assets/textures/1x1_black.png', device, basicSampler)
+    await this.loadTextureData('lightbulb', '/assets/textures/lightbulb.png', device, smoothSampler)
+    await this.loadTextureData('sun', '/assets/textures/sun.png', device, smoothSampler)
   }
 
-  private async loadTextureData(identifier: string, url: string, device: GPUDevice) {
+  private async loadTextureData(identifier: string, url: string, device: GPUDevice, sampler?: GPUSampler) {
     await this.loadImageBitmap(url).then((source) => {
       let textureData = {
-        sampler: device.createSampler({
+        sampler: (sampler ??= device.createSampler({
           addressModeU: 'repeat',
           addressModeV: 'repeat',
           magFilter: 'linear',
           minFilter: 'linear',
-        }),
+        })),
         texture: device.createTexture({
           label: identifier,
           size: [source.width, source.height, 1],

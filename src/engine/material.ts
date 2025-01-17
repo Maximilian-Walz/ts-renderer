@@ -1,13 +1,13 @@
 import { Vec3, Vec4, vec3, vec4 } from 'wgpu-matrix'
 
 export type TextureIdentifier = {
-  textureId: number
+  textureId: number | string
   texCoordId: number
 }
 
 export abstract class Material {
   bindGroup?: GPUBindGroup
-  abstract getBindGroupLayout(): GPUBindGroupLayout | undefined
+  abstract getBindGroupLayout(): GPUBindGroupLayout
 }
 
 export class BasicMaterial extends Material {
@@ -16,28 +16,38 @@ export class BasicMaterial extends Material {
   roughnessFactor: number = 1
   emissiveFactor: Vec3 = vec3.fromValues(0, 0, 0)
 
-  static bindGroupLayout?: GPUBindGroupLayout
+  static bindGroupLayout: GPUBindGroupLayout
   static bindGroupLayoutDescriptor: GPUBindGroupLayoutDescriptor = {
     label: 'Basic Material',
     entries: [],
   }
 
-  getBindGroupLayout(): GPUBindGroupLayout | undefined {
-    return BasicMaterial.bindGroupLayout!
+  getBindGroupLayout(): GPUBindGroupLayout {
+    return BasicMaterial.bindGroupLayout
   }
 }
 
+export const allWhiteTextureIdentifier = {
+  textureId: '1x1_white',
+  texCoordId: 0,
+} as TextureIdentifier
+
+export const allBlackTextureIdentifier = {
+  textureId: '1x1_black',
+  texCoordId: 0,
+} as TextureIdentifier
+
 export class PbrMaterial extends BasicMaterial {
   name?: string
-  albedoTexture: TextureIdentifier | undefined
-  metallicRoughnessTexture: TextureIdentifier | undefined
-  normalTexture: TextureIdentifier | undefined
+  albedoTexture: TextureIdentifier = allWhiteTextureIdentifier
+  metallicRoughnessTexture: TextureIdentifier = allWhiteTextureIdentifier
+  normalTexture: TextureIdentifier = allWhiteTextureIdentifier
   normalStrength: number = 1
-  occlusionTexture: TextureIdentifier | undefined
+  occlusionTexture: TextureIdentifier = allWhiteTextureIdentifier
   occlusionFactor: number = 1
-  emissiveTexture: TextureIdentifier | undefined
+  emissiveTexture: TextureIdentifier = allWhiteTextureIdentifier
 
-  static bindGroupLayout?: GPUBindGroupLayout
+  static bindGroupLayout: GPUBindGroupLayout
   static bindGroupLayoutDescriptor: GPUBindGroupLayoutDescriptor = {
     label: 'PBR Material',
     entries: [
@@ -54,7 +64,7 @@ export class PbrMaterial extends BasicMaterial {
     ],
   }
 
-  getBindGroupLayout(): GPUBindGroupLayout | undefined {
+  getBindGroupLayout(): GPUBindGroupLayout {
     return PbrMaterial.bindGroupLayout
   }
 }

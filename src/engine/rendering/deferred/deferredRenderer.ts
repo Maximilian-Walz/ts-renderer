@@ -1,4 +1,12 @@
-import { BufferDataComponentType, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
+import {
+  BufferDataComponentType,
+  CameraComponent,
+  LightComponent,
+  LightType,
+  TransformComponent,
+  VertexAttributeType,
+  getBufferDataTypeByteCount,
+} from '../../components/components'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { RenderStrategy } from '../RenderStrategy'
 
@@ -7,9 +15,11 @@ import { PbrMaterial } from '../../material'
 import { DebugRenderer } from '../debug/DebugRenderer'
 import { ShadowMapper } from '../shadows/ShadowMapper'
 import { SunLightShadowMapper } from '../shadows/SunLightShadowMapper'
-import deferredRenderingFrag from './deferredRendering.frag.wgsl'
 import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
+
+import nonShadowMapShadingFrag from './nonShadowMapShading.wgsl'
+import shadowMapShadingFrag from './shadowMapShading.frag.wgsl'
 import writeGBufferFrag from './writeGBuffer.frag.wgsl'
 import writeGBufferVert from './writeGBuffer.vert.wgsl'
 
@@ -21,12 +31,10 @@ export class DeferredRenderer implements RenderStrategy {
   private shadowMapper: ShadowMapper
   private debugRenderer: DebugRenderer
 
-  private lightsBuffer: GPUBuffer
-  private lightsBindGroup: GPUBindGroup
-
   private gBuffer: GBuffer
   private writeGBufferPipeline: GPURenderPipeline
-  private deferredRenderPipeline: GPURenderPipeline
+  private deferredSunLightRenderPipeline: GPURenderPipeline
+  private deferredPointLightRenderPipeline: GPURenderPipeline
 
   constructor(device: GPUDevice, gpuDataInterface: GPUDataInterface, context: GPUCanvasContext) {
     this.device = device
@@ -37,15 +45,15 @@ export class DeferredRenderer implements RenderStrategy {
     this.debugRenderer = new DebugRenderer(this.device, this.context, this.gpuDataInterface)
     this.gBuffer = this.createGBuffer()
 
-    const sceneBindGroupLayout = this.createSceneBindGroupLayout()
-    const lightsBindGroupLayout = this.createLightsBindGroupLayout()
-    const meshBindGroupLayout = this.createMeshBindGroupLayout()
-
-    this.writeGBufferPipeline = this.createWriteGBufferPipeline([sceneBindGroupLayout, meshBindGroupLayout, PbrMaterial.bindGroupLayout!])
-    this.deferredRenderPipeline = this.createDeferredRenderPipeline([this.gBuffer.getBindGroupLayout(), sceneBindGroupLayout, lightsBindGroupLayout], false)
-
-    this.lightsBuffer = this.createLightsBuffer()
-    this.lightsBindGroup = this.createLightsBindGroup(lightsBindGroupLayout)
+    this.writeGBufferPipeline = this.createWriteGBufferPipeline()
+    this.deferredSunLightRenderPipeline = this.createDeferredRenderPipeline(
+      [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.shadowCastingBindGroupLayout],
+      true
+    )
+    this.deferredPointLightRenderPipeline = this.createDeferredRenderPipeline(
+      [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.nonShadowCastingBindGroupLayout],
+      false
+    )
   }
 
   private createGBuffer(): GBuffer {
@@ -58,31 +66,10 @@ export class DeferredRenderer implements RenderStrategy {
     return gBuffer
   }
 
-  private createMeshBindGroupLayout() {
-    return this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-        {
-          binding: 1,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
-  }
-
-  private createWriteGBufferPipeline(bindGroupLayouts: GPUBindGroupLayout[]): GPURenderPipeline {
+  private createWriteGBufferPipeline(): GPURenderPipeline {
     return this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: bindGroupLayouts,
+        bindGroupLayouts: [CameraComponent.bindGroupLayout, TransformComponent.bindGroupLayout, PbrMaterial.bindGroupLayout],
       }),
       vertex: {
         module: this.device.createShaderModule({
@@ -152,30 +139,6 @@ export class DeferredRenderer implements RenderStrategy {
     })
   }
 
-  private createLightsBuffer(): GPUBuffer {
-    return this.device.createBuffer({
-      label: 'Lights data',
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      size: 800, // 10 lights for now
-    })
-  }
-
-  private createLightsBindGroup(lightsBindGroupLayout: GPUBindGroupLayout): GPUBindGroup {
-    return this.device.createBindGroup({
-      label: 'Lights',
-      layout: lightsBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            label: 'Lights data',
-            buffer: this.lightsBuffer,
-          },
-        },
-      ],
-    })
-  }
-
   private createWriteGBufferPassDescriptor(target: GPUTexture): GPURenderPassDescriptor {
     this.gBuffer.createTextureViews(target.width, target.height)
     return {
@@ -191,7 +154,7 @@ export class DeferredRenderer implements RenderStrategy {
     gBufferPass.setBindGroup(0, cameraData.camera.bindGroup!)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
-      if (transform.modelMatrixBuffer == undefined) {
+      if (transform.matricesBuffer == undefined) {
         return
       }
       gBufferPass.setBindGroup(1, transform.bindGroup!)
@@ -207,7 +170,7 @@ export class DeferredRenderer implements RenderStrategy {
           gBufferPass.setVertexBuffer(index, this.gpuDataInterface.getBuffer(accessor.bufferIndex), accessor.offset, accessor.count * byteCount)
         })
 
-        const material = this.gpuDataInterface.getMaterial(primitiveRenderData.materialIndex!)
+        const material = this.gpuDataInterface.getMaterial(primitiveRenderData.materialIndex)
         gBufferPass.setBindGroup(2, material.bindGroup!)
 
         gBufferPass.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
@@ -217,36 +180,9 @@ export class DeferredRenderer implements RenderStrategy {
     gBufferPass.end()
   }
 
-  private createSceneBindGroupLayout(): GPUBindGroupLayout {
-    return this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
-  }
-
-  private createLightsBindGroupLayout(): GPUBindGroupLayout {
-    return this.device.createBindGroupLayout({
-      entries: [
-        {
-          binding: 0,
-          buffer: {
-            type: 'uniform',
-          },
-          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
-  }
-
   private createDeferredRenderPipeline(bindGroupLayouts: GPUBindGroupLayout[], isSunLight: boolean): GPURenderPipeline {
     return this.device.createRenderPipeline({
+      label: isSunLight ? 'Sun light shading' : 'Point light shading',
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: bindGroupLayouts,
       }),
@@ -257,11 +193,21 @@ export class DeferredRenderer implements RenderStrategy {
       },
       fragment: {
         module: this.device.createShaderModule({
-          code: deferredRenderingFrag,
+          code: isSunLight ? shadowMapShadingFrag : nonShadowMapShadingFrag,
         }),
         targets: [
           {
             format: this.context.getCurrentTexture().format,
+            blend: {
+              color: {
+                srcFactor: 'one',
+                dstFactor: 'one',
+              },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one',
+              },
+            },
           },
         ],
         constants: {
@@ -288,27 +234,34 @@ export class DeferredRenderer implements RenderStrategy {
     }
   }
 
+  private doShadingForLightType(renderPass: GPURenderPassEncoder, pipeline: GPURenderPipeline, lightsData: LightData[], cameraData: CameraData): void {
+    renderPass.setPipeline(pipeline)
+    renderPass.setBindGroup(0, this.gBuffer.getBindGroup())
+    // reuse scene bind group for now
+    renderPass.setBindGroup(1, cameraData.camera.bindGroup!)
+
+    lightsData.forEach(({ light }) => {
+      renderPass.setBindGroup(2, light.shadingBindGroup!)
+      renderPass.draw(6)
+    })
+  }
+
   private doShading(commandEncoder: GPUCommandEncoder, lightsData: LightData[], cameraData: CameraData): void {
     const deferredRenderingPass = commandEncoder.beginRenderPass(this.createDeferredRenderPassDescriptor())
-    deferredRenderingPass.setPipeline(this.deferredRenderPipeline)
-    deferredRenderingPass.setBindGroup(0, this.gBuffer.getBindGroup())
-    // reuse scene bind group for now
-    deferredRenderingPass.setBindGroup(1, cameraData.camera.bindGroup!)
 
-    // could do this per light type or even per light in the future
-    let lightDataArray = new Float32Array(lightsData.flatMap((lightData) => [...lightData.transform.toMatrix(), ...lightData.light.color, lightData.light.power]))
-    this.device.queue.writeBuffer(this.lightsBuffer, 0, lightDataArray.buffer, lightDataArray.byteOffset, lightDataArray.byteLength)
+    const pointLightsData = lightsData.filter((lightData) => lightData.light.lightType == LightType.POINT)
+    const sunLightsData = lightsData.filter((lightData) => lightData.light.lightType == LightType.SUN)
 
-    deferredRenderingPass.setBindGroup(2, this.lightsBindGroup)
-    deferredRenderingPass.draw(6)
-
+    // For now, sun light <=> has shadow map
+    this.doShadingForLightType(deferredRenderingPass, this.deferredPointLightRenderPipeline, pointLightsData, cameraData)
+    this.doShadingForLightType(deferredRenderingPass, this.deferredSunLightRenderPipeline, sunLightsData, cameraData)
     deferredRenderingPass.end()
   }
 
   public render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData): void {
     const commandEncoder = this.device.createCommandEncoder()
 
-    this.shadowMapper.renderShadowMap(commandEncoder, modelsData, lightsData[0], cameraData)
+    lightsData.filter(({ light }) => light.castsShadow).forEach((lightData) => this.shadowMapper.renderShadowMap(commandEncoder, modelsData, lightData, cameraData))
     this.writeGBuffer(commandEncoder, modelsData, cameraData)
     this.doShading(commandEncoder, lightsData, cameraData)
 
