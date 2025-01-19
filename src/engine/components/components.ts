@@ -288,8 +288,8 @@ export class LightComponent extends Component {
   shadowMap: GPUTexture | undefined
   shadingBindGroup: GPUBindGroup | undefined
   shadowMappingBindGroup: GPUBindGroup | undefined
-  static nonShadowCastingBindGroupLayout: GPUBindGroupLayout
-  static shadowCastingBindGroupLayout: GPUBindGroupLayout
+  static pointLightBindGroupLayout: GPUBindGroupLayout
+  static sunLightBindGroupLayout: GPUBindGroupLayout
   static shadowMappingBindGroupLayout: GPUBindGroupLayout
   lightType: LightType
 

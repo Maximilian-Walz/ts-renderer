@@ -19,10 +19,16 @@ import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
 
 import ambientFrag from './ambient.frag.wgsl'
-import nonShadowMapShadingFrag from './nonShadowMapShading.wgsl'
-import shadowMapShadingFrag from './shadowMapShading.frag.wgsl'
+import pointLightShading from './pointLightShading.frag.wgsl'
+import sunLightShading from './sunLightShading.frag.wgsl'
 import writeGBufferFrag from './writeGBuffer.frag.wgsl'
 import writeGBufferVert from './writeGBuffer.vert.wgsl'
+
+type VertexAttributeInfo = {
+  type: VertexAttributeType
+  stride: number
+  format: GPUVertexFormat
+}
 
 export class DeferredRenderer implements RenderStrategy {
   private device: GPUDevice
@@ -37,6 +43,29 @@ export class DeferredRenderer implements RenderStrategy {
   private deferredSunLightRenderPipeline: GPURenderPipeline
   private ambientRenderPipeline: GPURenderPipeline
   private deferredPointLightRenderPipeline: GPURenderPipeline
+
+  private static vertexDataMapping: VertexAttributeInfo[] = [
+    {
+      type: VertexAttributeType.POSITION,
+      format: 'float32x3',
+      stride: 12,
+    },
+    {
+      type: VertexAttributeType.NORMAL,
+      format: 'float32x3',
+      stride: 12,
+    },
+    {
+      type: VertexAttributeType.TANGENT,
+      format: 'float32x4',
+      stride: 16,
+    },
+    {
+      type: VertexAttributeType.TEXCOORD_0,
+      format: 'float32x2',
+      stride: 8,
+    },
+  ]
 
   constructor(device: GPUDevice, gpuDataInterface: GPUDataInterface, context: GPUCanvasContext) {
     this.device = device
@@ -54,12 +83,12 @@ export class DeferredRenderer implements RenderStrategy {
     this.writeGBufferPipeline = this.createWriteGBufferPipeline()
     this.ambientRenderPipeline = this.createAmbientRenderPipeline(deferredShadingVertexModule)
     this.deferredSunLightRenderPipeline = this.createDeferredRenderPipeline(
-      [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.shadowCastingBindGroupLayout],
+      [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.sunLightBindGroupLayout],
       deferredShadingVertexModule,
       true
     )
     this.deferredPointLightRenderPipeline = this.createDeferredRenderPipeline(
-      [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.nonShadowCastingBindGroupLayout],
+      [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.pointLightBindGroupLayout],
       deferredShadingVertexModule,
       false
     )
@@ -84,49 +113,18 @@ export class DeferredRenderer implements RenderStrategy {
         module: this.device.createShaderModule({
           code: writeGBufferVert,
         }),
-        // TODO: Generate buffer info out of VertexAttributeTypes
-        buffers: [
-          {
-            arrayStride: 12,
+        buffers: DeferredRenderer.vertexDataMapping.map(({ format, stride }, index) => {
+          return {
+            arrayStride: stride,
             attributes: [
               {
-                shaderLocation: 0,
+                shaderLocation: index,
                 offset: 0,
-                format: 'float32x3',
+                format: format,
               },
             ],
-          },
-          {
-            arrayStride: 12,
-            attributes: [
-              {
-                shaderLocation: 1,
-                offset: 0,
-                format: 'float32x3',
-              },
-            ],
-          },
-          {
-            arrayStride: 12,
-            attributes: [
-              {
-                shaderLocation: 2,
-                offset: 0,
-                format: 'float32x3',
-              },
-            ],
-          },
-          {
-            arrayStride: 8,
-            attributes: [
-              {
-                shaderLocation: 3,
-                offset: 0,
-                format: 'float32x2',
-              },
-            ],
-          },
-        ],
+          }
+        }),
       },
       fragment: {
         module: this.device.createShaderModule({
@@ -151,6 +149,7 @@ export class DeferredRenderer implements RenderStrategy {
   private createWriteGBufferPassDescriptor(target: GPUTexture): GPURenderPassDescriptor {
     this.gBuffer.createTextureViews(target.width, target.height)
     return {
+      label: 'Write GBuffer',
       colorAttachments: ['normal', 'albedo', 'orm', 'emission'].map((textureName) => this.gBuffer.getColorAttachment(textureName)),
       depthStencilAttachment: this.gBuffer.getDepthAttachment(),
     }
@@ -170,11 +169,8 @@ export class DeferredRenderer implements RenderStrategy {
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
         gBufferPass.setIndexBuffer(this.gpuDataInterface.getBuffer(primitiveRenderData.indexBufferAccessor.bufferIndex), type)
-
-        // TODO: don't hardcode which is which (i.e. that 0 is POSITION and 1 is NORMAL); somehow ask the asset manager / pipeline / shader where it should be
-        const vertexDataMapping = [VertexAttributeType.POSITION, VertexAttributeType.NORMAL, VertexAttributeType.TANGENT, VertexAttributeType.TEXCOORD_0]
-        vertexDataMapping.forEach((attributeType, index) => {
-          const accessor = primitiveRenderData.vertexAttributes.get(attributeType)!
+        DeferredRenderer.vertexDataMapping.forEach(({ type }, index) => {
+          const accessor = primitiveRenderData.vertexAttributes.get(type)!
           const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
           gBufferPass.setVertexBuffer(index, this.gpuDataInterface.getBuffer(accessor.bufferIndex), accessor.offset, accessor.count * byteCount)
         })
@@ -242,7 +238,7 @@ export class DeferredRenderer implements RenderStrategy {
       },
       fragment: {
         module: this.device.createShaderModule({
-          code: isSunLight ? shadowMapShadingFrag : nonShadowMapShadingFrag,
+          code: isSunLight ? sunLightShading : pointLightShading,
         }),
         targets: [
           {
@@ -259,9 +255,6 @@ export class DeferredRenderer implements RenderStrategy {
             },
           },
         ],
-        constants: {
-          isSunLight: isSunLight ? 1 : 0,
-        },
       },
       primitive: {
         topology: 'triangle-list',
@@ -272,6 +265,7 @@ export class DeferredRenderer implements RenderStrategy {
 
   private createDeferredRenderPassDescriptor(): GPURenderPassDescriptor {
     return {
+      label: 'Deferred Shading',
       colorAttachments: [
         {
           view: this.context.getCurrentTexture().createView(),

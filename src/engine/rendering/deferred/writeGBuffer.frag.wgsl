@@ -36,7 +36,7 @@ fn main(
   let sampledNormal = textureSample(normalTexture, normalSampler, fragUV).rgb;
   let bitangent = normalize(cross(fragNormal, fragTangent));
   let TBN = mat3x3f(fragTangent, bitangent, fragNormal);
-  output.normal = vec4((TBN * normalize(sampledNormal - 0.5)), 1.0);
+  output.normal = vec4f(TBN * (normalize(sampledNormal - 0.5)), 0.0);
 
   output.albedo = textureSample(albedoTexture, albedoSampler, fragUV);
   if (output.albedo.a == 0) {

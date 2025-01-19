@@ -1,7 +1,7 @@
-import { mat4 } from 'wgpu-matrix'
+import { mat4, vec4 } from 'wgpu-matrix'
 import { BufferTarget, GltfAssetManager } from './assets/GltfAssetManager'
 import { StaticAssetManager } from './assets/StaticAssetsManager'
-import { CameraComponent, LightComponent, TransformComponent } from './components/components'
+import { CameraComponent, LightComponent, LightType, TransformComponent } from './components/components'
 import { BasicMaterial, Material, PbrMaterial, TextureIdentifier } from './material'
 import { CameraData, GPUTextureData, LightData } from './systems/Renderer'
 
@@ -44,13 +44,13 @@ export class GPUDataInterface {
       buffer: {},
     }
 
-    LightComponent.nonShadowCastingBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Non shadow casting',
+    LightComponent.pointLightBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Point light (casts no shadow)',
       entries: [lightBaseDataLayoutEntry],
     })
 
-    LightComponent.shadowCastingBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Shadow casting',
+    LightComponent.sunLightBindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Sun light (casts shadow)',
       entries: [
         lightBaseDataLayoutEntry,
         {
@@ -202,15 +202,15 @@ export class GPUDataInterface {
         },
       }
 
-      if (light.castsShadow) {
+      if (light.lightType == LightType.SUN && light.castsShadow) {
         light.shadowMap = this.device.createTexture({
-          size: [4096, 4096, 1],
+          size: [2048, 2048, 1],
           usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
           format: 'depth32float',
         })
 
         light.shadingBindGroup = this.device.createBindGroup({
-          layout: LightComponent.shadowCastingBindGroupLayout,
+          layout: LightComponent.sunLightBindGroupLayout,
           entries: [
             lightBaseDataEntry,
             {
@@ -230,9 +230,9 @@ export class GPUDataInterface {
           layout: LightComponent.shadowMappingBindGroupLayout,
           entries: [lightBaseDataEntry],
         })
-      } else {
+      } else if (light.lightType == LightType.POINT) {
         light.shadingBindGroup = this.device.createBindGroup({
-          layout: LightComponent.nonShadowCastingBindGroupLayout,
+          layout: LightComponent.pointLightBindGroupLayout,
           entries: [lightBaseDataEntry],
         })
       }
@@ -268,12 +268,22 @@ export class GPUDataInterface {
   }
 
   public writeLightBuffers(lightsData: LightData[]) {
-    lightsData.forEach((lightData) => {
-      const viewMatrix = TransformComponent.calculateGlobalCameraTransform(lightData.transform)
-      const viewProjectionMatrix = mat4.multiply(lightData.light.getProjection(), viewMatrix)
-      const invViewProjectionMatrix = mat4.inverse(viewProjectionMatrix)
-      const lightBaseData = new Float32Array([...viewMatrix, ...viewProjectionMatrix, ...invViewProjectionMatrix, ...lightData.light.color, lightData.light.power])
-      this.device.queue.writeBuffer(lightData.light.buffer!, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
+    lightsData.forEach(({ transform, light }) => {
+      const viewMatrix = TransformComponent.calculateGlobalCameraTransform(transform)
+      const invViewMatrix = mat4.inverse(viewMatrix)
+
+      let firstEntry
+      switch (light.lightType) {
+        case LightType.SUN:
+          firstEntry = vec4.transformMat4(vec4.fromValues(0.0, 0.0, 1.0, 0.0), invViewMatrix)
+        default:
+          firstEntry = vec4.transformMat4(vec4.fromValues(0.0, 0.0, 0.0, 1.0), invViewMatrix)
+          break
+      }
+
+      const viewProjectionMatrix = mat4.multiply(light.getProjection(), viewMatrix)
+      const lightBaseData = new Float32Array([...firstEntry, ...viewProjectionMatrix, ...light.color, light.power])
+      this.device.queue.writeBuffer(light.buffer!, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
     })
   }
 

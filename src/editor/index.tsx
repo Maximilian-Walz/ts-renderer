@@ -14,8 +14,8 @@ export class GraphicEditor {
   private engine: Engine
   private initialized: boolean = false
   private scenes: Scene[] = [
+    { name: 'Shadow Test', source: 'assets/gltf/shadowTest.gltf' },
     { name: 'Sponza', source: '/assets/gltf/Sponza.glb' },
-    { name: 'Shadow Test', source: 'assets/gltf/shadowTest.glb' },
     { name: 'Water Bottle', source: '/assets/gltf/WaterBottle.glb' },
     { name: 'BoomBox', source: '/assets/gltf/BoomBox.glb' },
     { name: 'DamagedHelmet', source: '/assets/gltf/DamagedHelmet.glb' },

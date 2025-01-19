@@ -1,7 +1,6 @@
 struct Light {
-  viewMatrix: mat4x4f,
+  positionOrDirection: vec4f,
   viewProjectionMatrix: mat4x4f,
-  invViewProjectionMatrix: mat4x4f,
   color: vec3f,
   power: f32
 }

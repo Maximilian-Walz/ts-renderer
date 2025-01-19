@@ -15,9 +15,16 @@ fn main(
 ) -> @location(0) vec4f {
   let depth = textureLoad(gBufferDepth, vec2i(floor(coord.xy)), 0);
 
+  // Use for debugging:
+  let normal = loadGBufferTexture(gBufferNormal, coord).xyz;
+  // let orm = loadGBufferTexture(gBufferORM, coord).rgb;
+  // let occlusion = orm.x;
+  // let roughness = orm.y;
+  // let metallic = orm.z;
+
   // Background
   if (depth >= 1.0) {
-    return vec4(0.2);
+    return vec4(0.4);
   }
 
   let albedo = loadGBufferTexture(gBufferAlbedo, coord).rgb;

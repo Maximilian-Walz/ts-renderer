@@ -1,6 +1,6 @@
 const PI = 3.14159265;
-
-override isSunLight = false;
+const PCF_SIZE = 3;
+const PCF_OFFSET = 0.0002;
 
 struct Camera {
     viewProjectionMatrix : mat4x4f,
@@ -8,9 +8,8 @@ struct Camera {
 }
 
 struct Light {
-  viewMatrix: mat4x4f,
+  direction: vec4f,
   viewProjectionMatrix: mat4x4f,
-  invViewProjectionMatrix: mat4x4f,
   color: vec3f,
   power: f32
 }
@@ -24,6 +23,8 @@ struct Light {
 @group(1) @binding(0) var<uniform> camera : Camera;
 
 @group(2) @binding(0) var<uniform> light: Light;
+@group(2) @binding(1) var shadowMapTexture: texture_depth_2d;
+@group(2) @binding(2) var shadowMapSampler: sampler_comparison;
 
 
 fn loadGBufferTexture(texture: texture_2d<f32>, coord: vec4f) -> vec4f {
@@ -59,20 +60,35 @@ fn main(
   @builtin(position) coord : vec4f
 ) -> @location(0) vec4f {
   let depth = textureLoad(gBufferDepth, vec2i(floor(coord.xy)), 0);
+  let bufferSize = textureDimensions(gBufferDepth);
+  let uv = coord.xy / vec2f(bufferSize);
+  let position = screenToWorld(uv, depth);
+  
+  let positionLightSpaceW = light.viewProjectionMatrix * vec4f(position, 1.0);  
+  var positionLightSpace = positionLightSpaceW.xyz;
+  positionLightSpace = vec3f(positionLightSpace.xy * vec2(0.5, -0.5) + vec2(0.5), positionLightSpace.z);
+
+  var shadowMapValue = 0.0;
+  for (var y = -PCF_SIZE; y <= PCF_SIZE; y++) {
+    for (var x = -PCF_SIZE; x <= PCF_SIZE; x++) {
+      let offset = vec2f(vec2(x, y)) * PCF_OFFSET;
+      shadowMapValue += textureSampleCompare(shadowMapTexture, shadowMapSampler,positionLightSpace.xy + offset, positionLightSpace.z - 0.007);
+    }
+  }
+  shadowMapValue /= (1 + PCF_SIZE + PCF_SIZE) * (1 + PCF_SIZE + PCF_SIZE);
 
   // Background
   if (depth >= 1.0) {
     discard;
   }
-  
-  let bufferSize = textureDimensions(gBufferDepth);
-  let uv = coord.xy / vec2f(bufferSize);
-  let position = screenToWorld(uv, depth);
+
+  if (shadowMapValue == 0) {
+    discard;
+  }
 
   let normal = loadGBufferTexture(gBufferNormal, coord).xyz;
   let albedo = loadGBufferTexture(gBufferAlbedo, coord).rgb;
   let orm = loadGBufferTexture(gBufferORM, coord).rgb;
-  let emission = loadGBufferTexture(gBufferEmission, coord).rgb;
 
   let occlusion = orm.x;
   let roughness = orm.y;
@@ -85,14 +101,9 @@ fn main(
   let nDotV = max(dot(N, V), 0);
   
   let lambert = albedo / PI;
-  let lightCol = light.color;
-  let lightPow = light.power;
   
   // Sun light or Point light
-  let lightPos = (light.invViewProjectionMatrix * vec4f(0.0, 0.0, 0.0, 1.0)).xyz;
-  let pointLightL = lightPos-position;
-  let sunLightL = (light.viewProjectionMatrix * vec4f(0.0, 0.0, -1.0, 0.0)).xyz;
-  var L = normalize(select(pointLightL, sunLightL, isSunLight));
+  var L = normalize(light.direction.xyz);
   let H = normalize(V + L);
   let nDotL = max(dot(N, L), 0);
   let nDotH = max(dot(N, H), 0);
@@ -106,8 +117,8 @@ fn main(
   
   let diffuse = kD * lambert;
   let specular = normalDistribution * geometryTerm * fresnel / (4.0 * nDotV * nDotL + 0.000001);
-  let result = (diffuse + specular) * lightCol * lightPow * nDotL;
+  let result = (diffuse + specular) * light.color * light.power * nDotL;
 
 
-  return vec4(result, 1.0);
+  return vec4(shadowMapValue * result, 1.0);
 }

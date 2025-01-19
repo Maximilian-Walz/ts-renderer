@@ -28,6 +28,7 @@ export class StaticAssetManager {
     await this.loadTextureData('error', '/assets/textures/error.png', device, basicSampler)
     await this.loadTextureData('1x1_white', '/assets/textures/1x1_white.png', device, basicSampler)
     await this.loadTextureData('1x1_black', '/assets/textures/1x1_black.png', device, basicSampler)
+    await this.loadTextureData('1x1_default_normal', '/assets/textures/1x1_default_normal.png', device, basicSampler)
     await this.loadTextureData('lightbulb', '/assets/textures/lightbulb.png', device, smoothSampler)
     await this.loadTextureData('sun', '/assets/textures/sun.png', device, smoothSampler)
   }

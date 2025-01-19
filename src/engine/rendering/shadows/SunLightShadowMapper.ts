@@ -53,6 +53,7 @@ export class SunLightShadowMapper extends ShadowMapper {
     }
 
     const shadowPass = commandEncoder.beginRenderPass({
+      label: 'Shadow mapping',
       colorAttachments: [],
       depthStencilAttachment: {
         view: lightData.light.shadowMap!.createView(),

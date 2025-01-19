@@ -2,7 +2,7 @@ import { GltfAsset, GltfLoader } from 'gltf-loader-ts'
 import { Material as GltfMaterial, TextureInfo } from 'gltf-loader-ts/lib/gltf'
 import { vec3, vec4 } from 'wgpu-matrix'
 import { EntityComponentSystem } from '../entity-component-system'
-import { allBlackTextureIdentifier, allWhiteTextureIdentifier, Material, PbrMaterial, TextureIdentifier } from '../material'
+import { allBlackTextureIdentifier, allWhiteTextureIdentifier, defaultNormalTextureIdentifier, Material, PbrMaterial, TextureIdentifier } from '../material'
 import { SceneLoader } from './SceneLoader'
 
 export enum BufferTarget {
@@ -166,7 +166,7 @@ export class GltfAssetManager {
           material.albedoTexture = GltfAssetManager.parseTextureInfo(pbr.baseColorTexture) ?? allWhiteTextureIdentifier
           material.metallicRoughnessTexture = GltfAssetManager.parseTextureInfo(pbr.metallicRoughnessTexture) ?? allWhiteTextureIdentifier
         }
-        material.normalTexture = GltfAssetManager.parseTextureInfo(materialData.normalTexture as TextureInfo) ?? allWhiteTextureIdentifier
+        material.normalTexture = GltfAssetManager.parseTextureInfo(materialData.normalTexture as TextureInfo) ?? defaultNormalTextureIdentifier
         material.occlusionTexture = GltfAssetManager.parseTextureInfo(materialData.occlusionTexture as TextureInfo) ?? allWhiteTextureIdentifier
         material.emissiveTexture = GltfAssetManager.parseTextureInfo(materialData.emissiveTexture as TextureInfo) ?? allBlackTextureIdentifier
       }

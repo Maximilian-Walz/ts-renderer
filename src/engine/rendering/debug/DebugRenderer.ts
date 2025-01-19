@@ -141,6 +141,7 @@ export class DebugRenderer {
       return
     }
     const debugPass = commandEncoder.beginRenderPass({
+      label: 'Debug overlays',
       colorAttachments: [
         {
           view: this.context.getCurrentTexture().createView(),

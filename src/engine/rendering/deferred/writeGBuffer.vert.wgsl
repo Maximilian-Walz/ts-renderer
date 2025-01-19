@@ -23,14 +23,17 @@ struct VertexOutput {
 fn main(
   @location(0) position : vec4f,
   @location(1) normal : vec3f,
-  @location(2) tangent: vec3f,
+  @location(2) tangent: vec4f,
   @location(3) uv : vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
   let positionScreenSpace = (camera.viewProjectionMatrix * transform.modelMatrix * position);
+  var normalWorldSpace = transform.normalModelMatrix * vec4f(normal, 0.0);
+  var tangentWorldSpace = transform.normalModelMatrix * tangent;
+
   output.Position = positionScreenSpace;
-  output.fragNormal = normalize(transform.normalModelMatrix * vec4f(normal, 1.0)).xyz;
-  output.fragTangent = normalize(transform.normalModelMatrix * vec4f(tangent, 1.0)).xyz;
+  output.fragNormal = normalWorldSpace.xyz;
+  output.fragTangent = tangentWorldSpace.xyz;
   output.fragUV = uv;
   return output;
 }

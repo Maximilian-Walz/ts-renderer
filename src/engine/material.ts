@@ -37,15 +37,20 @@ export const allBlackTextureIdentifier = {
   texCoordId: 0,
 } as TextureIdentifier
 
+export const defaultNormalTextureIdentifier = {
+  textureId: '1x1_default_normal',
+  texCoordId: 0,
+} as TextureIdentifier
+
 export class PbrMaterial extends BasicMaterial {
   name?: string
   albedoTexture: TextureIdentifier = allWhiteTextureIdentifier
   metallicRoughnessTexture: TextureIdentifier = allWhiteTextureIdentifier
-  normalTexture: TextureIdentifier = allWhiteTextureIdentifier
+  normalTexture: TextureIdentifier = defaultNormalTextureIdentifier
   normalStrength: number = 1
   occlusionTexture: TextureIdentifier = allWhiteTextureIdentifier
   occlusionFactor: number = 1
-  emissiveTexture: TextureIdentifier = allWhiteTextureIdentifier
+  emissiveTexture: TextureIdentifier = allBlackTextureIdentifier
 
   static bindGroupLayout: GPUBindGroupLayout
   static bindGroupLayoutDescriptor: GPUBindGroupLayoutDescriptor = {
