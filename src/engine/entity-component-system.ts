@@ -1,4 +1,4 @@
-import { Component, ComponentType, NUM_OF_ENTITY_TYPES, TransformComponent } from './components/components'
+import { Component, ComponentType, NUM_OF_COMPONENT_TYPES, TransformComponent } from './components/components'
 
 export type EntityId = number
 type ArchetypeIndex = number
@@ -191,7 +191,7 @@ type ComponentRecord = {
 
 export class SimpleEcs implements EntityComponentSystem {
   // Maps a ComponentType to a list of entities that have it
-  private componentMap: ComponentRecord[][] = Array.from({ length: NUM_OF_ENTITY_TYPES }, () => [])
+  private componentMap: ComponentRecord[][] = Array.from({ length: NUM_OF_COMPONENT_TYPES }, () => [])
   private nextEntityIndex: number = 0
 
   private entityTree: EntityTree = {
@@ -276,7 +276,7 @@ export class SimpleEcs implements EntityComponentSystem {
   }
 
   clear() {
-    this.componentMap = Array.from({ length: NUM_OF_ENTITY_TYPES }, () => [])
+    this.componentMap = Array.from({ length: NUM_OF_COMPONENT_TYPES }, () => [])
     this.nextEntityIndex = 0
     this.entityTree.nodes.clear()
     this.entityTree.rootNodeIds = []

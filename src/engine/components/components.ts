@@ -1,13 +1,14 @@
 import { Mat4, Quat, Vec3, mat3, mat4, quat, vec3 } from 'wgpu-matrix'
 import { EntityId } from '../entity-component-system'
 
-export const NUM_OF_ENTITY_TYPES = 5
+export const NUM_OF_COMPONENT_TYPES = 6
 export enum ComponentType {
   TRANSFORM,
   CAMERA,
   MESH_RENDERER,
   LIGHT,
   AUTO_ROTATE,
+  CAMERA_CONTROLLER,
 }
 
 export abstract class Component {
@@ -331,5 +332,15 @@ export class AutoRotateComponent extends Component {
       axis: this.axis,
       speed: this.speed,
     }
+  }
+}
+
+export class CameraControllerComponent extends Component {
+  constructor() {
+    super(ComponentType.CAMERA_CONTROLLER)
+  }
+
+  toJson(): Object {
+    return {}
   }
 }

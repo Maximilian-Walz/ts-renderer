@@ -158,7 +158,6 @@ export class GPUDataInterface {
       layout: material.getBindGroupLayout()!,
       entries: Array.of(material.albedoTexture, material.metallicRoughnessTexture, material.normalTexture, material.occlusionTexture, material.emissiveTexture).flatMap(
         (textureIdentifier, i) => {
-          // TODO: ERROR: textureIdentifier should never be undefined here, since we set a fallback in GltfAssetManager::createMaterials
           const textureData = this.getTextureAndSampler(textureIdentifier!)
           return [
             {
@@ -267,7 +266,7 @@ export class GPUDataInterface {
     })
   }
 
-  public writeLightBuffers(lightsData: LightData[]) {
+  public writeLightBuffers(lightsData: LightData[], activeCamerData: CameraData) {
     lightsData.forEach(({ transform, light }) => {
       const viewMatrix = TransformComponent.calculateGlobalCameraTransform(transform)
       const invViewMatrix = mat4.inverse(viewMatrix)

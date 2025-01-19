@@ -1,6 +1,10 @@
 import React from 'react'
 import { LuLaptop2, LuMouse } from 'react-icons/lu'
-import { InputMode } from './Viewport'
+
+export enum InputMode {
+  MOUSE = 'Mouse',
+  TRACKPAD = 'Trackpad',
+}
 
 type Props = {
   currentInputMode: InputMode

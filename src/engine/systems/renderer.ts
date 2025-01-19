@@ -20,6 +20,13 @@ export type LightData = {
   light: LightComponent
 }
 
+export type SceneData = {
+  modelsData: ModelData[]
+  lightsData: LightData[]
+  camerasData: CameraData[]
+  activeCameraData?: CameraData
+}
+
 export type GPUTextureData = {
   texture: GPUTexture
   sampler: GPUSampler
@@ -65,43 +72,22 @@ export class Renderer {
     this.renderStrategy = new DeferredRenderer(this.device, this.gpuDataInterface, this.context)
   }
 
-  public prepareGpuBuffers() {
+  public prepareScene({ modelsData, lightsData, camerasData }: SceneData) {
     this.gpuDataInterface.prepareGpuBuffers()
-  }
-
-  public prepareGpuTextures() {
     this.gpuDataInterface.prepareGpuTextures()
-  }
-
-  public prepareTransforms(transforms: TransformComponent[]) {
-    this.gpuDataInterface.prepareTransforms(transforms)
-  }
-
-  public prepareMaterials() {
     this.gpuDataInterface.prepareMaterials()
+    this.gpuDataInterface.prepareTransforms(modelsData.map(({ transform }) => transform))
+    this.gpuDataInterface.prepareTransforms(lightsData.map(({ transform }) => transform))
+    this.gpuDataInterface.prepareLights(lightsData)
+    this.gpuDataInterface.prepareCameras(camerasData)
   }
 
-  public prepareLights(lightData: LightData[]) {
-    this.gpuDataInterface.prepareLights(lightData)
-  }
+  public render({ modelsData, lightsData, camerasData, activeCameraData }: SceneData) {
+    if (activeCameraData == undefined) {
+      console.warn('Scene has no active camera.')
+      return
+    }
 
-  public prepareCameras(cameraData: CameraData[]) {
-    this.gpuDataInterface.prepareCameras(cameraData)
-  }
-
-  public writeTransformBuffers(transforms: TransformComponent[]) {
-    this.gpuDataInterface.writeTransformBuffers(transforms)
-  }
-
-  public writeLightBuffers(lightData: LightData[]) {
-    this.gpuDataInterface.writeLightBuffers(lightData)
-  }
-
-  public writeCamraBuffers(cameraData: CameraData[]) {
-    this.gpuDataInterface.writeCamraBuffers(cameraData, this.canvas.clientWidth, this.canvas.clientHeight)
-  }
-
-  public render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData) {
     const currentWidth = this.canvas.clientWidth
     const currentHeight = this.canvas.clientHeight
     if (currentWidth !== this.canvas.width || currentHeight !== this.canvas.height) {
@@ -109,6 +95,11 @@ export class Renderer {
       this.canvas.height = currentHeight
     }
 
-    this.renderStrategy.render(modelsData, lightsData, cameraData)
+    this.gpuDataInterface.writeTransformBuffers(modelsData.map(({ transform }) => transform))
+    this.gpuDataInterface.writeTransformBuffers(lightsData.map(({ transform }) => transform))
+    this.gpuDataInterface.writeLightBuffers(lightsData, activeCameraData)
+    this.gpuDataInterface.writeCamraBuffers(camerasData, currentWidth, currentHeight)
+
+    this.renderStrategy.render(modelsData, lightsData, activeCameraData)
   }
 }
