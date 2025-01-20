@@ -16,7 +16,7 @@ fn main(
   let depth = textureLoad(gBufferDepth, vec2i(floor(coord.xy)), 0);
 
   // Use for debugging:
-  let normal = loadGBufferTexture(gBufferNormal, coord).xyz;
+  //let normal = loadGBufferTexture(gBufferNormal, coord).xyz;
   // let orm = loadGBufferTexture(gBufferORM, coord).rgb;
   // let occlusion = orm.x;
   // let roughness = orm.y;
