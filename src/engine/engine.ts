@@ -85,8 +85,8 @@ export class Engine {
       lightsData: lights.map((light) => {
         return { transform: light[0], light: light[1] }
       }),
-      camerasData: cameras.map((light) => {
-        return { transform: light[0], camera: light[1] }
+      camerasData: cameras.map((camera) => {
+        return { transform: camera[0], camera: camera[1] }
       }),
       activeCameraData: activeCamera ? { transform: activeCamera[0], camera: activeCamera[1] } : undefined,
     }

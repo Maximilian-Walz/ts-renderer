@@ -7,7 +7,7 @@ import {
   VertexAttributeType,
   getBufferDataTypeByteCount,
 } from '../../components/components'
-import { CameraData, LightData, ModelData } from '../../systems/Renderer'
+import { CameraData, LightData, ModelData, SceneData } from '../../systems/Renderer'
 import { RenderStrategy } from '../RenderStrategy'
 
 import { GPUDataInterface } from '../../GPUDataInterface'
@@ -302,14 +302,16 @@ export class DeferredRenderer implements RenderStrategy {
     deferredRenderingPass.end()
   }
 
-  public render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData): void {
+  public render({ modelsData, lightsData, camerasData, activeCameraData }: SceneData): void {
+    if (!activeCameraData) return
+
     const commandEncoder = this.device.createCommandEncoder()
 
-    lightsData.filter(({ light }) => light.castsShadow).forEach((lightData) => this.shadowMapper.renderShadowMap(commandEncoder, modelsData, lightData, cameraData))
-    this.writeGBuffer(commandEncoder, modelsData, cameraData)
-    this.doShading(commandEncoder, lightsData, cameraData)
+    lightsData.filter(({ light }) => light.castsShadow).forEach((lightData) => this.shadowMapper.renderShadowMap(commandEncoder, modelsData, lightData, activeCameraData))
+    this.writeGBuffer(commandEncoder, modelsData, activeCameraData)
+    this.doShading(commandEncoder, lightsData, activeCameraData)
 
-    this.debugRenderer.renderDebugOverlay(commandEncoder, this.gBuffer.getDepthAttachment().view, lightsData, [cameraData], cameraData)
+    this.debugRenderer.renderDebugOverlay(commandEncoder, this.gBuffer.getDepthAttachment().view, lightsData, camerasData, activeCameraData)
 
     this.device.queue.submit([commandEncoder.finish()])
   }

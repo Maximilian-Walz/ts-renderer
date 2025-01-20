@@ -80,7 +80,7 @@ export class GraphicEditor {
   }
 
   setActiveCamera(cameraEntityId: number) {
-    this.setActiveCamera(cameraEntityId)
+    this.engine.setActiveCamera(cameraEntityId)
     // TODO: Clone camera data to editorCam (to mirror Blenders camera behaviour, when moving inside a scene camera)
   }
 }

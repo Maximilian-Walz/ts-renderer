@@ -22,11 +22,9 @@ export class DebugRenderer {
     const billboardBindGroupLayout = this.createBillboardBindGroupLayout()
     this.pipeline = this.createPipeline([CameraComponent.bindGroupLayout, TransformComponent.bindGroupLayout, billboardBindGroupLayout])
 
-    const billboardTextureIdentifiers = ['lightbulb', 'sun']
+    const billboardTextureIdentifiers = ['lightbulb', 'sun', 'camera']
     this.billboardBindGroups = new Map()
-    billboardTextureIdentifiers.forEach((textureIdentifier) =>
-      this.billboardBindGroups.set(textureIdentifier, this.createBillboardBindGroup(billboardBindGroupLayout, textureIdentifier))
-    )
+    billboardTextureIdentifiers.forEach((textureId) => this.billboardBindGroups.set(textureId, this.createBillboardBindGroup(billboardBindGroupLayout, textureId)))
   }
 
   private createQuadBuffer() {
@@ -119,8 +117,8 @@ export class DebugRenderer {
     })
   }
 
-  private createBillboardBindGroup(billboardBindGroupLayout: GPUBindGroupLayout, textureIndentifier: string): GPUBindGroup {
-    let textureData = this.gpuDataInterface.getStaticTextureData(textureIndentifier)
+  private createBillboardBindGroup(billboardBindGroupLayout: GPUBindGroupLayout, textureId: string): GPUBindGroup {
+    let textureData = this.gpuDataInterface.getStaticTextureData(textureId)
     return this.device.createBindGroup({
       layout: billboardBindGroupLayout,
       entries: [
@@ -158,9 +156,10 @@ export class DebugRenderer {
 
     debugPass.setPipeline(this.pipeline)
     debugPass.setBindGroup(0, activeCamera.camera.bindGroup!)
-    lightsData.forEach((lightData) => {
-      const textureIdentifier = (() => {
-        switch (lightData.light.lightType) {
+    debugPass.setVertexBuffer(0, this.quadBuffer)
+    lightsData.forEach(({ transform, light }) => {
+      const textureId = (() => {
+        switch (light.lightType) {
           case LightType.SUN:
             return 'sun'
           case LightType.POINT:
@@ -169,12 +168,17 @@ export class DebugRenderer {
             return 'lightbulb'
         }
       })()
-
-      debugPass.setBindGroup(2, this.billboardBindGroups.get(textureIdentifier)!)
-      debugPass.setBindGroup(1, lightData.transform.bindGroup!)
-      debugPass.setVertexBuffer(0, this.quadBuffer)
-      debugPass.draw(4)
+      this.renderForTransformAndTextureIdentifier(debugPass, transform, textureId)
+    })
+    camerasData.forEach(({ transform }) => {
+      this.renderForTransformAndTextureIdentifier(debugPass, transform, 'camera')
     })
     debugPass.end()
+  }
+
+  private renderForTransformAndTextureIdentifier(renderPass: GPURenderPassEncoder, transform: TransformComponent, textureId: string) {
+    renderPass.setBindGroup(2, this.billboardBindGroups.get(textureId)!)
+    renderPass.setBindGroup(1, transform.bindGroup!)
+    renderPass.draw(4)
   }
 }

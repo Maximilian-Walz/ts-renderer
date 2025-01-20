@@ -238,7 +238,7 @@ export class CameraComponent extends Component {
 
   bindGroup: GPUBindGroup | undefined
   static bindGroupLayout: GPUBindGroupLayout
-  viewProjectionsBuffer: GPUBuffer | undefined
+  matricesBuffer: GPUBuffer | undefined
 
   constructor(cameraType: CameraType, data: PerspectiveData | OrthographicData, zNear?: number, zFar?: number) {
     super(ComponentType.CAMERA)

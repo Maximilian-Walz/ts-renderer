@@ -1,5 +1,5 @@
-import { CameraData, LightData, ModelData } from '../systems/Renderer'
+import { SceneData } from '../systems/Renderer'
 
 export interface RenderStrategy {
-  render(modelsData: ModelData[], lightsData: LightData[], cameraData: CameraData): void
+  render(sceneData: SceneData): void
 }

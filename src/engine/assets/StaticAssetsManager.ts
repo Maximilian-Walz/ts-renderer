@@ -31,6 +31,7 @@ export class StaticAssetManager {
     await this.loadTextureData('1x1_default_normal', '/assets/textures/1x1_default_normal.png', device, basicSampler)
     await this.loadTextureData('lightbulb', '/assets/textures/lightbulb.png', device, smoothSampler)
     await this.loadTextureData('sun', '/assets/textures/sun.png', device, smoothSampler)
+    await this.loadTextureData('camera', '/assets/textures/camera.png', device, smoothSampler)
   }
 
   private async loadTextureData(identifier: string, url: string, device: GPUDevice, sampler?: GPUSampler) {

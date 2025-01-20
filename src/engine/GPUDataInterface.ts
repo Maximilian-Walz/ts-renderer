@@ -240,7 +240,7 @@ export class GPUDataInterface {
 
   public prepareCameras(cameraData: CameraData[]) {
     cameraData.forEach(({ camera }) => {
-      camera.viewProjectionsBuffer = this.device.createBuffer({
+      camera.matricesBuffer = this.device.createBuffer({
         size: 256,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       })
@@ -249,7 +249,7 @@ export class GPUDataInterface {
         entries: [
           {
             binding: 0,
-            resource: { buffer: camera.viewProjectionsBuffer },
+            resource: { buffer: camera.matricesBuffer },
           },
         ],
       })
@@ -292,11 +292,11 @@ export class GPUDataInterface {
       const viewMatrix = TransformComponent.calculateGlobalCameraTransform(transform)
       const viewProjectionMatrix = mat4.multiply(projectionMatrix, viewMatrix)
 
-      this.device.queue.writeBuffer(camera.viewProjectionsBuffer!, 0, viewProjectionMatrix.buffer, viewProjectionMatrix.byteOffset, viewProjectionMatrix.byteLength)
+      this.device.queue.writeBuffer(camera.matricesBuffer!, 0, viewProjectionMatrix.buffer, viewProjectionMatrix.byteOffset, viewProjectionMatrix.byteLength)
       const cameraInvViewProj = mat4.invert(viewProjectionMatrix)
-      this.device.queue.writeBuffer(camera.viewProjectionsBuffer!, 64, cameraInvViewProj.buffer, cameraInvViewProj.byteOffset, cameraInvViewProj.byteLength)
-      this.device.queue.writeBuffer(camera.viewProjectionsBuffer!, 128, viewMatrix.buffer, viewMatrix.byteOffset, viewMatrix.byteLength)
-      this.device.queue.writeBuffer(camera.viewProjectionsBuffer!, 192, projectionMatrix.buffer, projectionMatrix.byteOffset, projectionMatrix.byteLength)
+      this.device.queue.writeBuffer(camera.matricesBuffer!, 64, cameraInvViewProj.buffer, cameraInvViewProj.byteOffset, cameraInvViewProj.byteLength)
+      this.device.queue.writeBuffer(camera.matricesBuffer!, 128, viewMatrix.buffer, viewMatrix.byteOffset, viewMatrix.byteLength)
+      this.device.queue.writeBuffer(camera.matricesBuffer!, 192, projectionMatrix.buffer, projectionMatrix.byteOffset, projectionMatrix.byteLength)
     })
   }
 
