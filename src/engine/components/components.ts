@@ -71,19 +71,10 @@ export class TransformComponent extends Component {
     }
   }
 
-  static calculateGlobalCameraTransform(transform: TransformComponent): Mat4 {
-    if (transform.parent != undefined) {
-      return mat4.multiply(transform.toMatrix(), this.calculateGlobalTransform(transform.parent))
-    } else {
-      return transform.toMatrix()
-    }
-  }
-
   toMatrix() {
-    const matrix = mat4.fromQuat(this.rotation)
-    matrix[12] = this.position[0]
-    matrix[13] = this.position[1]
-    matrix[14] = this.position[2]
+    const rotation = mat4.fromQuat(this.rotation)
+    const translation = mat4.translation(this.position)
+    const matrix = mat4.mul(translation, rotation)
     mat4.scale(matrix, this.scale, matrix)
     return matrix
   }

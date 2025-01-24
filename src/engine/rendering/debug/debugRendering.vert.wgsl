@@ -24,7 +24,7 @@ fn main(@location(0) position : vec4f) -> Output {
     let size = 4.0;
 
     var output : Output;
-    let viewPos = camera.viewMatrix * transpose(trasform.normalModelMatrix) * vec4f(0, 0, 0, 1);
+    let viewPos = camera.viewMatrix * trasform.modelMatrix * vec4f(0, 0, 0, 1);
     let dist = -viewPos.z * size / 100;
     output.position = camera.projectionMatrix * (viewPos + vec4f(position.xy * dist, 0, 0));
 

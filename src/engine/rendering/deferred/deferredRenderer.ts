@@ -298,7 +298,7 @@ export class DeferredRenderer implements RenderStrategy {
     // For now, sun light <=> has shadow map
     this.doAmbient(deferredRenderingPass)
     this.doShadingForLightType(deferredRenderingPass, this.deferredPointLightRenderPipeline, pointLightsData, cameraData)
-    this.doShadingForLightType(deferredRenderingPass, this.deferredSunLightRenderPipeline, sunLightsData, cameraData)
+    //this.doShadingForLightType(deferredRenderingPass, this.deferredSunLightRenderPipeline, sunLightsData, cameraData)
     deferredRenderingPass.end()
   }
 

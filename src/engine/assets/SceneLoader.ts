@@ -6,6 +6,8 @@ import {
   BufferDataType,
   CameraComponent,
   CameraType,
+  LightComponent,
+  LightType,
   MeshRendererComponent,
   PrimitiveRenderData,
   TransformComponent,
@@ -53,12 +55,35 @@ export class SceneLoader {
     const entityId = this.ecs.createEntity(transformComponent)
     if (node.mesh != undefined) this.loadMesh(entityId, node.mesh)
     if (node.camera != undefined) this.loadCamera(entityId, node.camera)
+    if (node.extensions != undefined) this.loadExtensions(entityId, node.extensions)
     if (node.children != undefined) node.children.forEach((childIndex: number) => this.loadNode(childIndex, transformComponent))
 
     // Add auto rotator to mesh renderer components for debugging purposes
     if (node.mesh != undefined) {
       //ecs.addComponentToEntity(entityId, new AutoRotateComponent(vec3.fromValues(0, 1, 0), 10))
     }
+  }
+
+  private loadExtensions(entityId: EntityId, extensions: any) {
+    if (extensions.KHR_lights_punctual != undefined) this.loadLights(entityId, extensions.KHR_lights_punctual.light)
+  }
+
+  private loadLights(entityId: EntityId, lightIndex: number) {
+    const light = this.gltf.extensions.KHR_lights_punctual.lights[lightIndex]
+
+    let type: LightType
+    switch (light.type) {
+      case 'directional':
+        type = LightType.SUN
+        break
+      case 'pont':
+        type = LightType.POINT
+      default:
+        type = LightType.POINT
+    }
+
+    const lightComponent = new LightComponent(light.color, 2, type, type == LightType.SUN)
+    this.ecs.addComponentToEntity(entityId, lightComponent)
   }
 
   private loadCamera(entityId: EntityId, cameraIndex: number) {

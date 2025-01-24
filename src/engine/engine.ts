@@ -122,8 +122,8 @@ export class Engine {
       this.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(0.1, 0.1, -0.1))),
       new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 5.0, LightType.POINT, false)
     )
-    const sunTransform = TransformComponent.fromValues(vec3.fromValues(0.0, 0.0, -20.0))
-    quat.mul(sunTransform.rotation, quat.fromAxisAngle(vec3.fromValues(1.0, 0.0, 0.0), Math.PI / 2), sunTransform.rotation)
+    const sunRot = quat.fromAxisAngle(vec3.fromValues(1.0, 0.0, 0.0), -Math.PI / 2)
+    const sunTransform = TransformComponent.fromValues(vec3.fromValues(0.0, 20.0, 0), sunRot, undefined, undefined)
     this.ecs.addComponentToEntity(this.ecs.createEntity(sunTransform), new LightComponent(vec3.fromValues(1.0, 1.0, 1.0), 2.0, LightType.SUN, true))
   }
 

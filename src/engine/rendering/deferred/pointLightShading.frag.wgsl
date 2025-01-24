@@ -61,6 +61,7 @@ fn main(
   if (depth >= 1.0) {
     discard;
   }
+
   
   let bufferSize = textureDimensions(gBufferDepth);
   let uv = coord.xy / vec2f(bufferSize);

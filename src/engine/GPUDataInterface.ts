@@ -268,19 +268,19 @@ export class GPUDataInterface {
 
   public writeLightBuffers(lightsData: LightData[], activeCamerData: CameraData) {
     lightsData.forEach(({ transform, light }) => {
-      const viewMatrix = TransformComponent.calculateGlobalCameraTransform(transform)
-      const invViewMatrix = mat4.inverse(viewMatrix)
+      const viewMatrix = TransformComponent.calculateGlobalTransform(transform)
+      const invViewMatrix = mat4.invert(viewMatrix)
 
       let firstEntry
       switch (light.lightType) {
         case LightType.SUN:
-          firstEntry = vec4.transformMat4(vec4.fromValues(0.0, 0.0, 1.0, 0.0), invViewMatrix)
+          firstEntry = vec4.transformMat4(vec4.fromValues(0.0, 0.0, 1.0, 0.0), viewMatrix)
         default:
-          firstEntry = vec4.transformMat4(vec4.fromValues(0.0, 0.0, 0.0, 1.0), invViewMatrix)
+          firstEntry = vec4.transformMat4(vec4.fromValues(0.0, 0.0, 0.0, 1.0), viewMatrix)
           break
       }
 
-      const viewProjectionMatrix = mat4.multiply(light.getProjection(), viewMatrix)
+      const viewProjectionMatrix = mat4.multiply(light.getProjection(), invViewMatrix)
       const lightBaseData = new Float32Array([...firstEntry, ...viewProjectionMatrix, ...light.color, light.power])
       this.device.queue.writeBuffer(light.buffer!, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
     })
@@ -289,14 +289,13 @@ export class GPUDataInterface {
   public writeCamraBuffers(cameraData: CameraData[], canvasWidth: number, canvasHeight: number) {
     cameraData.forEach(({ transform, camera }) => {
       const projectionMatrix = camera.getProjection(canvasWidth, canvasHeight)
-      const viewMatrix = TransformComponent.calculateGlobalCameraTransform(transform)
-      const viewProjectionMatrix = mat4.multiply(projectionMatrix, viewMatrix)
+      const viewMatrix = TransformComponent.calculateGlobalTransform(transform)
+      const invViewMatrix = mat4.invert(viewMatrix)
+      const viewProjectionMatrix = mat4.multiply(projectionMatrix, invViewMatrix)
+      const invViewProjectionMatrix = mat4.mul(viewMatrix, mat4.invert(projectionMatrix))
 
-      this.device.queue.writeBuffer(camera.matricesBuffer!, 0, viewProjectionMatrix.buffer, viewProjectionMatrix.byteOffset, viewProjectionMatrix.byteLength)
-      const cameraInvViewProj = mat4.invert(viewProjectionMatrix)
-      this.device.queue.writeBuffer(camera.matricesBuffer!, 64, cameraInvViewProj.buffer, cameraInvViewProj.byteOffset, cameraInvViewProj.byteLength)
-      this.device.queue.writeBuffer(camera.matricesBuffer!, 128, viewMatrix.buffer, viewMatrix.byteOffset, viewMatrix.byteLength)
-      this.device.queue.writeBuffer(camera.matricesBuffer!, 192, projectionMatrix.buffer, projectionMatrix.byteOffset, projectionMatrix.byteLength)
+      const cameraMatrices = new Float32Array([...viewProjectionMatrix, ...invViewProjectionMatrix, ...invViewMatrix, ...projectionMatrix])
+      this.device.queue.writeBuffer(camera.matricesBuffer!, 0, cameraMatrices.buffer, cameraMatrices.byteOffset, cameraMatrices.byteLength)
     })
   }
 

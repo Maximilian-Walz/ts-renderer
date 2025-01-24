@@ -29,34 +29,32 @@ export class CameraController {
   }
 
   private applyCameraPan(transform: TransformComponent) {
-    const currentMatrix = transform.toMatrix()
-    const cameraX = mat4.getAxis(mat4.transpose(currentMatrix), 0)
-    const cameraZ = mat4.getAxis(mat4.transpose(currentMatrix), 1)
+    const currentMatrix = transform.parent!.toMatrix()
+    const cameraX = mat4.getAxis(currentMatrix, 0)
+    const cameraZ = mat4.getAxis(currentMatrix, 1)
 
     const target = transform.parent!.position
-    const scale = 1 / (transform.scale[0] * transform.scale[0] * 1000)
-    vec3.add(target, vec3.scale(cameraX, this.inputManager.mouseDeltaX * scale), target)
-    vec3.add(target, vec3.scale(cameraZ, -this.inputManager.mouseDeltaY * scale), target)
+    const scale = transform.position[2] / 1000
+    vec3.addScaled(target, cameraX, -this.inputManager.mouseDeltaX * scale, target)
+    vec3.addScaled(target, cameraZ, this.inputManager.mouseDeltaY * scale, target)
   }
 
   private applyCameraRotation(transform: TransformComponent) {
-    const angleY = utils.degToRad(this.inputManager.mouseDeltaX / 2)
-    const angleX = utils.degToRad(this.inputManager.mouseDeltaY / 2)
-    const rotation = transform.rotation
+    const angleY = -utils.degToRad(this.inputManager.mouseDeltaX / 2)
+    const angleX = -utils.degToRad(this.inputManager.mouseDeltaY / 2)
+    const target = transform.parent!.rotation
 
-    // Get current camera x-axis
-    const axis = mat4.getAxis(mat4.transpose(transform.toMatrix()), 0)
-    vec3.normalize(axis, axis)
-    const rotQuat = quat.fromAxisAngle(axis, angleX)
-    quat.mul(rotation, rotQuat, rotation)
-    quat.rotateY(rotation, angleY, rotation)
-    quat.normalize(rotation, rotation)
+    const axis = mat4.getAxis(mat4.transpose(transform.parent!.toMatrix()), 1)
+    const rotQuat = quat.fromAxisAngle(axis, angleY)
+    quat.mul(target, rotQuat, target)
+    quat.rotateX(target, angleX, target)
+    quat.normalize(target, target)
   }
 
   private applyCameraScale(transform: TransformComponent) {
-    const factor = -this.inputManager.touchpadPinchDelta / 100 + 1
-    const scale = transform.scale
-    vec3.scale(scale, factor, scale)
-    vec3.clamp(scale, 0.0001, 10, scale)
+    const scale = this.inputManager.touchpadPinchDelta / 2
+
+    vec3.addScaled(transform.position, vec3.fromValues(0, 0, 1), scale, transform.position)
+    vec3.clamp(transform.position, 0.001, 100, transform.position)
   }
 }
