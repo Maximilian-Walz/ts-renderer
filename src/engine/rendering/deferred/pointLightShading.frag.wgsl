@@ -55,13 +55,12 @@ fn schlickFresnel(vDotH: f32, color: vec3f, metallic: f32) -> vec3f {
 fn main(
   @builtin(position) coord : vec4f
 ) -> @location(0) vec4f {
-  let depth = textureLoad(gBufferDepth, vec2i(floor(coord.xy)), 0);
+  let depth = textureLoad(gBufferDepth, vec2i(floor(coord.xy)), 0); 
 
   // Background
   if (depth >= 1.0) {
     discard;
   }
-
   
   let bufferSize = textureDimensions(gBufferDepth);
   let uv = coord.xy / vec2f(bufferSize);

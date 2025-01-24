@@ -27,7 +27,7 @@ fn main(
   @location(3) uv : vec2f
 ) -> VertexOutput {
   var output : VertexOutput;
-  let positionScreenSpace = (camera.viewProjectionMatrix * transform.modelMatrix * position);
+  let positionScreenSpace = camera.viewProjectionMatrix * transform.modelMatrix * position;
   var normalWorldSpace = transform.normalModelMatrix * vec4f(normal, 0.0);
   var tangentWorldSpace = transform.normalModelMatrix * tangent;
 
