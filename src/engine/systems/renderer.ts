@@ -77,10 +77,10 @@ export class Renderer {
     this.gpuDataInterface.prepareGpuTextures()
     this.gpuDataInterface.prepareMaterials()
     this.gpuDataInterface.prepareTransforms(modelsData.map(({ transform }) => transform))
-    this.gpuDataInterface.prepareTransforms(lightsData.map(({ transform }) => transform))
     this.gpuDataInterface.prepareTransforms(camerasData.map(({ transform }) => transform))
-    this.gpuDataInterface.prepareLights(lightsData)
+    this.gpuDataInterface.prepareTransforms(lightsData.map(({ transform }) => transform))
     this.gpuDataInterface.prepareCameras(camerasData)
+    this.gpuDataInterface.prepareLights(lightsData)
   }
 
   public render(sceneData: SceneData) {
@@ -98,10 +98,10 @@ export class Renderer {
     }
 
     this.gpuDataInterface.writeTransformBuffers(modelsData.map(({ transform }) => transform))
-    this.gpuDataInterface.writeTransformBuffers(lightsData.map(({ transform }) => transform))
     this.gpuDataInterface.writeTransformBuffers(camerasData.map(({ transform }) => transform))
-    this.gpuDataInterface.writeLightBuffers(lightsData, activeCameraData)
+    this.gpuDataInterface.writeTransformBuffers(lightsData.map(({ transform }) => transform))
     this.gpuDataInterface.writeCamraBuffers(camerasData, currentWidth, currentHeight)
+    this.gpuDataInterface.writeLightBuffers(lightsData, activeCameraData)
 
     this.renderStrategy.render(sceneData)
   }

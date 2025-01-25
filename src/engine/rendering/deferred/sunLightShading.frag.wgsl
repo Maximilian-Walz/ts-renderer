@@ -5,6 +5,8 @@ const PCF_OFFSET = 0.0002;
 struct Camera {
     viewProjectionMatrix : mat4x4f,
     invViewProjectionMatrix : mat4x4f,
+    viewMatrix: mat4x4f,
+    projectionMatrix: mat4x4f,
 }
 
 struct Light {

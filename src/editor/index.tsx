@@ -43,7 +43,7 @@ export class GraphicEditor {
   private addEditorCamera() {
     let targetTransform = new TransformComponent()
     const editorCameraId = this.engine.ecs.createEntity(TransformComponent.fromValues(vec3.fromValues(0, 0, 10), undefined, undefined, targetTransform))
-    this.engine.ecs.addComponentToEntity(editorCameraId, new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1, 1000))
+    this.engine.ecs.addComponentToEntity(editorCameraId, new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1, 100))
     this.engine.ecs.addComponentToEntity(editorCameraId, new CameraControllerComponent())
     this.engine.setActiveCamera(editorCameraId)
   }

@@ -1,4 +1,4 @@
-import { BufferDataComponentType, LightComponent, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
+import { BufferDataComponentType, CameraComponent, LightComponent, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
 import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { ShadowMapper } from './ShadowMapper'
@@ -16,7 +16,7 @@ export class SunLightShadowMapper extends ShadowMapper {
     return this.device.createRenderPipeline({
       label: 'Shadow mapping',
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [LightComponent.shadowMappingBindGroupLayout, TransformComponent.bindGroupLayout],
+        bindGroupLayouts: [LightComponent.shadowMappingBindGroupLayout, CameraComponent.bindGroupLayout, TransformComponent.bindGroupLayout],
       }),
       vertex: {
         module: this.device.createShaderModule({
@@ -64,12 +64,13 @@ export class SunLightShadowMapper extends ShadowMapper {
     })
     shadowPass.setPipeline(this.shadowPipeline)
     shadowPass.setBindGroup(0, lightData.light.shadowMappingBindGroup!)
+    shadowPass.setBindGroup(1, cameraData.camera.bindGroup!)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
       if (transform.matricesBuffer == undefined) {
         return
       }
-      shadowPass.setBindGroup(1, transform.bindGroup!)
+      shadowPass.setBindGroup(2, transform.bindGroup!)
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
         shadowPass.setIndexBuffer(this.gpuDataInterface.getBuffer(primitiveRenderData.indexBufferAccessor.bufferIndex), type)

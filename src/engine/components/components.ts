@@ -1,4 +1,4 @@
-import { Mat4, Quat, Vec3, mat3, mat4, quat, vec3 } from 'wgpu-matrix'
+import { Mat4, Quat, Vec3, mat3, mat4, quat, vec3, vec4 } from 'wgpu-matrix'
 import { EntityId } from '../entity-component-system'
 
 export const NUM_OF_COMPONENT_TYPES = 6
@@ -226,6 +226,7 @@ export class CameraComponent extends Component {
   data: PerspectiveData | OrthographicData
   zNear: number
   zFar: number
+  invViewProjection?: Mat4
 
   bindGroup: GPUBindGroup | undefined
   static bindGroupLayout: GPUBindGroupLayout
@@ -293,8 +294,34 @@ export class LightComponent extends Component {
     this.castsShadow = castsShadow ?? false
   }
 
-  getProjection(): Mat4 {
-    return mat4.ortho(-10, 10, -10, 10, 0.1, 100)
+  getProjection(invCameraViewProjection: Mat4, lightViewMatrix: Mat4): Mat4 {
+    const frustumCorners = [
+      vec4.fromValues(-1, -1, 0, 1),
+      vec4.fromValues(-1, 1, 0, 1),
+      vec4.fromValues(1, -1, 0, 1),
+      vec4.fromValues(1, 1, 0, 1),
+      vec4.fromValues(-1, -1, 1, 1),
+      vec4.fromValues(-1, 1, 1, 1),
+      vec4.fromValues(1, -1, 1, 1),
+      vec4.fromValues(1, 1, 1, 1),
+    ]
+
+    let minX = Number.MAX_VALUE,
+      maxX = -Number.MAX_VALUE,
+      minY = Number.MAX_VALUE,
+      maxY = -Number.MAX_VALUE
+    const cornerProjection = mat4.mul(lightViewMatrix, invCameraViewProjection)
+    frustumCorners.forEach((corner) => {
+      vec4.transformMat4(corner, cornerProjection, corner)
+      vec4.divScalar(corner, corner[3], corner)
+      minX = Math.min(corner[0], minX)
+      maxX = Math.max(corner[0], maxX)
+      minY = Math.min(corner[1], minY)
+      maxY = Math.max(corner[1], maxY)
+    })
+    // TODO: Implement Cascaded Shadow Maps (CSMs)?
+    // TODO: Use scene AABB in combinatin with frustum to calculate tight near and far planes
+    return mat4.ortho(minX, maxX, minY, maxY, 0.1, 100)
   }
 
   toJson(): Object {

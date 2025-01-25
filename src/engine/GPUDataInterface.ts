@@ -280,7 +280,12 @@ export class GPUDataInterface {
           break
       }
 
-      const viewProjectionMatrix = mat4.multiply(light.getProjection(), invViewMatrix)
+      const cameraInvViewProjection = activeCamerData.camera.invViewProjection
+      if (cameraInvViewProjection == undefined) {
+        throw 'Camera projection needed for shadow map projection calculation. Compute camera matrices before light matrices.'
+      }
+
+      const viewProjectionMatrix = mat4.mul(light.getProjection(cameraInvViewProjection, invViewMatrix), invViewMatrix)
       const lightBaseData = new Float32Array([...firstEntry, ...viewProjectionMatrix, ...light.color, light.power])
       this.device.queue.writeBuffer(light.buffer!, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
     })
@@ -291,8 +296,12 @@ export class GPUDataInterface {
       const projectionMatrix = camera.getProjection(canvasWidth, canvasHeight)
       const viewMatrix = TransformComponent.calculateGlobalTransform(transform)
       const invViewMatrix = mat4.invert(viewMatrix)
-      const viewProjectionMatrix = mat4.multiply(projectionMatrix, invViewMatrix)
-      const invViewProjectionMatrix = mat4.mul(viewMatrix, mat4.invert(projectionMatrix))
+      const viewProjectionMatrix = mat4.mul(projectionMatrix, invViewMatrix)
+      const invProjectionMatrix = mat4.invert(projectionMatrix)
+      const invViewProjectionMatrix = mat4.mul(viewMatrix, invProjectionMatrix)
+
+      // Needed for shadow mapping projection
+      camera.invViewProjection = invViewProjectionMatrix
 
       const cameraMatrices = new Float32Array([...viewProjectionMatrix, ...invViewProjectionMatrix, ...invViewMatrix, ...projectionMatrix])
       this.device.queue.writeBuffer(camera.matricesBuffer!, 0, cameraMatrices.buffer, cameraMatrices.byteOffset, cameraMatrices.byteLength)
