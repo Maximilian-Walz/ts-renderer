@@ -1,12 +1,4 @@
-import {
-  BufferDataComponentType,
-  CameraComponent,
-  LightComponent,
-  LightType,
-  TransformComponent,
-  VertexAttributeType,
-  getBufferDataTypeByteCount,
-} from '../../components/components'
+import { BufferDataComponentType, CameraComponent, LightComponent, LightType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components'
 import { CameraData, LightData, ModelData, SceneData } from '../../systems/Renderer'
 import { RenderStrategy } from '../RenderStrategy'
 

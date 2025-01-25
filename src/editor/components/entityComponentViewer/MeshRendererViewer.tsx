@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import { LuBox } from 'react-icons/lu'
-import { ComponentType, MeshRendererComponent } from '../../../engine/components/components'
+import { ComponentType, MeshRendererComponent } from '../../../engine/components'
 import { EditorContext } from '../Editor'
 import { LabelInput } from '../data/LabelInput'
 import { ComponentViewer } from './ComponentViewer'

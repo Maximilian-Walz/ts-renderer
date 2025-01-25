@@ -1,4 +1,4 @@
-import { CameraComponent, LightType, TransformComponent } from '../../components/components'
+import { CameraComponent, LightType, TransformComponent } from '../../components'
 import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData } from '../../systems/Renderer'
 import debugOverlayFrag from './debugRendering.frag.wgsl'

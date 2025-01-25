@@ -1,5 +1,5 @@
 import { mat4, quat, utils, vec3 } from 'wgpu-matrix'
-import { CameraControllerComponent, TransformComponent } from '../components/components'
+import { CameraControllerComponent, TransformComponent } from '../components'
 import { InputManager } from '../InputManager'
 
 type ControlledEntity = {

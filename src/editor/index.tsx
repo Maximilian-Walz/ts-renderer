@@ -1,7 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { vec3 } from 'wgpu-matrix'
-import { CameraComponent, CameraControllerComponent, CameraType, ComponentType, TransformComponent } from '../engine/components/components'
+import { CameraComponent, CameraControllerComponent, CameraType, ComponentType, TransformComponent } from '../engine/components'
 import { Engine, Scene } from '../engine/Engine'
 import { EntityNode } from '../engine/entity-component-system'
 import { Editor } from './components/Editor'

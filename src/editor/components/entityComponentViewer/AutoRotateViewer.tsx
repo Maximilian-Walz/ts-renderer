@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import { LuAxis3D, LuRotateCw } from 'react-icons/lu'
-import { AutoRotateComponent, ComponentType } from '../../../engine/components/components'
+import { AutoRotateComponent, ComponentType } from '../../../engine/components'
 import { EditorContext } from '../Editor'
 import { NumberInput } from '../data/NumberInput'
 import { VectorInput } from '../data/VectorInput'

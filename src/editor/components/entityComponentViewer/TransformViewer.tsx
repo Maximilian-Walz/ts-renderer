@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import { LuAxis3D, LuMove3D, LuRotate3D, LuScale3D } from 'react-icons/lu'
-import { ComponentType, TransformComponent } from '../../../engine/components/components'
+import { ComponentType, TransformComponent } from '../../../engine/components'
 import { EditorContext } from '../Editor'
 import { LabelInput } from '../data/LabelInput'
 import { VectorInput } from '../data/VectorInput'

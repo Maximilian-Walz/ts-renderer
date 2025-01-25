@@ -1,5 +1,5 @@
 import { GUI } from 'dat.gui'
-import { CameraComponent } from './components/components'
+import { CameraComponent } from './components'
 
 class Float3 {
   x: number = 0

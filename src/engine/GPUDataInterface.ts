@@ -1,7 +1,7 @@
 import { mat4, vec4 } from 'wgpu-matrix'
 import { BufferTarget, GltfAssetManager } from './assets/GltfAssetManager'
 import { StaticAssetManager } from './assets/StaticAssetsManager'
-import { CameraComponent, LightComponent, LightType, TransformComponent } from './components/components'
+import { CameraComponent, LightComponent, LightType, TransformComponent } from './components'
 import { BasicMaterial, Material, PbrMaterial, TextureIdentifier } from './material'
 import { CameraData, GPUTextureData, LightData } from './systems/Renderer'
 

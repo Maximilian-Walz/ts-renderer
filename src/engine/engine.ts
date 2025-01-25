@@ -2,16 +2,7 @@ import Stats from 'stats.js'
 import { quat, vec3 } from 'wgpu-matrix'
 import { GltfAssetManager } from './assets/GltfAssetManager'
 import { StaticAssetManager } from './assets/StaticAssetsManager'
-import {
-  AutoRotateComponent,
-  CameraComponent,
-  CameraControllerComponent,
-  ComponentType,
-  LightComponent,
-  LightType,
-  MeshRendererComponent,
-  TransformComponent,
-} from './components/components'
+import { AutoRotateComponent, CameraComponent, CameraControllerComponent, ComponentType, LightComponent, LightType, MeshRendererComponent, TransformComponent } from './components'
 import { EntityComponentSystem, EntityId, SimpleEcs } from './entity-component-system'
 import { InputManager } from './InputManager'
 import { CameraController } from './systems/CameraController'

@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import { LuLightbulb, LuPalette } from 'react-icons/lu'
-import { ComponentType, LightComponent } from '../../../engine/components/components'
+import { ComponentType, LightComponent } from '../../../engine/components'
 import { EditorContext } from '../Editor'
 import { NumberInput } from '../data/NumberInput'
 import { VectorInput } from '../data/VectorInput'

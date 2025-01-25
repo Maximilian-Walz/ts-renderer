@@ -12,7 +12,7 @@ import {
   PrimitiveRenderData,
   TransformComponent,
   VertexAttributeType,
-} from '../components/components'
+} from '../components'
 import { EntityComponentSystem, EntityId } from '../entity-component-system'
 
 export class SceneLoader {

@@ -1,6 +1,6 @@
 import { GltfAssetManager } from '../assets/GltfAssetManager'
 import { StaticAssetManager } from '../assets/StaticAssetsManager'
-import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../components/components'
+import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../components'
 import { GPUDataInterface } from '../GPUDataInterface'
 import { DeferredRenderer } from '../rendering/deferred/DeferredRenderer'
 import { RenderStrategy } from '../rendering/RenderStrategy'

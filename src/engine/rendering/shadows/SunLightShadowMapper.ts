@@ -1,4 +1,4 @@
-import { BufferDataComponentType, CameraComponent, LightComponent, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components/components'
+import { BufferDataComponentType, CameraComponent, LightComponent, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components'
 import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { ShadowMapper } from './ShadowMapper'
