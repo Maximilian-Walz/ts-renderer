@@ -1,9 +1,9 @@
 import Stats from 'stats.js'
 import { quat, vec3 } from 'wgpu-matrix'
-import { GltfAssetManager } from './assets/GltfAssetManager'
-import { StaticAssetManager } from './assets/StaticAssetsManager'
+import { AssetManager } from './assets/AssetManager'
 import { AutoRotateComponent, CameraComponent, CameraControllerComponent, ComponentType, LightComponent, LightType, MeshRendererComponent, TransformComponent } from './components'
 import { EntityComponentSystem, EntityId, SimpleEcs } from './entity-component-system'
+import { GPUDataInterface } from './GPUDataInterface'
 import { InputManager } from './InputManager'
 import { CameraController } from './systems/CameraController'
 import { Renderer, SceneData } from './systems/Renderer'
@@ -16,10 +16,11 @@ export type Scene = {
 export class Engine {
   public ecs: EntityComponentSystem
 
+  public assetManager: AssetManager
+  public renderer!: Renderer
+  public gpuDataInterface!: GPUDataInterface
+
   private inputManager: InputManager
-  private assetManager: GltfAssetManager
-  private staticAssetManager: StaticAssetManager
-  private renderer: Renderer
   private rotator: Rotator
   private cameraController: CameraController
   private stats: Stats = new Stats()
@@ -29,17 +30,33 @@ export class Engine {
   constructor() {
     this.ecs = new SimpleEcs()
     this.inputManager = new InputManager()
-    this.assetManager = new GltfAssetManager(this.ecs)
-    this.staticAssetManager = new StaticAssetManager()
+    this.assetManager = new AssetManager()
 
     // Systems
-    this.renderer = new Renderer()
     this.rotator = new Rotator()
     this.cameraController = new CameraController(this.inputManager)
   }
 
   async init() {
-    await this.renderer.init(this.assetManager, this.staticAssetManager)
+    let device
+    if (!navigator.gpu) {
+      throw new Error('WebGPU not supported on this browser.')
+    }
+    const adapter = await navigator.gpu.requestAdapter()
+    if (!adapter) {
+      throw new Error('No appropriate GPUAdapter found.')
+    }
+    device = await adapter.requestDevice()
+    device.lost.then((info) => {
+      console.error(`WebGPU device was lost: ${info.message}`)
+      if (info.reason !== 'destroyed') {
+        this.init()
+      }
+    })
+
+    this.gpuDataInterface = new GPUDataInterface(device)
+    this.renderer = new Renderer(device, this.assetManager, this.gpuDataInterface)
+    this.assetManager.loadDefaultAssets(this.gpuDataInterface)
   }
 
   setRenderTarget(canvas: HTMLCanvasElement) {
@@ -103,10 +120,11 @@ export class Engine {
     requestAnimationFrame(() => this.loop())
   }
 
-  async loadScene(source: string) {
+  async loadScene(identifier: string) {
     this.activeCameraId = undefined
     this.ecs.clear()
-    await this.assetManager.loadSceneFromGltf(source)
+    this.assetManager.loadGltfToGpu(identifier, this.gpuDataInterface)
+    this.assetManager.spawnGltf(identifier, this.ecs)
 
     // Hardcode some test lights
     this.ecs.addComponentToEntity(

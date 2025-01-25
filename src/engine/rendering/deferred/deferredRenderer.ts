@@ -2,7 +2,6 @@ import { BufferDataComponentType, CameraComponent, LightComponent, LightType, Tr
 import { CameraData, LightData, ModelData, SceneData } from '../../systems/Renderer'
 import { RenderStrategy } from '../RenderStrategy'
 
-import { GPUDataInterface } from '../../GPUDataInterface'
 import { PbrMaterial } from '../../material'
 import { DebugRenderer } from '../debug/DebugRenderer'
 import { ShadowMapper } from '../shadows/ShadowMapper'
@@ -10,6 +9,8 @@ import { SunLightShadowMapper } from '../shadows/SunLightShadowMapper'
 import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
 
+import { AssetManager } from '../../assets/AssetManager'
+import { GPUDataInterface } from '../../GPUDataInterface'
 import ambientFrag from './ambient.frag.wgsl'
 import pointLightShading from './pointLightShading.frag.wgsl'
 import sunLightShading from './sunLightShading.frag.wgsl'
@@ -24,7 +25,6 @@ type VertexAttributeInfo = {
 
 export class DeferredRenderer implements RenderStrategy {
   private device: GPUDevice
-  private gpuDataInterface: GPUDataInterface
   private context: GPUCanvasContext
 
   private shadowMapper: ShadowMapper
@@ -59,13 +59,12 @@ export class DeferredRenderer implements RenderStrategy {
     },
   ]
 
-  constructor(device: GPUDevice, gpuDataInterface: GPUDataInterface, context: GPUCanvasContext) {
+  constructor(device: GPUDevice, context: GPUCanvasContext, gpuDataInterface: GPUDataInterface, assetManager: AssetManager) {
     this.device = device
-    this.gpuDataInterface = gpuDataInterface
     this.context = context
 
     this.shadowMapper = new SunLightShadowMapper(device, gpuDataInterface)
-    this.debugRenderer = new DebugRenderer(this.device, this.context, this.gpuDataInterface)
+    this.debugRenderer = new DebugRenderer(device, context, assetManager)
     this.gBuffer = this.createGBuffer()
 
     const deferredShadingVertexModule = this.device.createShaderModule({
@@ -160,15 +159,15 @@ export class DeferredRenderer implements RenderStrategy {
       gBufferPass.setBindGroup(1, transform.bindGroup!)
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
-        gBufferPass.setIndexBuffer(this.gpuDataInterface.getBuffer(primitiveRenderData.indexBufferAccessor.bufferIndex), type)
+        gBufferPass.setIndexBuffer(primitiveRenderData.indexBufferAccessor.buffer, type)
         DeferredRenderer.vertexDataMapping.forEach(({ type }, index) => {
           const accessor = primitiveRenderData.vertexAttributes.get(type)!
           const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
-          gBufferPass.setVertexBuffer(index, this.gpuDataInterface.getBuffer(accessor.bufferIndex), accessor.offset, accessor.count * byteCount)
+          gBufferPass.setVertexBuffer(index, accessor.buffer, accessor.offset, accessor.count * byteCount)
         })
 
-        const material = this.gpuDataInterface.getMaterial(primitiveRenderData.materialIndex)
-        gBufferPass.setBindGroup(2, material.bindGroup!)
+        const material = primitiveRenderData.material
+        gBufferPass.setBindGroup(2, material.bindGroup)
 
         gBufferPass.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })

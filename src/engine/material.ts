@@ -1,12 +1,20 @@
 import { Vec3, Vec4, vec3, vec4 } from 'wgpu-matrix'
+import { GPUTextureData } from './systems/Renderer'
+
+export class GPUMaterial {
+  public bindGroup: GPUBindGroup
+
+  constructor(bindGroup: GPUBindGroup) {
+    this.bindGroup = bindGroup
+  }
+}
 
 export type TextureIdentifier = {
-  textureId: number | string
+  textureData: GPUTextureData
   texCoordId: number
 }
 
 export abstract class Material {
-  bindGroup?: GPUBindGroup
   abstract getBindGroupLayout(): GPUBindGroupLayout
 }
 
@@ -27,30 +35,46 @@ export class BasicMaterial extends Material {
   }
 }
 
-export const allWhiteTextureIdentifier = {
-  textureId: '1x1_white',
-  texCoordId: 0,
-} as TextureIdentifier
-
-export const allBlackTextureIdentifier = {
-  textureId: '1x1_black',
-  texCoordId: 0,
-} as TextureIdentifier
-
-export const defaultNormalTextureIdentifier = {
-  textureId: '1x1_default_normal',
-  texCoordId: 0,
-} as TextureIdentifier
+export type DefaultTextures = {
+  white: GPUTextureData
+  black: GPUTextureData
+  normal: GPUTextureData
+}
 
 export class PbrMaterial extends BasicMaterial {
   name?: string
-  albedoTexture: TextureIdentifier = allWhiteTextureIdentifier
-  metallicRoughnessTexture: TextureIdentifier = allWhiteTextureIdentifier
-  normalTexture: TextureIdentifier = defaultNormalTextureIdentifier
+  albedoTexture: TextureIdentifier
+  metallicRoughnessTexture: TextureIdentifier
+  normalTexture: TextureIdentifier
   normalStrength: number = 1
-  occlusionTexture: TextureIdentifier = allWhiteTextureIdentifier
+  occlusionTexture: TextureIdentifier
   occlusionFactor: number = 1
-  emissiveTexture: TextureIdentifier = allBlackTextureIdentifier
+  emissiveTexture: TextureIdentifier
+
+  constructor(
+    albedoTexture: TextureIdentifier,
+    metallicRoughnessTexture: TextureIdentifier,
+    normalTexture: TextureIdentifier,
+    occlusionTexture: TextureIdentifier,
+    emissiveTexture: TextureIdentifier
+  ) {
+    super()
+    this.albedoTexture = albedoTexture
+    this.metallicRoughnessTexture = metallicRoughnessTexture
+    this.normalTexture = normalTexture
+    this.occlusionTexture = occlusionTexture
+    this.emissiveTexture = emissiveTexture
+  }
+
+  static fromDefaultTextures(defaultTextures: DefaultTextures): PbrMaterial {
+    return new PbrMaterial(
+      { textureData: defaultTextures.white, texCoordId: 0 },
+      { textureData: defaultTextures.white, texCoordId: 0 },
+      { textureData: defaultTextures.normal, texCoordId: 0 },
+      { textureData: defaultTextures.white, texCoordId: 0 },
+      { textureData: defaultTextures.black, texCoordId: 0 }
+    )
+  }
 
   static bindGroupLayout: GPUBindGroupLayout
   static bindGroupLayoutDescriptor: GPUBindGroupLayoutDescriptor = {

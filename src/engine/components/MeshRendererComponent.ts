@@ -1,4 +1,5 @@
 import { Component, ComponentType } from '.'
+import { GPUMaterial } from '../material'
 
 export enum VertexAttributeType {
   POSITION = 'POSITION',
@@ -77,7 +78,7 @@ export const getBufferDataTypeByteCount = (bufferDataType: BufferDataType, compo
 }
 
 export type BufferAccessor = {
-  bufferIndex: number
+  buffer: GPUBuffer
   offset: number
   componentType: BufferDataComponentType
   type: BufferDataType
@@ -85,7 +86,7 @@ export type BufferAccessor = {
 }
 
 export type PrimitiveRenderData = {
-  materialIndex?: number
+  material: GPUMaterial
   indexBufferAccessor: BufferAccessor
   vertexAttributes: Map<VertexAttributeType, BufferAccessor>
   mode: number | undefined

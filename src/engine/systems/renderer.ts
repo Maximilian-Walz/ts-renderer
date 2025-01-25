@@ -1,5 +1,4 @@
-import { GltfAssetManager } from '../assets/GltfAssetManager'
-import { StaticAssetManager } from '../assets/StaticAssetsManager'
+import { AssetManager } from '../assets/AssetManager'
 import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../components'
 import { GPUDataInterface } from '../GPUDataInterface'
 import { DeferredRenderer } from '../rendering/deferred/DeferredRenderer'
@@ -33,32 +32,18 @@ export type GPUTextureData = {
 }
 
 export class Renderer {
-  private device!: GPUDevice
+  private device: GPUDevice
+  private gpuDataInterface: GPUDataInterface
+  private assetManager: AssetManager
   private renderStrategy!: RenderStrategy
-  private gpuDataInterface!: GPUDataInterface
 
   private canvas!: HTMLCanvasElement
   private context!: GPUCanvasContext
 
-  async init(gltfAssetManager: GltfAssetManager, staticAssetManager: StaticAssetManager) {
-    if (!navigator.gpu) {
-      throw new Error('WebGPU not supported on this browser.')
-    }
-    const adapter = await navigator.gpu.requestAdapter()
-    if (!adapter) {
-      throw new Error('No appropriate GPUAdapter found.')
-    }
-
-    this.device = await adapter.requestDevice()
-    this.device.lost.then((info) => {
-      console.error(`WebGPU device was lost: ${info.message}`)
-      if (info.reason !== 'destroyed') {
-        this.init(gltfAssetManager, staticAssetManager)
-      }
-    })
-
-    await staticAssetManager.loadStaticAssets(this.device)
-    this.gpuDataInterface = new GPUDataInterface(this.device, staticAssetManager, gltfAssetManager)
+  constructor(device: GPUDevice, assetManager: AssetManager, gpuDataInterface: GPUDataInterface) {
+    this.device = device
+    this.assetManager = assetManager
+    this.gpuDataInterface = gpuDataInterface
   }
 
   public setRenderTarget(canvas: HTMLCanvasElement) {
@@ -69,13 +54,10 @@ export class Renderer {
       format: navigator.gpu.getPreferredCanvasFormat(),
     })
 
-    this.renderStrategy = new DeferredRenderer(this.device, this.gpuDataInterface, this.context)
+    this.renderStrategy = new DeferredRenderer(this.device, this.context, this.gpuDataInterface, this.assetManager)
   }
 
   public prepareScene({ modelsData, lightsData, camerasData }: SceneData) {
-    this.gpuDataInterface.prepareGpuBuffers()
-    this.gpuDataInterface.prepareGpuTextures()
-    this.gpuDataInterface.prepareMaterials()
     this.gpuDataInterface.prepareTransforms(modelsData.map(({ transform }) => transform))
     this.gpuDataInterface.prepareTransforms(camerasData.map(({ transform }) => transform))
     this.gpuDataInterface.prepareTransforms(lightsData.map(({ transform }) => transform))

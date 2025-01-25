@@ -1,22 +1,22 @@
 import { mat4, vec4 } from 'wgpu-matrix'
-import { BufferTarget, GltfAssetManager } from './assets/GltfAssetManager'
-import { StaticAssetManager } from './assets/StaticAssetsManager'
+import { BufferTarget, GltfBuffer, GltfTextureData } from './assets/GltfAssetLoader'
 import { CameraComponent, LightComponent, LightType, TransformComponent } from './components'
-import { BasicMaterial, Material, PbrMaterial, TextureIdentifier } from './material'
+import { BasicMaterial, GPUMaterial, Material, PbrMaterial } from './material'
 import { CameraData, GPUTextureData, LightData } from './systems/Renderer'
 
 export class GPUDataInterface {
   private device: GPUDevice
-  private staticAssetManager: StaticAssetManager
-  private gltfAssetManager: GltfAssetManager
 
-  private gpuBuffers: GPUBuffer[] = []
-  private gpuTextures: GPUTextureData[] = []
+  private smoothSampler: GPUSampler
 
-  constructor(device: GPUDevice, staticAssetManager: StaticAssetManager, gltfAssetManger: GltfAssetManager) {
+  constructor(device: GPUDevice) {
     this.device = device
-    this.staticAssetManager = staticAssetManager
-    this.gltfAssetManager = gltfAssetManger
+    this.smoothSampler = device.createSampler({
+      addressModeU: 'repeat',
+      addressModeV: 'repeat',
+      magFilter: 'linear',
+      minFilter: 'linear',
+    })
     this.createStaticBindGroupLayouts()
   }
 
@@ -76,50 +76,51 @@ export class GPUDataInterface {
     })
   }
 
-  public prepareGpuBuffers() {
-    this.gltfAssetManager.buffers.forEach((buffer, index) => {
+  public createBuffers(buffers: GltfBuffer[]): GPUBuffer[] {
+    return buffers.map((buffer) => {
       // TODO: Can I set less as default? Counter example: BoomBox
       let usage = GPUBufferUsage.UNIFORM | GPUBufferUsage.VERTEX | GPUBufferUsage.INDEX
       if (buffer.target == BufferTarget.ARRAY_BUFFER) usage = GPUBufferUsage.VERTEX
       else if (buffer.target == BufferTarget.ELEMENT_ARRAY_BUFFER) usage = GPUBufferUsage.INDEX
       const bufferLength = buffer.data.length + (4 - (buffer.data.length % 4))
-      this.gpuBuffers[index] = this.device.createBuffer({
+      const gpuBuffer = this.device.createBuffer({
         size: bufferLength,
         usage: usage,
         mappedAtCreation: true,
       })
-      new Uint8Array(this.gpuBuffers[index].getMappedRange()).set(buffer.data)
-      this.gpuBuffers[index].unmap()
+      new Uint8Array(gpuBuffer.getMappedRange()).set(buffer.data)
+      gpuBuffer.unmap()
+      return gpuBuffer
     })
-    console.log('Buffers loaded:', this.gpuBuffers.length)
   }
 
-  public prepareGpuTextures() {
-    this.gltfAssetManager.textures.forEach((texture, index) => {
-      const gpuTexture = this.device.createTexture({
-        label: 'Asset texture',
-        size: [texture.image.width, texture.image.height, 1],
-        format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-      })
-
-      const gpuSampler = texture.sampler
-        ? this.device.createSampler({
-            addressModeU: texture.sampler.wrapS as GPUAddressMode,
-            addressModeV: texture.sampler.wrapT as GPUAddressMode,
-            magFilter: texture.sampler.magFilter as GPUFilterMode,
-            minFilter: texture.sampler.minFilter as GPUFilterMode,
-            mipmapFilter: texture.sampler.mipMapFilter as GPUFilterMode,
-          })
-        : this.staticAssetManager.getTextureData('1x1_white').sampler
-
-      this.device.queue.copyExternalImageToTexture({ source: texture.image }, { texture: gpuTexture }, [texture.image.width, texture.image.height])
-      this.gpuTextures[index] = {
-        texture: gpuTexture,
-        sampler: gpuSampler,
-      }
+  public createTexture({ image, sampler }: GltfTextureData): GPUTextureData {
+    const gpuTexture = this.device.createTexture({
+      label: 'Asset texture',
+      size: [image.width, image.height, 1],
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     })
-    console.log('Textures loaded:', this.gpuTextures.length)
+
+    const gpuSampler = sampler
+      ? this.device.createSampler({
+          addressModeU: sampler.wrapS as GPUAddressMode,
+          addressModeV: sampler.wrapT as GPUAddressMode,
+          magFilter: sampler.magFilter as GPUFilterMode,
+          minFilter: sampler.minFilter as GPUFilterMode,
+          mipmapFilter: sampler.mipMapFilter as GPUFilterMode,
+        })
+      : this.smoothSampler
+
+    this.device.queue.copyExternalImageToTexture({ source: image }, { texture: gpuTexture }, [image.width, image.height])
+    return {
+      texture: gpuTexture,
+      sampler: gpuSampler,
+    }
+  }
+
+  public createTextures(textures: GltfTextureData[]): GPUTextureData[] {
+    return textures.map((texture) => this.createTexture(texture))
   }
 
   public prepareTransforms(transforms: TransformComponent[]) {
@@ -141,24 +142,13 @@ export class GPUDataInterface {
     })
   }
 
-  private getTextureAndSampler(textureIdentifier: TextureIdentifier): GPUTextureData {
-    const textureId = textureIdentifier.textureId
-    if (typeof textureId == 'number' && textureId <= this.gpuTextures.length) {
-      return this.gpuTextures[textureId]
-    } else if (typeof textureId == 'string') {
-      return this.staticAssetManager.getTextureData(textureId)
-    } else {
-      return this.staticAssetManager.getTextureData('error')
-    }
-  }
-
-  private preparePbrMaterial(material: PbrMaterial) {
+  public createPbrMaterial(material: PbrMaterial): GPUMaterial {
     // TODO: Insert binding for additional material info (normal factor, occlusion strength etc.)
-    material.bindGroup = this.device.createBindGroup({
+    const bindGroup = this.device.createBindGroup({
       layout: material.getBindGroupLayout()!,
       entries: Array.of(material.albedoTexture, material.metallicRoughnessTexture, material.normalTexture, material.occlusionTexture, material.emissiveTexture).flatMap(
         (textureIdentifier, i) => {
-          const textureData = this.getTextureAndSampler(textureIdentifier!)
+          const textureData = textureIdentifier.textureData
           return [
             {
               binding: 2 * i,
@@ -172,17 +162,13 @@ export class GPUDataInterface {
         }
       ),
     })
+    return new GPUMaterial(bindGroup)
   }
 
-  public prepareMaterials() {
-    this.preparePbrMaterial(this.gltfAssetManager.defaultMaterial as PbrMaterial)
-
-    this.gltfAssetManager.materials.forEach((material) => {
-      if (material instanceof PbrMaterial) {
-        this.preparePbrMaterial(material)
-      } else if (material instanceof BasicMaterial) {
-        throw Error('Basic material not implemented yet')
-      }
+  public createMaterials(materials: Material[]): GPUMaterial[] {
+    const pbrMaterials = materials as PbrMaterial[] // TODO: support other materials
+    return pbrMaterials.map((material) => {
+      return this.createPbrMaterial(material)
     })
   }
 
@@ -306,21 +292,5 @@ export class GPUDataInterface {
       const cameraMatrices = new Float32Array([...viewProjectionMatrix, ...invViewProjectionMatrix, ...invViewMatrix, ...projectionMatrix])
       this.device.queue.writeBuffer(camera.matricesBuffer!, 0, cameraMatrices.buffer, cameraMatrices.byteOffset, cameraMatrices.byteLength)
     })
-  }
-
-  public getStaticTextureData(identifier: string) {
-    return this.staticAssetManager.getTextureData(identifier)
-  }
-
-  public getBuffer(bufferIndex: number) {
-    return this.gpuBuffers[bufferIndex]
-  }
-
-  public getMaterial(materialIndex?: number): Material {
-    if (materialIndex == undefined || materialIndex >= this.gltfAssetManager.materials.length) {
-      return this.gltfAssetManager.defaultMaterial
-    }
-
-    return this.gltfAssetManager.materials[materialIndex]
   }
 }

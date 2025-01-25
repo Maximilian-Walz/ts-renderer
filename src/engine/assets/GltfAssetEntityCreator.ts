@@ -1,4 +1,3 @@
-import { GltfAsset } from 'gltf-loader-ts'
 import { GlTf } from 'gltf-loader-ts/lib/gltf'
 import { mat4, quat, vec3 } from 'wgpu-matrix'
 import {
@@ -14,27 +13,33 @@ import {
   VertexAttributeType,
 } from '../components'
 import { EntityComponentSystem, EntityId } from '../entity-component-system'
+import { GPUMaterial } from '../material'
+import { GPUAssetData } from './GltfAssetLoader'
 
-export class SceneLoader {
+export class GltfAssetEntityCreator {
   private ecs: EntityComponentSystem
   private gltf: GlTf
+  private assetData: GPUAssetData
+  private defaultMaterial: GPUMaterial
 
-  public constructor(ecs: EntityComponentSystem, asset: GltfAsset) {
+  public constructor(ecs: EntityComponentSystem, gltf: GlTf, assetData: GPUAssetData, defaultMateral: GPUMaterial) {
     this.ecs = ecs
-    this.gltf = asset.gltf
+    this.gltf = gltf
+    this.assetData = assetData
+    this.defaultMaterial = defaultMateral
   }
 
-  public createEntities() {
+  public createEntities(parentTransform?: TransformComponent) {
     const sceneIndex = this.gltf.scene ?? 0
     if (this.gltf.scenes) {
-      this.loadScene(sceneIndex)
+      this.loadScene(sceneIndex, parentTransform)
     }
   }
 
-  private loadScene(sceneIndex: number) {
+  private loadScene(sceneIndex: number, parentTransform?: TransformComponent) {
     const scene = this.gltf.scenes![sceneIndex]
     for (const nodeIndex of scene.nodes!) {
-      this.loadNode(nodeIndex)
+      this.loadNode(nodeIndex, parentTransform)
     }
   }
 
@@ -57,11 +62,6 @@ export class SceneLoader {
     if (node.camera != undefined) this.loadCamera(entityId, node.camera)
     if (node.extensions != undefined) this.loadExtensions(entityId, node.extensions)
     if (node.children != undefined) node.children.forEach((childIndex: number) => this.loadNode(childIndex, transformComponent))
-
-    // Add auto rotator to mesh renderer components for debugging purposes
-    if (node.mesh != undefined) {
-      //ecs.addComponentToEntity(entityId, new AutoRotateComponent(vec3.fromValues(0, 1, 0), 10))
-    }
   }
 
   private loadExtensions(entityId: EntityId, extensions: any) {
@@ -144,7 +144,7 @@ export class SceneLoader {
       const primitiveRenderData: PrimitiveRenderData = {
         indexBufferAccessor: this.createAccessor(primitive.indices!),
         vertexAttributes: vertexAttributes,
-        materialIndex: primitive.material,
+        material: primitive.material != undefined ? this.assetData.materials[primitive.material] : this.defaultMaterial,
         mode: primitive.mode,
       }
       meshRendererComponent.primitives.push(primitiveRenderData)
@@ -155,7 +155,7 @@ export class SceneLoader {
   private createAccessor(accessorIndex: number): BufferAccessor {
     const accessor = this.gltf.accessors![accessorIndex]
     return {
-      bufferIndex: accessor.bufferView!,
+      buffer: this.assetData.buffers[accessor.bufferView!], // TODO: Think about what should happen if there is no bufferView (index)
       componentType: accessor.componentType,
       offset: accessor.byteOffset ?? 0,
       count: accessor.count,

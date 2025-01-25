@@ -73,11 +73,11 @@ export class SunLightShadowMapper extends ShadowMapper {
       shadowPass.setBindGroup(2, transform.bindGroup!)
       meshRenderer.primitives.forEach((primitiveRenderData) => {
         const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
-        shadowPass.setIndexBuffer(this.gpuDataInterface.getBuffer(primitiveRenderData.indexBufferAccessor.bufferIndex), type)
+        shadowPass.setIndexBuffer(primitiveRenderData.indexBufferAccessor.buffer, type)
 
         const accessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.POSITION)!
         const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
-        shadowPass.setVertexBuffer(0, this.gpuDataInterface.getBuffer(accessor.bufferIndex), accessor.offset, accessor.count * byteCount)
+        shadowPass.setVertexBuffer(0, accessor.buffer, accessor.offset, accessor.count * byteCount)
 
         shadowPass.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
       })

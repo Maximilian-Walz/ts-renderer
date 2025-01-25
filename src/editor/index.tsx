@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { vec3 } from 'wgpu-matrix'
+import { AssetInfo } from '../engine/assets/AssetManager'
 import { CameraComponent, CameraControllerComponent, CameraType, ComponentType, TransformComponent } from '../engine/components'
 import { Engine, Scene } from '../engine/Engine'
 import { EntityNode } from '../engine/entity-component-system'
@@ -12,12 +13,18 @@ createRoot(document.getElementById('editor')!).render(<Editor />)
 export class GraphicEditor {
   private engine: Engine
   private initialized: boolean = false
-  private scenes: Scene[] = [
-    { name: 'Shadow Test', source: 'assets/gltf/shadowTest.glb' },
-    { name: 'Sponza', source: '/assets/gltf/Sponza.glb' },
-    { name: 'Water Bottle', source: '/assets/gltf/WaterBottle.glb' },
-    { name: 'BoomBox', source: '/assets/gltf/BoomBox.glb' },
-    { name: 'DamagedHelmet', source: '/assets/gltf/DamagedHelmet.glb' },
+  private scenes: AssetInfo[] = [
+    { identifier: 'Shadow Test', path: 'assets/gltf/shadowTest.glb' },
+    { identifier: 'Sponza', path: '/assets/gltf/Sponza.glb' },
+    { identifier: 'Water Bottle', path: '/assets/gltf/WaterBottle.glb' },
+    { identifier: 'BoomBox', path: '/assets/gltf/BoomBox.glb' },
+    { identifier: 'DamagedHelmet', path: '/assets/gltf/DamagedHelmet.glb' },
+  ]
+
+  private staticTextures: AssetInfo[] = [
+    { identifier: 'lightbulb', path: '/assets/textures/lightbulb.png' },
+    { identifier: 'sun', path: '/assets/textures/sun.png' },
+    { identifier: 'camera', path: '/assets/textures/camera.png' },
   ]
 
   activeCameraEntityId: number | undefined
@@ -30,6 +37,13 @@ export class GraphicEditor {
     if (this.initialized) return
     await this.engine.init()
     this.initialized = true
+
+    await Promise.all(
+      this.staticTextures.map(async (assetInfo) => {
+        await this.engine.assetManager.loadTextureData(assetInfo)
+        this.engine.assetManager.loadTextureToGpu(assetInfo.identifier, this.engine.gpuDataInterface)
+      })
+    )
   }
 
   setRenderTarget(canvas: HTMLCanvasElement) {
@@ -37,7 +51,12 @@ export class GraphicEditor {
   }
 
   getScenes(): Scene[] {
-    return this.scenes
+    return this.scenes.map(({ identifier, path }) => {
+      return {
+        name: identifier,
+        source: path,
+      }
+    })
   }
 
   private addEditorCamera() {
@@ -49,7 +68,8 @@ export class GraphicEditor {
   }
 
   async setActiveScene(sceneIndex: number) {
-    await this.engine.loadScene(this.scenes[sceneIndex].source)
+    await this.engine.assetManager.loadGltfData(this.scenes[sceneIndex])
+    await this.engine.loadScene(this.scenes[sceneIndex].identifier)
     this.addEditorCamera()
     this.engine.prepareScene()
   }

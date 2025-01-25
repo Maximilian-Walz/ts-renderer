@@ -1,22 +1,22 @@
+import { AssetManager } from '../../assets/AssetManager'
 import { CameraComponent, LightType, TransformComponent } from '../../components'
-import { GPUDataInterface } from '../../GPUDataInterface'
 import { CameraData, LightData } from '../../systems/Renderer'
 import debugOverlayFrag from './debugRendering.frag.wgsl'
 import debugOverlayVert from './debugRendering.vert.wgsl'
 
 export class DebugRenderer {
   private device: GPUDevice
-  private gpuDataInterface: GPUDataInterface
+  private assetManager: AssetManager
   private context: GPUCanvasContext
 
   private quadBuffer: GPUBuffer
   private pipeline: GPURenderPipeline
   private billboardBindGroups: Map<string, GPUBindGroup>
 
-  constructor(device: GPUDevice, context: GPUCanvasContext, gpuDataInterface: GPUDataInterface) {
+  constructor(device: GPUDevice, context: GPUCanvasContext, assetManager: AssetManager) {
     this.device = device
     this.context = context
-    this.gpuDataInterface = gpuDataInterface
+    this.assetManager = assetManager
 
     this.quadBuffer = this.createQuadBuffer()
     const billboardBindGroupLayout = this.createBillboardBindGroupLayout()
@@ -118,7 +118,7 @@ export class DebugRenderer {
   }
 
   private createBillboardBindGroup(billboardBindGroupLayout: GPUBindGroupLayout, textureId: string): GPUBindGroup {
-    let textureData = this.gpuDataInterface.getStaticTextureData(textureId)
+    let textureData = this.assetManager.getTextureData(textureId)
     return this.device.createBindGroup({
       layout: billboardBindGroupLayout,
       entries: [
