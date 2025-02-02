@@ -1,13 +1,13 @@
 import React, { useContext, useEffect, useRef } from 'react'
 import { EditorContext } from './EditorInterface'
 
-export function Viewport() {
+export function GameView() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const editor = useContext(EditorContext)
 
   useEffect(() => {
     if (canvasRef.current) {
-      editor!.setEditorRenderTarget(canvasRef.current)
+      editor!.setGameRenderTarget(canvasRef.current)
     }
   }, [canvasRef, editor])
 

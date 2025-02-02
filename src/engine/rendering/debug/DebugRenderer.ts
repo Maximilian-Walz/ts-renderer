@@ -118,7 +118,7 @@ export class DebugRenderer {
   }
 
   private createBillboardBindGroup(billboardBindGroupLayout: GPUBindGroupLayout, textureId: string): GPUBindGroup {
-    let textureData = this.assetManager.getTextureData(textureId)
+    let textureData = this.assetManager.getTextureLoader(textureId).getAssetData()
     return this.device.createBindGroup({
       layout: billboardBindGroupLayout,
       entries: [

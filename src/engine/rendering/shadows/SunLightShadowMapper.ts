@@ -1,5 +1,5 @@
-import { BufferDataComponentType, CameraComponent, LightComponent, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components'
-import { GPUDataInterface } from '../../GPUDataInterface'
+import { BufferDataComponentType, getBufferDataTypeByteCount, VertexAttributeType } from '../../assets/Mesh'
+import { CameraComponent, LightComponent, TransformComponent } from '../../components'
 import { CameraData, LightData, ModelData } from '../../systems/Renderer'
 import { ShadowMapper } from './ShadowMapper'
 import shadowMapperVert from './shadowMapper.vert.wgsl'
@@ -7,8 +7,8 @@ import shadowMapperVert from './shadowMapper.vert.wgsl'
 export class SunLightShadowMapper extends ShadowMapper {
   private shadowPipeline: GPURenderPipeline
 
-  constructor(device: GPUDevice, gpuDataInterface: GPUDataInterface) {
-    super(device, gpuDataInterface)
+  constructor(device: GPUDevice) {
+    super(device)
     this.shadowPipeline = this.createPipeline()
   }
 
@@ -70,16 +70,20 @@ export class SunLightShadowMapper extends ShadowMapper {
       if (transform.matricesBuffer == undefined) {
         return
       }
+
       shadowPass.setBindGroup(2, transform.bindGroup!)
-      meshRenderer.primitives.forEach((primitiveRenderData) => {
-        const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
-        shadowPass.setIndexBuffer(primitiveRenderData.indexBufferAccessor.buffer, type)
+      meshRenderer.primitives.forEach(({ meshLoader }) => {
+        const mesh = meshLoader.getAssetData()
+        const type = mesh.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
+        const indexBuffer = mesh.indexBufferAccessor.buffer.getAssetData()
+        shadowPass.setIndexBuffer(indexBuffer, type)
 
-        const accessor = primitiveRenderData.vertexAttributes.get(VertexAttributeType.POSITION)!
+        const accessor = mesh.vertexAttributes.get(VertexAttributeType.POSITION)!
         const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
-        shadowPass.setVertexBuffer(0, accessor.buffer, accessor.offset, accessor.count * byteCount)
+        const buffer = accessor.buffer.getAssetData()
+        shadowPass.setVertexBuffer(0, buffer, accessor.offset, accessor.count * byteCount)
 
-        shadowPass.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
+        shadowPass.drawIndexed(mesh.indexBufferAccessor.count)
       })
     })
 

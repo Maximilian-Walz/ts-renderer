@@ -1,13 +1,11 @@
 import { Mat4, Quat, Vec3, mat3, mat4, quat, vec3 } from 'wgpu-matrix'
 import { Component, ComponentType } from '.'
-import { EntityId } from '../entity-component-system'
 
 export class TransformComponent extends Component {
   name: string | undefined
   position: Vec3
   rotation: Quat
   scale: Vec3
-  entityId?: EntityId
   parent?: TransformComponent
 
   bindGroup: GPUBindGroup | undefined
@@ -68,8 +66,6 @@ export class TransformComponent extends Component {
       position: this.position,
       rotation: this.rotation,
       scale: this.scale,
-      entityId: this.entityId,
-      parent: this.parent?.entityId,
     }
   }
 }

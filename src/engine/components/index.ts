@@ -3,12 +3,12 @@ import { Component } from './Component'
 
 export const NUM_OF_COMPONENT_TYPES = 6
 export enum ComponentType {
-  TRANSFORM,
-  CAMERA,
-  MESH_RENDERER,
-  LIGHT,
-  AUTO_ROTATE,
-  CAMERA_CONTROLLER,
+  TRANSFORM = 'transform',
+  CAMERA = 'camera',
+  MESH_RENDERER = 'meshRenderer',
+  LIGHT = 'light',
+  AUTO_ROTATE = 'autoRotate',
+  CAMERA_CONTROLLER = 'cameraController',
 }
 
 export * from './CameraComponent'

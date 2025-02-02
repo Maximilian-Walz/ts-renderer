@@ -1,7 +1,7 @@
 import { mat4, vec4 } from 'wgpu-matrix'
-import { BufferTarget, GltfBuffer, GltfTextureData } from './assets/GltfAssetLoader'
+import { BasicMaterial, GPUMaterial, Material, PbrMaterial } from './assets/Material'
+import { TextureData } from './assets/loaders/TextureAssetLoader'
 import { CameraComponent, LightComponent, LightType, TransformComponent } from './components'
-import { BasicMaterial, GPUMaterial, Material, PbrMaterial } from './material'
 import { CameraData, GPUTextureData, LightData } from './systems/Renderer'
 
 export class GPUDataInterface {
@@ -76,28 +76,22 @@ export class GPUDataInterface {
     })
   }
 
-  public createBuffers(buffers: GltfBuffer[]): GPUBuffer[] {
-    return buffers.map((buffer) => {
-      // TODO: Can I set less as default? Counter example: BoomBox
-      let usage = GPUBufferUsage.UNIFORM | GPUBufferUsage.VERTEX | GPUBufferUsage.INDEX
-      if (buffer.target == BufferTarget.ARRAY_BUFFER) usage = GPUBufferUsage.VERTEX
-      else if (buffer.target == BufferTarget.ELEMENT_ARRAY_BUFFER) usage = GPUBufferUsage.INDEX
-      const bufferLength = buffer.data.length + (4 - (buffer.data.length % 4))
-      const gpuBuffer = this.device.createBuffer({
-        size: bufferLength,
-        usage: usage,
-        mappedAtCreation: true,
-      })
-      new Uint8Array(gpuBuffer.getMappedRange()).set(buffer.data)
-      gpuBuffer.unmap()
-      return gpuBuffer
+  public createBuffer(buffer: Uint8Array, usage: GPUBufferUsageFlags) {
+    const bufferLength = buffer.length + (4 - (buffer.length % 4))
+    const gpuBuffer = this.device.createBuffer({
+      size: bufferLength,
+      usage: usage,
+      mappedAtCreation: true,
     })
+    new Uint8Array(gpuBuffer.getMappedRange()).set(buffer)
+    gpuBuffer.unmap()
+    return gpuBuffer
   }
 
-  public createTexture({ image, sampler }: GltfTextureData): GPUTextureData {
+  public createTexture(texture: TextureData, sampler?: SamplerData): GPUTextureData {
     const gpuTexture = this.device.createTexture({
       label: 'Asset texture',
-      size: [image.width, image.height, 1],
+      size: [texture.width, texture.height, 1],
       format: 'rgba8unorm',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     })
@@ -112,15 +106,11 @@ export class GPUDataInterface {
         })
       : this.smoothSampler
 
-    this.device.queue.copyExternalImageToTexture({ source: image }, { texture: gpuTexture }, [image.width, image.height])
+    this.device.queue.copyExternalImageToTexture({ source: texture }, { texture: gpuTexture }, [texture.width, texture.height])
     return {
       texture: gpuTexture,
       sampler: gpuSampler,
     }
-  }
-
-  public createTextures(textures: GltfTextureData[]): GPUTextureData[] {
-    return textures.map((texture) => this.createTexture(texture))
   }
 
   public prepareTransforms(transforms: TransformComponent[]) {
@@ -148,7 +138,7 @@ export class GPUDataInterface {
       layout: material.getBindGroupLayout()!,
       entries: Array.of(material.albedoTexture, material.metallicRoughnessTexture, material.normalTexture, material.occlusionTexture, material.emissiveTexture).flatMap(
         (textureIdentifier, i) => {
-          const textureData = textureIdentifier.textureData
+          const textureData = textureIdentifier.textureData.getAssetData()
           return [
             {
               binding: 2 * i,

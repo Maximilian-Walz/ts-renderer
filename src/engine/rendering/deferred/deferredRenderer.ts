@@ -1,8 +1,8 @@
-import { BufferDataComponentType, CameraComponent, LightComponent, LightType, TransformComponent, VertexAttributeType, getBufferDataTypeByteCount } from '../../components'
-import { CameraData, LightData, ModelData, SceneData } from '../../systems/Renderer'
+import { CameraComponent, LightComponent, LightType, TransformComponent } from '../../components'
+import { CameraData, LightData, ModelData, RenderData } from '../../systems/Renderer'
 import { RenderStrategy } from '../RenderStrategy'
 
-import { PbrMaterial } from '../../material'
+import { PbrMaterial } from '../../assets/Material'
 import { DebugRenderer } from '../debug/DebugRenderer'
 import { ShadowMapper } from '../shadows/ShadowMapper'
 import { SunLightShadowMapper } from '../shadows/SunLightShadowMapper'
@@ -10,7 +10,7 @@ import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
 
 import { AssetManager } from '../../assets/AssetManager'
-import { GPUDataInterface } from '../../GPUDataInterface'
+import { BufferDataComponentType, getBufferDataTypeByteCount, VertexAttributeType } from '../../assets/Mesh'
 import ambientFrag from './ambient.frag.wgsl'
 import pointLightShading from './pointLightShading.frag.wgsl'
 import sunLightShading from './sunLightShading.frag.wgsl'
@@ -59,11 +59,11 @@ export class DeferredRenderer implements RenderStrategy {
     },
   ]
 
-  constructor(device: GPUDevice, context: GPUCanvasContext, gpuDataInterface: GPUDataInterface, assetManager: AssetManager) {
+  constructor(device: GPUDevice, context: GPUCanvasContext, assetManager: AssetManager) {
     this.device = device
     this.context = context
 
-    this.shadowMapper = new SunLightShadowMapper(device, gpuDataInterface)
+    this.shadowMapper = new SunLightShadowMapper(device)
     this.debugRenderer = new DebugRenderer(device, context, assetManager)
     this.gBuffer = this.createGBuffer()
 
@@ -156,20 +156,25 @@ export class DeferredRenderer implements RenderStrategy {
       if (transform.matricesBuffer == undefined) {
         return
       }
+
       gBufferPass.setBindGroup(1, transform.bindGroup!)
-      meshRenderer.primitives.forEach((primitiveRenderData) => {
-        const type = primitiveRenderData.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
-        gBufferPass.setIndexBuffer(primitiveRenderData.indexBufferAccessor.buffer, type)
+      meshRenderer.primitives.forEach(({ meshLoader, materialLoader }) => {
+        const mesh = meshLoader.getAssetData()
+        const type = mesh.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
+
+        const indexBuffer = mesh.indexBufferAccessor.buffer.getAssetData()
+        gBufferPass.setIndexBuffer(indexBuffer, type)
         DeferredRenderer.vertexDataMapping.forEach(({ type }, index) => {
-          const accessor = primitiveRenderData.vertexAttributes.get(type)!
+          const accessor = mesh.vertexAttributes.get(type)!
           const byteCount = getBufferDataTypeByteCount(accessor.type, accessor.componentType)
-          gBufferPass.setVertexBuffer(index, accessor.buffer, accessor.offset, accessor.count * byteCount)
+          const buffer = accessor.buffer.getAssetData()
+          gBufferPass.setVertexBuffer(index, buffer, accessor.offset, accessor.count * byteCount)
         })
 
-        const material = primitiveRenderData.material
+        const material = materialLoader.getAssetData()
         gBufferPass.setBindGroup(2, material.bindGroup)
 
-        gBufferPass.drawIndexed(primitiveRenderData.indexBufferAccessor.count)
+        gBufferPass.drawIndexed(mesh.indexBufferAccessor.count)
       })
     })
 
@@ -293,7 +298,7 @@ export class DeferredRenderer implements RenderStrategy {
     deferredRenderingPass.end()
   }
 
-  public render({ modelsData, lightsData, camerasData, activeCameraData }: SceneData): void {
+  public render({ modelsData, lightsData, camerasData, activeCameraData }: RenderData): void {
     if (!activeCameraData) return
 
     const commandEncoder = this.device.createCommandEncoder()

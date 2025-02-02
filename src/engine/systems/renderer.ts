@@ -19,7 +19,7 @@ export type LightData = {
   light: LightComponent
 }
 
-export type SceneData = {
+export type RenderData = {
   modelsData: ModelData[]
   lightsData: LightData[]
   camerasData: CameraData[]
@@ -54,18 +54,18 @@ export class Renderer {
       format: navigator.gpu.getPreferredCanvasFormat(),
     })
 
-    this.renderStrategy = new DeferredRenderer(this.device, this.context, this.gpuDataInterface, this.assetManager)
+    this.renderStrategy = new DeferredRenderer(this.device, this.context, this.assetManager)
   }
 
-  public prepareScene({ modelsData, lightsData, camerasData }: SceneData) {
-    this.gpuDataInterface.prepareTransforms(modelsData.map(({ transform }) => transform))
-    this.gpuDataInterface.prepareTransforms(camerasData.map(({ transform }) => transform))
-    this.gpuDataInterface.prepareTransforms(lightsData.map(({ transform }) => transform))
+  public prepareScene({ modelsData, lightsData, camerasData }: RenderData) {
+    this.gpuDataInterface.prepareTransforms(modelsData.map((model) => model.transform))
+    this.gpuDataInterface.prepareTransforms(camerasData.map((camera) => camera.transform))
+    this.gpuDataInterface.prepareTransforms(lightsData.map((light) => light.transform))
     this.gpuDataInterface.prepareCameras(camerasData)
     this.gpuDataInterface.prepareLights(lightsData)
   }
 
-  public render(sceneData: SceneData) {
+  public render(sceneData: RenderData) {
     const { modelsData, lightsData, camerasData, activeCameraData } = sceneData
     if (activeCameraData == undefined) {
       console.warn('Scene has no active camera.')

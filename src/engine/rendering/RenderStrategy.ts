@@ -1,5 +1,5 @@
-import { SceneData } from '../systems/Renderer'
+import { RenderData } from '../systems/Renderer'
 
 export interface RenderStrategy {
-  render(sceneData: SceneData): void
+  render(sceneData: RenderData): void
 }
