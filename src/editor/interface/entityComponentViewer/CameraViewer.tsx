@@ -1,0 +1,90 @@
+import React from 'react'
+import { LuCamera } from 'react-icons/lu'
+import { CameraComponent, CameraType, ComponentType, OrthographicData, PerspectiveData } from '../../../engine/components'
+import { Entity } from '../../../engine/scenes/Entity'
+import { LabelInput } from '../../components/LabelInput'
+import { NumberInput } from '../../components/NumberInput'
+import { ComponentViewer } from './ComponentViewer'
+
+type Props = {
+  entity: Entity
+}
+
+function PerspectiveViewer({ camera }: { camera: CameraComponent }) {
+  return (
+    <>
+      <NumberInput
+        label={'Field of View'}
+        initialValue={(camera.data as PerspectiveData).fov}
+        precision={4}
+        step={0.1}
+        onChange={(value) => ((camera.data as PerspectiveData).fov = value)}
+      />
+      {camera.useCanvasData && (
+        <NumberInput
+          label={'Aspect Ratio'}
+          initialValue={(camera.data as PerspectiveData).aspect}
+          precision={4}
+          step={0.1}
+          onChange={(value) => ((camera.data as PerspectiveData).aspect = value)}
+        />
+      )}
+      <div className="form-control space-y-0.5">
+        <div className="label-text -mb-4">Clip</div>
+        <NumberInput label={'Near'} initialValue={camera.zNear} precision={4} onChange={(value) => (camera.zNear = value)} />
+        <NumberInput label={'Far'} initialValue={camera.zFar} precision={4} onChange={(value) => (camera.zFar = value)} />
+      </div>
+    </>
+  )
+}
+
+function OrthographicViewer({ camera }: { camera: CameraComponent }) {
+  return (
+    <>
+      <NumberInput
+        label={'xMag'}
+        initialValue={(camera.data as OrthographicData).xMag}
+        precision={4}
+        step={0.1}
+        onChange={(value) => ((camera.data as OrthographicData).xMag = value)}
+      />
+      <NumberInput
+        label={'yMag'}
+        initialValue={(camera.data as OrthographicData).yMag}
+        precision={4}
+        step={0.1}
+        onChange={(value) => ((camera.data as OrthographicData).yMag = value)}
+      />
+      <div className="form-control space-y-0.5">
+        <div className="label-text -mb-4">Clip</div>
+        <NumberInput label={'Near'} initialValue={camera.zNear} precision={4} onChange={(value) => (camera.zNear = value)} />
+        <NumberInput label={'Far'} initialValue={camera.zFar} precision={4} onChange={(value) => (camera.zFar = value)} />
+      </div>
+    </>
+  )
+}
+
+export function CameraViewer({ entity }: Props) {
+  const camera = entity.getComponentOrUndefined(ComponentType.CAMERA) as CameraComponent
+  if (camera == undefined) {
+    return null
+  }
+
+  const cameraSwitch = (cameraType: CameraType) => {
+    switch (cameraType) {
+      case CameraType.PERSPECTIVE:
+        return <PerspectiveViewer camera={camera} />
+      case CameraType.ORTHOGRAPHIC:
+        return <OrthographicViewer camera={camera} />
+    }
+  }
+
+  return (
+    <ComponentViewer title="Camera" icon={<LuCamera />}>
+      <div className="join join-vertical space-y-1">
+        <LabelInput label="Name" initialValue={(camera.name ??= '')} onChange={(value) => (camera.name = value)} />
+        {cameraSwitch(camera.cameraType)}
+      </div>
+    </ComponentViewer>
+  )
+}

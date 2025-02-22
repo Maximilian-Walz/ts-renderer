@@ -17,7 +17,7 @@ const tabs: Tab[] = [
 export function EditorInterface({ editor }: Props) {
   return (
     <EditorProvider editor={editor}>
-      <div className="flex h-full w-full flex-col">
+      <div className="flex h-full w-full flex-col bg-gray-900">
         <Tabs tabs={tabs} className="flex grow flex-col" />
       </div>
     </EditorProvider>
