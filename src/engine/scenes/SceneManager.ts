@@ -1,24 +1,24 @@
 import { EntityId } from './Entity'
-import { Scene } from './Scene'
+import { Scene, SceneId } from './Scene'
 
 export type SceneInfo = {
-  identifier: string
+  sceneId: SceneId
   name: string
 }
 
 export class SceneManger {
-  private scenes: Map<string, Scene> = new Map()
+  private scenes: Map<SceneId, Scene> = new Map()
   private activeScene: Scene | undefined
 
-  public addScene(identifier: string, scene: Scene) {
-    if (this.scenes.has(identifier)) {
-      throw new Error(`Scene with identifier ${identifier} already exists.`)
+  public addScene(scene: Scene) {
+    if (this.scenes.has(scene.sceneId)) {
+      throw new Error(`Scene with id ${scene.sceneId} already exists.`)
     }
-    this.scenes.set(identifier, scene)
+    this.scenes.set(scene.sceneId, scene)
   }
 
-  public setActiveScene(identifier: string) {
-    this.activeScene = this.getScene(identifier)
+  public setActiveScene(sceneId: SceneId) {
+    this.activeScene = this.getScene(sceneId)
   }
 
   public getActiveScene(): Scene {
@@ -28,22 +28,18 @@ export class SceneManger {
     return this.activeScene
   }
 
-  public getScene(identifier: string): Scene {
-    if (!this.scenes.has(identifier)) {
-      throw new Error(`Scene with identifier ${identifier} does not exist.`)
+  public getScene(sceneId: SceneId): Scene {
+    if (!this.scenes.has(sceneId)) {
+      throw new Error(`Scene with id ${sceneId} does not exist.`)
     }
-    return this.scenes.get(identifier)!
+    return this.scenes.get(sceneId)!
   }
 
-  public getScenesInfo(): SceneInfo[] {
-    return Array.from(this.scenes).map(([identifier, scene]) => {
-      return { identifier: identifier, name: scene.name }
-    })
+  public getScenes(): Scene[] {
+    return Array.from(this.scenes.values())
   }
 
-  public instanceScene(sourceSceneIdentifier: string, targetSceneIdentifier?: string, parentEntityId?: EntityId) {
-    const sourceScene = this.getScene(sourceSceneIdentifier)
-    const targetScene = targetSceneIdentifier != undefined ? this.getScene(targetSceneIdentifier) : this.activeScene!
+  public instanceScene(sourceScene: Scene, targetScene: Scene = this.activeScene!, parentEntityId?: EntityId) {
     targetScene.instanceScene(sourceScene, parentEntityId)
   }
 }

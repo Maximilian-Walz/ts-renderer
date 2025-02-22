@@ -2,7 +2,7 @@ import { Camera, GlTf, Mesh, Node, Scene } from 'gltf-loader-ts/lib/gltf'
 import { mat4, quat, vec3 } from 'wgpu-matrix'
 import { CameraComponent, CameraType, LightComponent, LightType, MeshRendererComponent, PrimitiveRenderData, TransformComponent } from '../components'
 import { Entity } from '../scenes/Entity'
-import { Scene as EngineScene } from '../scenes/Scene'
+import { Scene as EngineScene, SceneId } from '../scenes/Scene'
 import { AssetManager } from './AssetManager'
 
 type MeshIdCreator = (meshIndex: number, primitiveIndex: number) => string
@@ -29,8 +29,8 @@ export class GltfEntityLoader {
     this.materialIdCreator = materialIdCreator
   }
 
-  public importScene(scene: Scene): EngineScene {
-    const engineScene = new EngineScene(scene.name)
+  public importScene(sceneId: SceneId, scene: Scene): EngineScene {
+    const engineScene = new EngineScene(sceneId, scene.name)
     scene.nodes?.forEach((nodeId) => {
       this.addEntitiesFromNodes(engineScene, nodeId)
     })

@@ -1,8 +1,8 @@
 import { vec3 } from 'wgpu-matrix'
 import { CoolGame } from '../coolGame/CoolGame'
-import { GltfImporter } from '../engine/assets/GltfImporter'
 import { CameraComponent, CameraControllerComponent, CameraType, TransformComponent } from '../engine/components'
 import { Game } from '../engine/Game'
+import { Entity } from '../engine/scenes/Entity'
 import { Scene } from '../engine/scenes/Scene'
 
 const staticTextures: { identifier: string; path: string }[] = [
@@ -20,9 +20,10 @@ const gltfs: { identifier: string; path: string }[] = [
 ]
 
 export class Editor extends Game {
-  private game!: Game
+  public game!: Game
 
-  activeCameraEntityId: number | undefined
+  public activeCameraEntityId: number | undefined
+  public activeEntity: Entity | undefined
 
   protected async afterInit() {
     await Promise.all(
@@ -31,7 +32,7 @@ export class Editor extends Game {
       })
     )
 
-    this.engine.sceneManager.addScene('editor', new Scene('editor'))
+    this.engine.sceneManager.addScene(new Scene('editor', 'Editor'))
     this.engine.sceneManager.setActiveScene('editor')
     this.addEditorCamera()
     this.engine.updateActiveSceneRenderData()
@@ -41,16 +42,8 @@ export class Editor extends Game {
     this.game = new CoolGame()
     await this.game.init(device)
 
-    await Promise.all(
-      gltfs.map(async ({ identifier, path }) => {
-        const importer = new GltfImporter(this.game.engine.assetManager, this.game.engine.sceneManager, identifier, path)
-        await importer.importGltf()
-      })
-    )
-
-    const gameScene = this.game.engine.sceneManager.getScene('shadow-test_scene_0')
-    this.engine.sceneManager.addScene('game-scene', gameScene)
-    this.engine.sceneManager.instanceScene('game-scene')
+    const gameScene = this.game.engine.sceneManager.getActiveScene()
+    this.engine.sceneManager.instanceScene(gameScene)
   }
 
   public setEditorRenderTarget(canvas: HTMLCanvasElement) {
@@ -64,9 +57,10 @@ export class Editor extends Game {
   private addEditorCamera() {
     let targetTransform = new TransformComponent()
     const editorCamId = 'editor-cam'
-    this.engine.sceneManager.createEntity(editorCamId, TransformComponent.fromValues(vec3.fromValues(0, 0, 10), undefined, undefined, targetTransform))
-    this.engine.sceneManager.addComponentToEntity(editorCamId, new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1, 100))
-    this.engine.sceneManager.addComponentToEntity(editorCamId, new CameraControllerComponent())
+    const activeScene = this.engine.sceneManager.getActiveScene()
+    const editorCam = activeScene.createEntity(editorCamId, TransformComponent.fromValues(vec3.fromValues(0, 0, 10), undefined, undefined, targetTransform))
+    editorCam.addComponent(new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1, 100))
+    editorCam.addComponent(new CameraControllerComponent())
     this.engine.setActiveCamera(editorCamId)
   }
 }

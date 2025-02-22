@@ -1,8 +1,8 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { EditorInterface } from './components/EditorInterface'
 import { Editor } from './Editor'
 import './index.css'
+import { EditorInterface } from './interface/EditorInterface'
 
 const init = async () => {
   let device

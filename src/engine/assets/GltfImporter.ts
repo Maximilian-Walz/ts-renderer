@@ -161,7 +161,7 @@ export class GltfImporter {
   private importScenes(gltf: GlTf) {
     const loader = new GltfEntityLoader(this.assetManager, gltf, this.createMeshId.bind(this), this.createMaterialId.bind(this))
     gltf.scenes!.forEach((scene, index) => {
-      this.sceneManager.addScene(this.createSceneId(index), loader.importScene(scene))
+      this.sceneManager.addScene(loader.importScene(this.createSceneId(index), scene))
     })
   }
 

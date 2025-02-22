@@ -1,13 +1,16 @@
 import { Component, ComponentType, TransformComponent } from '../components'
 import { Entity, EntityId } from './Entity'
 
+export type SceneId = string
 export type ComponentQueryResult = Record<ComponentType, Component | undefined>[]
 
 export class Scene {
+  public readonly sceneId: SceneId
   public readonly name: string
   private entities: Map<EntityId, Entity> = new Map()
 
-  constructor(name: string) {
+  constructor(sceneId: SceneId, name: string) {
+    this.sceneId = sceneId
     this.name = name
   }
 
