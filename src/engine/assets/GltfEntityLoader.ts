@@ -1,7 +1,8 @@
 import { Camera, GlTf, Mesh, Node, Scene } from 'gltf-loader-ts/lib/gltf'
 import { mat4, quat, vec3 } from 'wgpu-matrix'
-import { CameraComponent, CameraType, ComponentType, LightComponent, LightType, MeshRendererComponent, PrimitiveRenderData, TransformComponent } from '../components'
-import { Scene as EngineScene, Entity } from '../scenes/Scene'
+import { CameraComponent, CameraType, LightComponent, LightType, MeshRendererComponent, PrimitiveRenderData, TransformComponent } from '../components'
+import { Entity } from '../scenes/Entity'
+import { Scene as EngineScene } from '../scenes/Scene'
 import { AssetManager } from './AssetManager'
 
 type MeshIdCreator = (meshIndex: number, primitiveIndex: number) => string
@@ -39,7 +40,6 @@ export class GltfEntityLoader {
   private addEntitiesFromNodes(engineScene: EngineScene, nodeIndex: number, parentTransform?: TransformComponent) {
     const node = this.nodes[nodeIndex]
 
-    const entity: Entity = new Map()
     let transformComponent: TransformComponent
     if (node.matrix) {
       transformComponent = TransformComponent.fromMatrix(mat4.create(...node.matrix), parentTransform)
@@ -50,13 +50,11 @@ export class GltfEntityLoader {
       transformComponent = TransformComponent.fromValues(translation, rotation, scale, parentTransform)
     }
     transformComponent.name = node.name
-    entity.set(ComponentType.TRANSFORM, transformComponent)
 
-    if (node.mesh != undefined) entity.set(ComponentType.MESH_RENDERER, this.loadMeshRenderer(node.mesh))
-    if (node.camera != undefined) entity.set(ComponentType.CAMERA, this.loadCamera(this.cameras[node.camera]))
+    const entity = engineScene.createEntity(node.name, transformComponent)
+    if (node.mesh != undefined) entity.addComponent(this.loadMeshRenderer(node.mesh))
+    if (node.camera != undefined) entity.addComponent(this.loadCamera(this.cameras[node.camera]))
     if (node.extensions != undefined) this.loadExtensions(entity, node.extensions)
-    engineScene.entities.set(node.name, entity)
-
     if (node.children != undefined) node.children.forEach((childIndex: number) => this.addEntitiesFromNodes(engineScene, childIndex, transformComponent))
   }
 
@@ -109,7 +107,7 @@ export class GltfEntityLoader {
   }
 
   private loadExtensions(entity: Entity, extensions: any) {
-    if (extensions.KHR_lights_punctual != undefined) entity.set(ComponentType.LIGHT, this.loadLight(extensions.KHR_lights_punctual.light))
+    if (extensions.KHR_lights_punctual != undefined) entity.addComponent(this.loadLight(extensions.KHR_lights_punctual.light))
   }
 
   private loadLight(lightIndex: number): LightComponent {

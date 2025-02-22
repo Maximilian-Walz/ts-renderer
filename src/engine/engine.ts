@@ -3,14 +3,11 @@ import { AssetManager } from './assets/AssetManager'
 import { CameraComponent, CameraControllerComponent, ComponentType, LightComponent, MeshRendererComponent, TransformComponent } from './components'
 import { GPUDataInterface } from './GPUDataInterface'
 import { InputManager } from './InputManager'
+import { Scene } from './scenes/Scene'
 import { SceneManger } from './scenes/SceneManager'
 import { CameraController } from './systems/CameraController'
 import { RenderData, Renderer } from './systems/Renderer'
 import { Rotator } from './systems/Rotator'
-export type Scene = {
-  name?: string
-  source: string
-}
 
 export class Engine {
   public assetManager!: AssetManager
@@ -24,6 +21,8 @@ export class Engine {
   private stats: Stats = new Stats()
 
   private activeCameraId?: string
+
+  private abortScheduled: boolean = false
 
   constructor() {
     this.sceneManager = new SceneManger()
@@ -75,18 +74,21 @@ export class Engine {
     this.stats.dom.style.bottom = '0px'
     this.stats.dom.style.top = 'auto'
     document.body.appendChild(this.stats.dom)
-
     requestAnimationFrame(() => this.loop())
   }
 
-  private getRenderData(): RenderData {
-    const models = this.sceneManager.getComponents([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER])
-    const lights = this.sceneManager.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT])
-    const cameras = this.sceneManager.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA])
+  public abort() {
+    this.abortScheduled = true
+  }
+
+  private getRenderData(activeScene: Scene): RenderData {
+    const models = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER])
+    const lights = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT])
+    const cameras = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA])
 
     let activeCamera
     if (this.activeCameraId != undefined) {
-      activeCamera = this.sceneManager.getComponentsByEntityId(this.activeCameraId)
+      activeCamera = this.sceneManager.getActiveScene().getEntity(this.activeCameraId)
     }
 
     return {
@@ -100,33 +102,42 @@ export class Engine {
         return { transform: components.transform as TransformComponent, camera: components.camera as CameraComponent }
       }),
       activeCameraData: activeCamera
-        ? { transform: activeCamera.get(ComponentType.TRANSFORM) as TransformComponent, camera: activeCamera.get(ComponentType.CAMERA) as CameraComponent }
+        ? {
+            transform: activeCamera.getComponent(ComponentType.TRANSFORM) as TransformComponent,
+            camera: activeCamera.getComponent(ComponentType.CAMERA) as CameraComponent,
+          }
         : undefined,
     }
   }
 
   private loop() {
+    if (this.abortScheduled) {
+      this.abortScheduled = false
+      return
+    }
+
     this.stats.begin()
 
-    const rotatableModels = this.sceneManager.getComponents([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE])
+    const activeScene = this.sceneManager.getActiveScene()
+    const rotatableModels = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE])
     //this.rotator.rotate(rotatableModels)
 
-    const controlledEntities = this.sceneManager.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA_CONTROLLER])
+    const controlledEntities = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA_CONTROLLER])
     this.cameraController.update(
       controlledEntities.map((components) => {
         return { transform: components.transform as TransformComponent, controller: components.cameraController as CameraControllerComponent }
       })
     )
-
-    this.renderer.render(this.getRenderData())
+    this.renderer.render(this.getRenderData(activeScene))
 
     this.inputManager.clearDeltas()
     this.stats.end()
+
     requestAnimationFrame(() => this.loop())
   }
 
   // TODO: Should not be neccessary to have this in the future, but need to separate components and their GPU elements first
   public updateActiveSceneRenderData() {
-    this.renderer.prepareScene(this.getRenderData())
+    this.renderer.prepareScene(this.getRenderData(this.sceneManager.getActiveScene()))
   }
 }
