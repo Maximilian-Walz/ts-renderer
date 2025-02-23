@@ -61,7 +61,6 @@ export class Engine {
     this.renderer.setRenderTarget(canvas)
     this.inputManager.setTarget(canvas)
     this.initRendering()
-    this.updateActiveSceneRenderData()
   }
 
   setActiveCamera(cameraId: string) {
@@ -118,21 +117,22 @@ export class Engine {
 
     this.stats.begin()
 
-    const activeScene = this.sceneManager.getActiveScene()
-    const rotatableModels = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE])
-    //this.rotator.rotate(rotatableModels)
+    if (this.sceneManager.hasActiveScene()) {
+      const activeScene = this.sceneManager.getActiveScene()
+      const rotatableModels = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE])
+      //this.rotator.rotate(rotatableModels)
 
-    const controlledEntities = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA_CONTROLLER])
-    this.cameraController.update(
-      controlledEntities.map((components) => {
-        return { transform: components.transform as TransformComponent, controller: components.cameraController as CameraControllerComponent }
-      })
-    )
-    this.renderer.render(this.getRenderData(activeScene))
+      const controlledEntities = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA_CONTROLLER])
+      this.cameraController.update(
+        controlledEntities.map((components) => {
+          return { transform: components.transform as TransformComponent, controller: components.cameraController as CameraControllerComponent }
+        })
+      )
+      this.renderer.render(this.getRenderData(activeScene))
 
-    this.inputManager.clearDeltas()
-    this.stats.end()
-
+      this.inputManager.clearDeltas()
+      this.stats.end()
+    }
     requestAnimationFrame(() => this.loop())
   }
 

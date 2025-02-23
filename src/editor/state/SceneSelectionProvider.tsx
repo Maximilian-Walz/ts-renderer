@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { SceneId } from '../../engine/scenes/Scene'
 import { useEditor } from './EditorProvider'
 
@@ -11,6 +11,14 @@ type Props = {
 
 export function SceneSelctionProvider({ children }: Props) {
   const [selectedSceneId, setSelectedSceneId] = useState<SceneId | undefined>(undefined)
+
+  const editor = useEditor()!
+
+  useEffect(() => {
+    if (selectedSceneId != undefined) {
+      editor.loadGameScene(selectedSceneId)
+    }
+  }, [selectedSceneId])
 
   return (
     <SelectedSceneIdContext.Provider value={selectedSceneId}>

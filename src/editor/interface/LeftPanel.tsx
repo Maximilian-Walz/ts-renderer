@@ -1,21 +1,14 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Tab, Tabs } from '../components/Tabs'
-import { useEditor } from '../state/EditorProvider'
-import { useSetSelectedSceneId } from '../state/SceneSelectionProvider'
-import { SceneImport } from './SceneImport'
+import { SceneSelect } from './SceneSelect'
 import { SceneTree } from './SceneTree'
 
 const tabs: Tab[] = [
-  { id: 'scene', displayName: 'Scene', content: <SceneTree /> },
-  { id: 'import', displayName: 'Import', content: <SceneImport /> },
+  { id: 'tree', displayName: 'Entities', content: <SceneTree /> },
+  { id: 'scenes', displayName: 'Scenes', content: <SceneSelect /> },
 ]
 
 export function LeftPanel() {
-  const editor = useEditor()!
-  const setSelectedSceneId = useSetSelectedSceneId()
-
-  useEffect(() => setSelectedSceneId(editor.game.engine.sceneManager.getActiveScene().sceneId), [])
-
   return (
     <div className="">
       <Tabs tabs={tabs} tabStyle="tabs-lifted" />

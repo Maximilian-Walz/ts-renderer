@@ -7,13 +7,8 @@ import { TransformViewer } from './entityComponentViewer/TransformViewer'
 
 export function RightPanel() {
   const entity = useSelectedEntity()
-
-  if (entity == undefined) {
-    return <div>No entity selected</div>
-  }
-
-  return (
-    <div className="">
+  return entity != undefined ? (
+    <div>
       <div className="text-md collapse-title font-medium">{entity.entityId}</div>
       <div className="space-y-2">
         <TransformViewer entity={entity} />
@@ -22,5 +17,7 @@ export function RightPanel() {
         <MeshRendererViewer entity={entity} />
       </div>
     </div>
+  ) : (
+    <div>No entity selected</div>
   )
 }

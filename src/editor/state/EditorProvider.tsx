@@ -15,3 +15,7 @@ export function EditorProvider({ editor, children }: Props) {
 export function useEditor() {
   return useContext(EditorContext)
 }
+
+export function useGameSceneManager() {
+  return useEditor()!.game.engine.sceneManager
+}

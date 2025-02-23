@@ -2,6 +2,8 @@ import React from 'react'
 import { Tab, Tabs } from '../components/Tabs'
 import { Editor } from '../Editor'
 import { EditorProvider } from '../state/EditorProvider'
+import { EntitySelctionProvider } from '../state/EntitySelectionProvider'
+import { SceneSelctionProvider } from '../state/SceneSelectionProvider'
 import { GameView } from './GameView'
 import { Viewport } from './Viewport'
 
@@ -17,9 +19,13 @@ const tabs: Tab[] = [
 export function EditorInterface({ editor }: Props) {
   return (
     <EditorProvider editor={editor}>
-      <div className="flex h-full w-full flex-col bg-gray-900">
-        <Tabs tabs={tabs} className="flex grow flex-col" />
-      </div>
+      <SceneSelctionProvider>
+        <EntitySelctionProvider>
+          <div className="flex h-full w-full overflow-hidden bg-gray-900">
+            <Tabs tabs={tabs} className="flex h-screen w-full flex-col" />
+          </div>
+        </EntitySelctionProvider>
+      </SceneSelctionProvider>
     </EditorProvider>
   )
 }

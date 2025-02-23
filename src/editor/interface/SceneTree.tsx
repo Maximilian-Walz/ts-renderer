@@ -41,7 +41,7 @@ function Node({ entity, childrenMap }: NodeProps) {
           className={`btn btn-ghost btn-xs content-center rounded-full pl-1 pr-2 text-sm ${isActive ? 'bg-primary-500 text-gray-800 hover:bg-primary-400' : 'hover:bg-gray-700'}`}
         >
           <div className={`rounded-full p-1 ${isActive ? 'text-gray-800' : 'text-primary-500'}`}>{icon}</div>
-          {transform.name || `Nameless Entity`}
+          {transform.name || entity.entityId}
         </button>
       </div>
       {expanded && expandable && (

@@ -31,6 +31,6 @@ export function useSelectedEntity() {
   const selectedScene = useSelectedScene()
   const selectedEntityId = useSelectedEntityId()
   if (selectedEntityId != undefined) {
-    return selectedScene?.getEntity(selectedEntityId)
+    return selectedScene?.getEntityOrUndefined(selectedEntityId)
   }
 }

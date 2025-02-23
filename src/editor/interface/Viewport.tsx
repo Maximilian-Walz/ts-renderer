@@ -1,7 +1,5 @@
 import React, { useEffect, useRef } from 'react'
 import { useEditor } from '../state/EditorProvider'
-import { EntitySelctionProvider } from '../state/EntitySelectionProvider'
-import { SceneSelctionProvider } from '../state/SceneSelectionProvider'
 import { LeftPanel } from './LeftPanel'
 import { RightPanel } from './RightPanel'
 
@@ -18,15 +16,16 @@ export function Viewport() {
 
   return (
     <div>
-      <div className="flex min-h-0 grow flex-row">
-        <SceneSelctionProvider>
-          <EntitySelctionProvider>
-            <LeftPanel />
-            <canvas className="min-w-0 grow rounded-xl" ref={canvasRef}></canvas>
-            <RightPanel />
-          </EntitySelctionProvider>
-        </SceneSelctionProvider>
+      <div className="flex flex-row">
+        <div className="basis-1/6">
+          <LeftPanel />
+        </div>
+        <canvas className="min-h-0 min-w-0 grow rounded-xl" ref={canvasRef}></canvas>
+        <div className="basis-1/4 overflow-scroll">
+          <RightPanel />
+        </div>
       </div>
+      <div className="flex-row text-center">Bottom Panel</div>
     </div>
   )
 }
