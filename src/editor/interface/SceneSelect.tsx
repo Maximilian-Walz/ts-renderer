@@ -8,11 +8,11 @@ export function SceneSelect() {
   const setSelectedSceneId = useSetSelectedSceneId()
 
   return (
-    <div className="join join-vertical m-2 items-start">
+    <div className="join join-vertical m-2 items-start gap-1">
       {sceneManger.getScenes().map((scene) => (
         <button
           key={scene.sceneId}
-          className={`${scene.sceneId == selectedSceneId ? 'bg-primary-500 text-gray-800 hover:bg-primary-400' : 'text-gray-200 hover:bg-gray-700'} btn btn-ghost btn-xs rounded-full pl-1 pr-2 text-sm text-gray-800`}
+          className={`${scene.sceneId == selectedSceneId ? 'bg-primary-500 text-gray-800 hover:bg-primary-400' : 'text-gray-200 hover:bg-gray-700'} btn btn-ghost btn-xs rounded-full pl-1 pr-2 text-sm`}
           onClick={() => setSelectedSceneId(scene.sceneId)}
         >
           {scene.sceneId}

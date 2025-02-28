@@ -21,8 +21,10 @@ export function EditorInterface({ editor }: Props) {
     <EditorProvider editor={editor}>
       <SceneSelctionProvider>
         <EntitySelctionProvider>
-          <div className="flex h-full w-full overflow-hidden bg-gray-900">
-            <Tabs tabs={tabs} className="flex h-screen w-full flex-col" />
+          <div className="h-full w-full overflow-hidden bg-gray-900">
+            <div className="flex h-full grow flex-col">
+              <Tabs tabs={tabs} />
+            </div>
           </div>
         </EntitySelctionProvider>
       </SceneSelctionProvider>

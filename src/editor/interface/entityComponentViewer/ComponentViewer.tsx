@@ -1,6 +1,6 @@
 import React, { ReactElement, useState } from 'react'
 import { LuBoxSelect } from 'react-icons/lu'
-import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
+import { MdKeyboardArrowDown, MdKeyboardArrowLeft } from 'react-icons/md'
 
 type Props = {
   title: string
@@ -12,20 +12,19 @@ export function ComponentViewer({ title, children, icon = <LuBoxSelect /> }: Pro
   const [expanded, setExpanded] = useState<boolean>(false)
 
   return (
-    <div className="collapse rounded-none">
-      <input type="checkbox" hidden readOnly checked={expanded}></input>
+    <div className="flex flex-col">
       <div
-        className="join join-horizontal cursor-pointer items-center justify-between rounded-none bg-gray-800 p-3 px-6 align-middle text-sm font-medium hover:bg-gray-700"
+        className="join join-horizontal grow cursor-pointer items-center justify-between rounded-none bg-gray-800 p-3 px-6 align-middle text-sm font-medium hover:bg-gray-700"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="join items-center">
+        <div className="join grow items-center">
           <span className="mr-3">{icon}</span>
           {title}
         </div>
-        {expanded ? <MdKeyboardArrowUp /> : <MdKeyboardArrowDown />}
+        {expanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowLeft />}
       </div>
-      <div className="collapse-content">
-        <div className="mt-3">{children}</div>
+      <div hidden={!expanded} className="m-3">
+        {children}
       </div>
     </div>
   )

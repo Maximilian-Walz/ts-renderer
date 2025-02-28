@@ -15,17 +15,17 @@ export function Viewport() {
   }, [canvasRef, editor])
 
   return (
-    <div>
-      <div className="flex flex-row">
-        <div className="basis-1/6">
-          <LeftPanel />
-        </div>
-        <canvas className="min-h-0 min-w-0 grow rounded-xl" ref={canvasRef}></canvas>
-        <div className="basis-1/4 overflow-scroll">
-          <RightPanel />
-        </div>
+    <div className="flex grow">
+      <div className="basis-2/12">
+        <LeftPanel />
       </div>
-      <div className="flex-row text-center">Bottom Panel</div>
+      <div className="flex grow basis-7/12 flex-col">
+        <canvas className="min-h-0 min-w-0 grow rounded-xl" ref={canvasRef}></canvas>
+        <div className="basis-1/12 text-center">Bottom Panel</div>
+      </div>
+      <div className="flex grow basis-3/12 flex-col">
+        <RightPanel />
+      </div>
     </div>
   )
 }
