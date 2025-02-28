@@ -1,6 +1,6 @@
 import Stats from 'stats.js'
 import { AssetManager } from './assets/AssetManager'
-import { CameraComponent, CameraControllerComponent, ComponentType, LightComponent, MeshRendererComponent, TransformComponent } from './components'
+import { BillboardComponent, CameraComponent, CameraControllerComponent, ComponentType, LightComponent, MeshRendererComponent, TransformComponent } from './components'
 import { GPUDataInterface } from './GPUDataInterface'
 import { InputManager } from './InputManager'
 import { Scene } from './scenes/Scene'
@@ -53,7 +53,7 @@ export class Engine {
 
     this.gpuDataInterface = new GPUDataInterface(device)
     this.assetManager = new AssetManager(this.gpuDataInterface)
-    this.renderer = new Renderer(device, this.assetManager, this.gpuDataInterface)
+    this.renderer = new Renderer(device, this.gpuDataInterface)
     await this.assetManager.loadDefaultAssets()
   }
 
@@ -84,6 +84,7 @@ export class Engine {
     const models = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER])
     const lights = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT])
     const cameras = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA])
+    const billboards = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.BILLBOARD])
 
     let activeCamera
     if (this.activeCameraId != undefined) {
@@ -99,6 +100,9 @@ export class Engine {
       }),
       camerasData: cameras.map((components) => {
         return { transform: components.transform as TransformComponent, camera: components.camera as CameraComponent }
+      }),
+      billboardsData: billboards.map((components) => {
+        return { transform: components.transform as TransformComponent, billboard: components.billboard as BillboardComponent }
       }),
       activeCameraData: activeCamera
         ? {

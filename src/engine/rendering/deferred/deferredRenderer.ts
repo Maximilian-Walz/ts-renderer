@@ -3,13 +3,12 @@ import { CameraData, LightData, ModelData, RenderData } from '../../systems/Rend
 import { RenderStrategy } from '../RenderStrategy'
 
 import { PbrMaterial } from '../../assets/Material'
-import { DebugRenderer } from '../debug/DebugRenderer'
+import { ObscuredBillboardRenderer } from '../billboards/ObscuredBillboardRenderer'
 import { ShadowMapper } from '../shadows/ShadowMapper'
 import { SunLightShadowMapper } from '../shadows/SunLightShadowMapper'
 import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
 
-import { AssetManager } from '../../assets/AssetManager'
 import { BufferDataComponentType, getBufferDataTypeByteCount, VertexAttributeType } from '../../assets/Mesh'
 import ambientFrag from './ambient.frag.wgsl'
 import pointLightShading from './pointLightShading.frag.wgsl'
@@ -28,7 +27,7 @@ export class DeferredRenderer implements RenderStrategy {
   private context: GPUCanvasContext
 
   private shadowMapper: ShadowMapper
-  private debugRenderer: DebugRenderer
+  private debugRenderer: ObscuredBillboardRenderer
 
   private gBuffer: GBuffer
   private writeGBufferPipeline: GPURenderPipeline
@@ -59,12 +58,12 @@ export class DeferredRenderer implements RenderStrategy {
     },
   ]
 
-  constructor(device: GPUDevice, context: GPUCanvasContext, assetManager: AssetManager) {
+  constructor(device: GPUDevice, context: GPUCanvasContext) {
     this.device = device
     this.context = context
 
     this.shadowMapper = new SunLightShadowMapper(device)
-    this.debugRenderer = new DebugRenderer(device, context, assetManager)
+    this.debugRenderer = new ObscuredBillboardRenderer(device, context)
     this.gBuffer = this.createGBuffer()
 
     const deferredShadingVertexModule = this.device.createShaderModule({
@@ -298,7 +297,7 @@ export class DeferredRenderer implements RenderStrategy {
     deferredRenderingPass.end()
   }
 
-  public render({ modelsData, lightsData, camerasData, activeCameraData }: RenderData): void {
+  public render({ modelsData, lightsData, activeCameraData, billboardsData }: RenderData): void {
     if (!activeCameraData) return
 
     const commandEncoder = this.device.createCommandEncoder()
@@ -307,7 +306,7 @@ export class DeferredRenderer implements RenderStrategy {
     this.writeGBuffer(commandEncoder, modelsData, activeCameraData)
     this.doShading(commandEncoder, lightsData, activeCameraData)
 
-    this.debugRenderer.renderDebugOverlay(commandEncoder, this.gBuffer.getDepthAttachment().view, lightsData, camerasData, activeCameraData)
+    this.debugRenderer.render(commandEncoder, this.gBuffer.getDepthAttachment().view, billboardsData, activeCameraData)
 
     this.device.queue.submit([commandEncoder.finish()])
   }

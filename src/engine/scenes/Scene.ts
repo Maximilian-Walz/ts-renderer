@@ -56,6 +56,7 @@ export class Scene {
         [ComponentType.LIGHT]: undefined,
         [ComponentType.AUTO_ROTATE]: undefined,
         [ComponentType.CAMERA_CONTROLLER]: undefined,
+        [ComponentType.BILLBOARD]: undefined,
       }
       Object.keys(ComponentType).forEach(
         (type) => (record[ComponentType[type as keyof typeof ComponentType]] = entity.getComponentOrUndefined(ComponentType[type as keyof typeof ComponentType]))

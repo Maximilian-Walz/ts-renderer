@@ -9,8 +9,10 @@ export enum ComponentType {
   LIGHT = 'light',
   AUTO_ROTATE = 'autoRotate',
   CAMERA_CONTROLLER = 'cameraController',
+  BILLBOARD = 'billboard',
 }
 
+export * from './BillboardComponent'
 export * from './CameraComponent'
 export * from './Component'
 export * from './LightComponent'

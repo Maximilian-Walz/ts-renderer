@@ -1,7 +1,7 @@
 import { mat4, vec4 } from 'wgpu-matrix'
 import { BasicMaterial, GPUMaterial, Material, PbrMaterial } from './assets/Material'
 import { TextureData } from './assets/loaders/TextureAssetLoader'
-import { CameraComponent, LightComponent, LightType, TransformComponent } from './components'
+import { BillboardComponent, CameraComponent, LightComponent, LightType, TransformComponent } from './components'
 import { CameraData, GPUTextureData, LightData } from './systems/Renderer'
 
 export class GPUDataInterface {
@@ -73,6 +73,25 @@ export class GPUDataInterface {
     LightComponent.shadowMappingBindGroupLayout = this.device.createBindGroupLayout({
       label: 'Shadow mapping',
       entries: [lightBaseDataLayoutEntry],
+    })
+
+    // Omnipresent Billboards
+    BillboardComponent.bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Billboard data',
+      entries: [
+        {
+          binding: 0,
+          texture: {
+            sampleType: 'float',
+          },
+          visibility: GPUShaderStage.FRAGMENT,
+        },
+        {
+          binding: 1,
+          sampler: {},
+          visibility: GPUShaderStage.FRAGMENT,
+        },
+      ],
     })
   }
 
@@ -211,6 +230,25 @@ export class GPUDataInterface {
           entries: [lightBaseDataEntry],
         })
       }
+    })
+  }
+
+  public prepareBillboards(billboards: BillboardComponent[]) {
+    billboards.forEach((billboard) => {
+      let textureData = billboard.textureLoader.getAssetData()
+      billboard.bindGroup = this.device.createBindGroup({
+        layout: BillboardComponent.bindGroupLayout,
+        entries: [
+          {
+            binding: 0,
+            resource: textureData.texture.createView(),
+          },
+          {
+            binding: 1,
+            resource: textureData.sampler,
+          },
+        ],
+      })
     })
   }
 

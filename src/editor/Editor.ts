@@ -1,6 +1,6 @@
 import { vec3 } from 'wgpu-matrix'
 import { CoolGame } from '../coolGame/CoolGame'
-import { CameraComponent, CameraControllerComponent, CameraType, TransformComponent } from '../engine/components'
+import { BillboardComponent, CameraComponent, CameraControllerComponent, CameraType, ComponentType, LightComponent, LightType, TransformComponent } from '../engine/components'
 import { Game } from '../engine/Game'
 import { Entity } from '../engine/scenes/Entity'
 import { Scene, SceneId } from '../engine/scenes/Scene'
@@ -48,10 +48,23 @@ export class Editor extends Game {
     this.engine.setActiveCamera(editorCamId)
   }
 
+  private addBillboards(scene: Scene) {
+    scene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA]).forEach(({ transform }) => {
+      const billboard = scene.createEntity(`camera_${(transform as TransformComponent).name}_billboard`, new TransformComponent(transform as TransformComponent))
+      billboard.addComponent(new BillboardComponent(this.engine.assetManager.getTextureLoader('camera')))
+    })
+
+    scene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT]).forEach(({ transform, light }) => {
+      const billboard = scene.createEntity(`light_${(transform as TransformComponent).name}_billboard`, new TransformComponent(transform as TransformComponent))
+      billboard.addComponent(new BillboardComponent(this.engine.assetManager.getTextureLoader((light as LightComponent).lightType == LightType.SUN ? 'sun' : 'lightbulb')))
+    })
+  }
+
   public loadGameScene(sceneId: SceneId) {
     if (!this.engine.sceneManager.hasScene(sceneId)) {
       const copy = this.engine.sceneManager.addSceneCopy(this.game.engine.sceneManager.getScene(sceneId))
       this.addEditorCamera(copy)
+      this.addBillboards(copy)
     }
     this.engine.sceneManager.setActiveScene(sceneId)
     this.engine.updateActiveSceneRenderData()
