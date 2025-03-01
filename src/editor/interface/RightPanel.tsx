@@ -1,9 +1,9 @@
 import React from 'react'
 import { useSelectedEntity } from '../state/EntitySelectionProvider'
-import { CameraViewer } from './entityComponentViewer/CameraViewer'
-import { LightViewer } from './entityComponentViewer/LightViewer'
-import { MeshRendererViewer } from './entityComponentViewer/MeshRendererViewer'
-import { TransformViewer } from './entityComponentViewer/TransformViewer'
+import { CameraViewer } from './entity-component-viewer/CameraViewer'
+import { LightViewer } from './entity-component-viewer/LightViewer'
+import { MeshRendererViewer } from './entity-component-viewer/MeshRendererViewer'
+import { TransformViewer } from './entity-component-viewer/TransformViewer'
 
 export function RightPanel() {
   const entity = useSelectedEntity()

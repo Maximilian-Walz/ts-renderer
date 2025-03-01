@@ -10,6 +10,7 @@ export enum ComponentType {
   AUTO_ROTATE = 'autoRotate',
   CAMERA_CONTROLLER = 'cameraController',
   BILLBOARD = 'billboard',
+  SHADOW_MAP = 'shadowMap',
 }
 
 export * from './BillboardComponent'
@@ -17,6 +18,7 @@ export * from './CameraComponent'
 export * from './Component'
 export * from './LightComponent'
 export * from './MeshRendererComponent'
+export * from './ShadowMapComponent'
 export * from './TransformComponent'
 
 export class AutoRotateComponent extends Component {

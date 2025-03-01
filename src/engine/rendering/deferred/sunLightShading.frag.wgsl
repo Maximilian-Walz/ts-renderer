@@ -25,8 +25,8 @@ struct Light {
 @group(1) @binding(0) var<uniform> camera : Camera;
 
 @group(2) @binding(0) var<uniform> light: Light;
-@group(2) @binding(1) var shadowMapTexture: texture_depth_2d;
-@group(2) @binding(2) var shadowMapSampler: sampler_comparison;
+@group(3) @binding(0) var shadowMapTexture: texture_depth_2d;
+@group(3) @binding(1) var shadowMapSampler: sampler_comparison;
 
 
 fn loadGBufferTexture(texture: texture_2d<f32>, coord: vec4f) -> vec4f {

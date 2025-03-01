@@ -1,5 +1,6 @@
 import { mat4, Mat4 } from 'wgpu-matrix'
-import { Component, ComponentType } from '.'
+import { BindGroupDataComponent, ComponentType } from '.'
+import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
 
 export enum CameraType {
   PERSPECTIVE,
@@ -16,7 +17,7 @@ export type OrthographicData = {
   yMag: number
 }
 
-export class CameraComponent extends Component {
+export class CameraComponent extends BindGroupDataComponent<BufferBindGroupData> {
   name?: string
   cameraType: CameraType
   useCanvasAspect?: boolean
@@ -25,10 +26,6 @@ export class CameraComponent extends Component {
   zFar: number
   invViewProjection?: Mat4
 
-  bindGroup: GPUBindGroup | undefined
-  static bindGroupLayout: GPUBindGroupLayout
-  matricesBuffer: GPUBuffer | undefined
-
   constructor(cameraType: CameraType, data: PerspectiveData | OrthographicData, zNear?: number, zFar?: number) {
     super(ComponentType.CAMERA)
     this.cameraType = cameraType
@@ -36,6 +33,14 @@ export class CameraComponent extends Component {
     this.data = data
     this.zNear = zNear ?? 1
     this.zFar = zFar ?? 100
+  }
+
+  public createBindGroupData(device: GPUDevice): BufferBindGroupData {
+    return new BufferBindGroupData(device, 256)
+  }
+
+  public static override getBindGroupLayout(device: GPUDevice): GPUBindGroupLayout {
+    return BufferBindGroupData.getLayout(device)
   }
 
   getProjection(cavasWidth?: number, canvasHeight?: number): Mat4 {

@@ -2,7 +2,9 @@ import { Component, ComponentType, TransformComponent } from '../components'
 import { Entity, EntityId } from './Entity'
 
 export type SceneId = string
-export type ComponentQueryResult = Record<ComponentType, Component | undefined>[]
+
+export type ComponentRecord = Partial<Record<ComponentType, Component | undefined>>
+export type ComponentQueryResult = ComponentRecord[]
 
 export class Scene {
   public readonly sceneId: SceneId
@@ -49,15 +51,7 @@ export class Scene {
   public getComponents(componentTypes: ComponentType[]): ComponentQueryResult {
     const result: ComponentQueryResult = []
     this.entities.forEach((entity) => {
-      let record: Record<ComponentType, Component | undefined> = {
-        [ComponentType.TRANSFORM]: undefined,
-        [ComponentType.CAMERA]: undefined,
-        [ComponentType.MESH_RENDERER]: undefined,
-        [ComponentType.LIGHT]: undefined,
-        [ComponentType.AUTO_ROTATE]: undefined,
-        [ComponentType.CAMERA_CONTROLLER]: undefined,
-        [ComponentType.BILLBOARD]: undefined,
-      }
+      let record: ComponentRecord = {}
       Object.keys(ComponentType).forEach(
         (type) => (record[ComponentType[type as keyof typeof ComponentType]] = entity.getComponentOrUndefined(ComponentType[type as keyof typeof ComponentType]))
       )

@@ -1,21 +1,24 @@
-import { BillboardComponent, CameraComponent, TransformComponent } from '../../components'
 import { BillboardsData, CameraData } from '../../systems/Renderer'
+import { BufferBindGroupData } from '../bind-group-data/BufferBindGroupData'
+import { TextureBindGroupData } from '../bind-group-data/TextureBindGroupData'
 import debugOverlayFrag from './obscuredBillboardRendering.frag.wgsl'
 import debugOverlayVert from './obscuredBillboardRendering.vert.wgsl'
 
 export class ObscuredBillboardRenderer {
   private device: GPUDevice
-  private context: GPUCanvasContext
 
   private quadBuffer: GPUBuffer
   private pipeline: GPURenderPipeline
 
-  constructor(device: GPUDevice, context: GPUCanvasContext) {
+  constructor(device: GPUDevice, targetTextureFormat: GPUTextureFormat) {
     this.device = device
-    this.context = context
 
     this.quadBuffer = this.createQuadBuffer()
-    this.pipeline = this.createPipeline([CameraComponent.bindGroupLayout, TransformComponent.bindGroupLayout, BillboardComponent.bindGroupLayout])
+    this.pipeline = this.createPipeline(targetTextureFormat, [
+      BufferBindGroupData.getLayout(this.device),
+      BufferBindGroupData.getLayout(this.device),
+      TextureBindGroupData.getLayout(this.device),
+    ])
   }
 
   private createQuadBuffer() {
@@ -31,9 +34,9 @@ export class ObscuredBillboardRenderer {
     return quadBuffer
   }
 
-  private createPipeline(bindGroupLayouts: GPUBindGroupLayout[]): GPURenderPipeline {
+  private createPipeline(targetTextureFormat: GPUTextureFormat, bindGroupLayouts: GPUBindGroupLayout[]): GPURenderPipeline {
     return this.device.createRenderPipeline({
-      label: 'Debug overlay',
+      label: 'Billboards',
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: bindGroupLayouts,
       }),
@@ -60,7 +63,7 @@ export class ObscuredBillboardRenderer {
         }),
         targets: [
           {
-            format: this.context.getCurrentTexture().format,
+            format: targetTextureFormat,
             blend: {
               color: {
                 srcFactor: 'src-alpha',
@@ -106,11 +109,11 @@ export class ObscuredBillboardRenderer {
     })
 
     billboardPass.setPipeline(this.pipeline)
-    billboardPass.setBindGroup(0, activeCamera.camera.bindGroup!)
+    billboardPass.setBindGroup(0, activeCamera.camera.getBindGroupData(this.device).bindGroup)
     billboardPass.setVertexBuffer(0, this.quadBuffer)
     billboardsData.forEach(({ transform, billboard }) => {
-      billboardPass.setBindGroup(1, transform.bindGroup!)
-      billboardPass.setBindGroup(2, billboard.bindGroup!)
+      billboardPass.setBindGroup(1, transform.getBindGroupData(this.device).bindGroup)
+      billboardPass.setBindGroup(2, billboard.getBindGroupData(this.device).bindGroup)
       billboardPass.draw(4)
     })
     billboardPass.end()

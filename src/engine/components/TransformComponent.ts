@@ -1,16 +1,13 @@
 import { Mat4, Quat, Vec3, mat3, mat4, quat, vec3 } from 'wgpu-matrix'
-import { Component, ComponentType } from '.'
+import { BindGroupDataComponent, ComponentType } from '.'
+import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
 
-export class TransformComponent extends Component {
+export class TransformComponent extends BindGroupDataComponent<BufferBindGroupData> {
   name: string | undefined
   position: Vec3
   rotation: Quat
   scale: Vec3
   parent?: TransformComponent
-
-  bindGroup: GPUBindGroup | undefined
-  matricesBuffer: GPUBuffer | undefined
-  static bindGroupLayout: GPUBindGroupLayout
 
   constructor(parentTransform?: TransformComponent) {
     super(ComponentType.TRANSFORM)
@@ -18,6 +15,14 @@ export class TransformComponent extends Component {
     this.position = vec3.zero()
     this.rotation = quat.identity()
     this.scale = vec3.fromValues(1, 1, 1)
+  }
+
+  public createBindGroupData(device: GPUDevice): BufferBindGroupData {
+    return new BufferBindGroupData(device, 64 * 3)
+  }
+
+  public static override getBindGroupLayout(device: GPUDevice): GPUBindGroupLayout {
+    return BufferBindGroupData.getLayout(device)
   }
 
   setMatrix(tranformationMatrix: Mat4) {

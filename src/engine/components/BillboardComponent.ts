@@ -1,16 +1,22 @@
 import { ComponentType } from '.'
 import { TextureAssetLoader } from '../assets/loaders/TextureAssetLoader'
-import { Component } from './Component'
+import { TextureBindGroupData } from '../rendering/bind-group-data/TextureBindGroupData'
+import { BindGroupDataComponent } from './Component'
 
-export class BillboardComponent extends Component {
+export class BillboardComponent extends BindGroupDataComponent<TextureBindGroupData> {
   textureLoader: TextureAssetLoader
-
-  bindGroup: GPUBindGroup | undefined
-  static bindGroupLayout: GPUBindGroupLayout
 
   constructor(textureLoader: TextureAssetLoader) {
     super(ComponentType.BILLBOARD)
     this.textureLoader = textureLoader
+  }
+
+  public createBindGroupData(device: GPUDevice): TextureBindGroupData {
+    return new TextureBindGroupData(device, this.textureLoader.getAssetData())
+  }
+
+  public static override getBindGroupLayout(device: GPUDevice): GPUBindGroupLayout {
+    return TextureBindGroupData.getLayout(device)
   }
 
   public toJson(): Object {

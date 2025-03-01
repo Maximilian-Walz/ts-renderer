@@ -1,12 +1,13 @@
 import Stats from 'stats.js'
 import { AssetManager } from './assets/AssetManager'
-import { BillboardComponent, CameraComponent, CameraControllerComponent, ComponentType, LightComponent, MeshRendererComponent, TransformComponent } from './components'
+import { CameraComponent, CameraControllerComponent, ComponentType, TransformComponent } from './components'
 import { GPUDataInterface } from './GPUDataInterface'
 import { InputManager } from './InputManager'
+import { EntityId } from './scenes/Entity'
 import { Scene } from './scenes/Scene'
 import { SceneManger } from './scenes/SceneManager'
 import { CameraController } from './systems/CameraController'
-import { RenderData, Renderer } from './systems/Renderer'
+import { BillboardsData, CameraData, LightData, ModelData, RenderData, Renderer, ShadowMapLightData } from './systems/Renderer'
 import { Rotator } from './systems/Rotator'
 
 export class Engine {
@@ -20,7 +21,7 @@ export class Engine {
   private cameraController: CameraController
   private stats: Stats = new Stats()
 
-  private activeCameraId?: string
+  private activeCameraId?: EntityId
 
   private abortScheduled: boolean = false
 
@@ -80,36 +81,18 @@ export class Engine {
     this.abortScheduled = true
   }
 
-  private getRenderData(activeScene: Scene): RenderData {
-    const models = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER])
-    const lights = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT])
-    const cameras = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA])
-    const billboards = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.BILLBOARD])
-
-    let activeCamera
-    if (this.activeCameraId != undefined) {
-      activeCamera = this.sceneManager.getActiveScene().getEntity(this.activeCameraId)
-    }
-
+  private getRenderData(activeScene: Scene, activeCameraId: EntityId): RenderData {
+    const activeCamera = this.sceneManager.getActiveScene().getEntity(activeCameraId)
     return {
-      modelsData: models.map((components) => {
-        return { transform: components.transform as TransformComponent, meshRenderer: components.meshRenderer as MeshRendererComponent }
-      }),
-      lightsData: lights.map((components) => {
-        return { transform: components.transform as TransformComponent, light: components.light as LightComponent }
-      }),
-      camerasData: cameras.map((components) => {
-        return { transform: components.transform as TransformComponent, camera: components.camera as CameraComponent }
-      }),
-      billboardsData: billboards.map((components) => {
-        return { transform: components.transform as TransformComponent, billboard: components.billboard as BillboardComponent }
-      }),
-      activeCameraData: activeCamera
-        ? {
-            transform: activeCamera.getComponent(ComponentType.TRANSFORM) as TransformComponent,
-            camera: activeCamera.getComponent(ComponentType.CAMERA) as CameraComponent,
-          }
-        : undefined,
+      modelsData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as ModelData[],
+      lightsData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT]) as LightData[],
+      camerasData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA]) as CameraData[],
+      lightsWithShadowMap: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT, ComponentType.SHADOW_MAP]) as ShadowMapLightData[],
+      billboardsData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.BILLBOARD]) as BillboardsData[],
+      activeCameraData: {
+        transform: activeCamera.getComponent(ComponentType.TRANSFORM) as TransformComponent,
+        camera: activeCamera.getComponent(ComponentType.CAMERA) as CameraComponent,
+      },
     }
   }
 
@@ -132,16 +115,13 @@ export class Engine {
           return { transform: components.transform as TransformComponent, controller: components.cameraController as CameraControllerComponent }
         })
       )
-      this.renderer.render(this.getRenderData(activeScene))
+      if (this.activeCameraId != undefined) {
+        this.renderer.render(this.getRenderData(activeScene, this.activeCameraId))
+      }
 
       this.inputManager.clearDeltas()
       this.stats.end()
     }
     requestAnimationFrame(() => this.loop())
-  }
-
-  // TODO: Should not be neccessary to have this in the future, but need to separate components and their GPU elements first
-  public updateActiveSceneRenderData() {
-    this.renderer.prepareScene(this.getRenderData(this.sceneManager.getActiveScene()))
   }
 }

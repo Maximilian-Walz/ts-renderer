@@ -1,7 +1,7 @@
 import { mat4, vec4 } from 'wgpu-matrix'
 import { BasicMaterial, GPUMaterial, Material, PbrMaterial } from './assets/Material'
 import { TextureData } from './assets/loaders/TextureAssetLoader'
-import { BillboardComponent, CameraComponent, LightComponent, LightType, TransformComponent } from './components'
+import { LightType, TransformComponent } from './components'
 import { CameraData, GPUTextureData, LightData } from './systems/Renderer'
 
 export class GPUDataInterface {
@@ -21,78 +21,9 @@ export class GPUDataInterface {
   }
 
   private createStaticBindGroupLayouts() {
-    // Cameras
-    CameraComponent.bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Camera',
-      entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }],
-    })
-
-    // Transforms
-    TransformComponent.bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Transform',
-      entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }],
-    })
-
     // Materials
     BasicMaterial.bindGroupLayout = this.device.createBindGroupLayout(BasicMaterial.bindGroupLayoutDescriptor)
     PbrMaterial.bindGroupLayout = this.device.createBindGroupLayout(PbrMaterial.bindGroupLayoutDescriptor)
-
-    // Lights
-    let lightBaseDataLayoutEntry = {
-      binding: 0,
-      visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-      buffer: {},
-    }
-
-    LightComponent.pointLightBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Point light (casts no shadow)',
-      entries: [lightBaseDataLayoutEntry],
-    })
-
-    LightComponent.sunLightBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Sun light (casts shadow)',
-      entries: [
-        lightBaseDataLayoutEntry,
-        {
-          binding: 1,
-          visibility: GPUShaderStage.FRAGMENT,
-          texture: {
-            sampleType: 'depth',
-          },
-        },
-        {
-          binding: 2,
-          visibility: GPUShaderStage.FRAGMENT,
-          sampler: {
-            type: 'comparison',
-          },
-        },
-      ],
-    })
-
-    LightComponent.shadowMappingBindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Shadow mapping',
-      entries: [lightBaseDataLayoutEntry],
-    })
-
-    // Omnipresent Billboards
-    BillboardComponent.bindGroupLayout = this.device.createBindGroupLayout({
-      label: 'Billboard data',
-      entries: [
-        {
-          binding: 0,
-          texture: {
-            sampleType: 'float',
-          },
-          visibility: GPUShaderStage.FRAGMENT,
-        },
-        {
-          binding: 1,
-          sampler: {},
-          visibility: GPUShaderStage.FRAGMENT,
-        },
-      ],
-    })
   }
 
   public createBuffer(buffer: Uint8Array, usage: GPUBufferUsageFlags) {
@@ -132,25 +63,6 @@ export class GPUDataInterface {
     }
   }
 
-  public prepareTransforms(transforms: TransformComponent[]) {
-    transforms.forEach((transform) => {
-      transform.matricesBuffer = this.device.createBuffer({
-        size: 64 * 3,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      })
-
-      transform.bindGroup = this.device.createBindGroup({
-        layout: TransformComponent.bindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: { buffer: transform.matricesBuffer },
-          },
-        ],
-      })
-    })
-  }
-
   public createPbrMaterial(material: PbrMaterial): GPUMaterial {
     // TODO: Insert binding for additional material info (normal factor, occlusion strength etc.)
     const bindGroup = this.device.createBindGroup({
@@ -181,104 +93,13 @@ export class GPUDataInterface {
     })
   }
 
-  public prepareLights(lightsData: LightData[]) {
-    lightsData.forEach(({ light }) => {
-      light.buffer = this.device.createBuffer({
-        size: 208,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        label: 'Light buffer',
-      })
-
-      let lightBaseDataEntry = {
-        binding: 0,
-        resource: {
-          buffer: light.buffer,
-        },
-      }
-
-      if (light.lightType == LightType.SUN && light.castsShadow) {
-        light.shadowMap = this.device.createTexture({
-          size: [2048, 2048, 1],
-          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-          format: 'depth32float',
-        })
-
-        light.shadowMapView = light.shadowMap.createView()
-
-        light.shadingBindGroup = this.device.createBindGroup({
-          layout: LightComponent.sunLightBindGroupLayout,
-          entries: [
-            lightBaseDataEntry,
-            {
-              binding: 1,
-              resource: light.shadowMapView,
-            },
-            {
-              binding: 2,
-              resource: this.device.createSampler({
-                compare: 'less',
-              }),
-            },
-          ],
-        })
-
-        light.shadowMappingBindGroup = this.device.createBindGroup({
-          layout: LightComponent.shadowMappingBindGroupLayout,
-          entries: [lightBaseDataEntry],
-        })
-      } else if (light.lightType == LightType.POINT) {
-        light.shadingBindGroup = this.device.createBindGroup({
-          layout: LightComponent.pointLightBindGroupLayout,
-          entries: [lightBaseDataEntry],
-        })
-      }
-    })
-  }
-
-  public prepareBillboards(billboards: BillboardComponent[]) {
-    billboards.forEach((billboard) => {
-      let textureData = billboard.textureLoader.getAssetData()
-      billboard.bindGroup = this.device.createBindGroup({
-        layout: BillboardComponent.bindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: textureData.texture.createView(),
-          },
-          {
-            binding: 1,
-            resource: textureData.sampler,
-          },
-        ],
-      })
-    })
-  }
-
-  public prepareCameras(cameraData: CameraData[]) {
-    cameraData.forEach(({ camera }) => {
-      camera.matricesBuffer = this.device.createBuffer({
-        size: 256,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      })
-      camera.bindGroup = this.device.createBindGroup({
-        layout: CameraComponent.bindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: { buffer: camera.matricesBuffer },
-          },
-        ],
-      })
-    })
-  }
-
   public writeTransformBuffers(transforms: TransformComponent[]) {
     transforms.forEach((transform) => {
       const modelMatrix = TransformComponent.calculateGlobalTransform(transform)
       const invModelMatrix = mat4.invert(modelMatrix)
       const normalModelMatrix = mat4.transpose(invModelMatrix)
       const matrices = new Float32Array([...modelMatrix, ...invModelMatrix, ...normalModelMatrix])
-      this.device.queue.writeBuffer(transform.matricesBuffer!, 0, matrices.buffer, matrices.byteOffset, matrices.byteLength)
+      this.device.queue.writeBuffer(transform.getBindGroupData(this.device).buffer, 0, matrices.buffer, matrices.byteOffset, matrices.byteLength)
     })
   }
 
@@ -303,7 +124,7 @@ export class GPUDataInterface {
 
       const viewProjectionMatrix = mat4.mul(light.getProjection(cameraInvViewProjection, invViewMatrix), invViewMatrix)
       const lightBaseData = new Float32Array([...firstEntry, ...viewProjectionMatrix, ...light.color, light.power])
-      this.device.queue.writeBuffer(light.buffer!, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
+      this.device.queue.writeBuffer(light.getBindGroupData(this.device).buffer, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
     })
   }
 
@@ -320,7 +141,7 @@ export class GPUDataInterface {
       camera.invViewProjection = invViewProjectionMatrix
 
       const cameraMatrices = new Float32Array([...viewProjectionMatrix, ...invViewProjectionMatrix, ...invViewMatrix, ...projectionMatrix])
-      this.device.queue.writeBuffer(camera.matricesBuffer!, 0, cameraMatrices.buffer, cameraMatrices.byteOffset, cameraMatrices.byteLength)
+      this.device.queue.writeBuffer(camera.getBindGroupData(this.device).buffer, 0, cameraMatrices.buffer, cameraMatrices.byteOffset, cameraMatrices.byteLength)
     })
   }
 }

@@ -1,4 +1,4 @@
-import { CameraData, LightData, ModelData } from '../../systems/Renderer'
+import { CameraData, ModelData, ShadowMapLightData } from '../../systems/Renderer'
 
 export abstract class ShadowMapper {
   protected device: GPUDevice
@@ -7,5 +7,5 @@ export abstract class ShadowMapper {
     this.device = device
   }
 
-  public abstract renderShadowMap(commandEncoder: GPUCommandEncoder, modelsData: ModelData[], lightData: LightData, cameraData: CameraData): void
+  public abstract renderShadowMap(commandEncoder: GPUCommandEncoder, modelsData: ModelData[], shadowMappingData: ShadowMapLightData, cameraData: CameraData): void
 }

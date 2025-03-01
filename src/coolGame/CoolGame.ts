@@ -1,4 +1,5 @@
 import { GltfImporter } from '../engine/assets/GltfImporter'
+import { ShadowMapComponent } from '../engine/components'
 import { Game } from '../engine/Game'
 
 const gameScenes = {
@@ -17,6 +18,9 @@ export class CoolGame extends Game {
 
     this.engine.sceneManager.setActiveScene('shadowTest_scene_0')
     this.engine.setActiveCamera('Camera')
-    this.engine.updateActiveSceneRenderData()
+
+    const activeScene = this.engine.sceneManager.getActiveScene()
+    const sunLight = activeScene.getEntity('Light')
+    sunLight.addComponent(new ShadowMapComponent())
   }
 }

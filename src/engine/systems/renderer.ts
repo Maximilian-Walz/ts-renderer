@@ -1,7 +1,6 @@
-import { BillboardComponent, CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../components'
+import { BillboardComponent, CameraComponent, LightComponent, MeshRendererComponent, ShadowMapComponent, TransformComponent } from '../components'
 import { GPUDataInterface } from '../GPUDataInterface'
 import { DeferredRenderer } from '../rendering/deferred/DeferredRenderer'
-import { RenderStrategy } from '../rendering/RenderStrategy'
 
 export type CameraData = {
   transform: TransformComponent
@@ -18,17 +17,26 @@ export type LightData = {
   light: LightComponent
 }
 
+export type GPUSpriteData = {}
+
 export type BillboardsData = {
   transform: TransformComponent
   billboard: BillboardComponent
 }
 
+export type ShadowMapLightData = {
+  transform: TransformComponent
+  light: LightComponent
+  shadowMap: ShadowMapComponent
+}
+
 export type RenderData = {
   modelsData: ModelData[]
   lightsData: LightData[]
+  lightsWithShadowMap: ShadowMapLightData[]
   camerasData: CameraData[]
   billboardsData: BillboardsData[]
-  activeCameraData?: CameraData
+  activeCameraData: CameraData
 }
 
 export type GPUTextureData = {
@@ -39,7 +47,7 @@ export type GPUTextureData = {
 export class Renderer {
   private device: GPUDevice
   private gpuDataInterface: GPUDataInterface
-  private renderStrategy!: RenderStrategy
+  private deferredRenderer: DeferredRenderer
 
   private canvas!: HTMLCanvasElement
   private context!: GPUCanvasContext
@@ -47,6 +55,7 @@ export class Renderer {
   constructor(device: GPUDevice, gpuDataInterface: GPUDataInterface) {
     this.device = device
     this.gpuDataInterface = gpuDataInterface
+    this.deferredRenderer = new DeferredRenderer(this.device, navigator.gpu.getPreferredCanvasFormat())
   }
 
   public setRenderTarget(canvas: HTMLCanvasElement) {
@@ -56,30 +65,9 @@ export class Renderer {
       device: this.device,
       format: navigator.gpu.getPreferredCanvasFormat(),
     })
-
-    this.renderStrategy = new DeferredRenderer(this.device, this.context)
-  }
-
-  public prepareScene({ modelsData, lightsData, camerasData, billboardsData }: RenderData) {
-    this.gpuDataInterface.prepareTransforms(modelsData.map(({ transform }) => transform))
-
-    this.gpuDataInterface.prepareTransforms(camerasData.map(({ transform }) => transform))
-    this.gpuDataInterface.prepareCameras(camerasData)
-
-    this.gpuDataInterface.prepareTransforms(lightsData.map(({ transform }) => transform))
-    this.gpuDataInterface.prepareLights(lightsData)
-
-    this.gpuDataInterface.prepareTransforms(billboardsData.map(({ transform }) => transform))
-    this.gpuDataInterface.prepareBillboards(billboardsData.map(({ billboard }) => billboard))
   }
 
   public render(sceneData: RenderData) {
-    const { modelsData, lightsData, camerasData, billboardsData, activeCameraData } = sceneData
-    if (activeCameraData == undefined) {
-      console.warn('Scene has no active camera.')
-      return
-    }
-
     const currentWidth = this.canvas.clientWidth
     const currentHeight = this.canvas.clientHeight
     if (currentWidth !== this.canvas.width || currentHeight !== this.canvas.height) {
@@ -87,6 +75,7 @@ export class Renderer {
       this.canvas.height = currentHeight
     }
 
+    const { modelsData, lightsData, camerasData, billboardsData, activeCameraData } = sceneData
     this.gpuDataInterface.writeTransformBuffers(modelsData.map(({ transform }) => transform))
     this.gpuDataInterface.writeTransformBuffers(camerasData.map(({ transform }) => transform))
     this.gpuDataInterface.writeTransformBuffers(lightsData.map(({ transform }) => transform))
@@ -94,6 +83,6 @@ export class Renderer {
     this.gpuDataInterface.writeCamraBuffers(camerasData, currentWidth, currentHeight)
     this.gpuDataInterface.writeLightBuffers(lightsData, activeCameraData)
 
-    this.renderStrategy.render(sceneData)
+    this.deferredRenderer.render(this.context.getCurrentTexture(), sceneData)
   }
 }

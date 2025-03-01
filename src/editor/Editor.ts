@@ -67,6 +67,5 @@ export class Editor extends Game {
       this.addBillboards(copy)
     }
     this.engine.sceneManager.setActiveScene(sceneId)
-    this.engine.updateActiveSceneRenderData()
   }
 }

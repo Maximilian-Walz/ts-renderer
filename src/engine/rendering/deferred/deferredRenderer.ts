@@ -1,6 +1,5 @@
-import { CameraComponent, LightComponent, LightType, TransformComponent } from '../../components'
-import { CameraData, LightData, ModelData, RenderData } from '../../systems/Renderer'
-import { RenderStrategy } from '../RenderStrategy'
+import { CameraComponent, LightComponent, LightType, ShadowMapComponent } from '../../components'
+import { CameraData, LightData, ModelData, RenderData, ShadowMapLightData } from '../../systems/Renderer'
 
 import { PbrMaterial } from '../../assets/Material'
 import { ObscuredBillboardRenderer } from '../billboards/ObscuredBillboardRenderer'
@@ -10,6 +9,8 @@ import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
 
 import { BufferDataComponentType, getBufferDataTypeByteCount, VertexAttributeType } from '../../assets/Mesh'
+import { BufferBindGroupData } from '../bind-group-data/BufferBindGroupData'
+import { ShadowMapBindGroupData } from '../bind-group-data/ShadowMapBindGroupData'
 import ambientFrag from './ambient.frag.wgsl'
 import pointLightShading from './pointLightShading.frag.wgsl'
 import sunLightShading from './sunLightShading.frag.wgsl'
@@ -22,9 +23,8 @@ type VertexAttributeInfo = {
   format: GPUVertexFormat
 }
 
-export class DeferredRenderer implements RenderStrategy {
+export class DeferredRenderer {
   private device: GPUDevice
-  private context: GPUCanvasContext
 
   private shadowMapper: ShadowMapper
   private billboardRenderer: ObscuredBillboardRenderer
@@ -34,8 +34,9 @@ export class DeferredRenderer implements RenderStrategy {
   private deferredSunLightRenderPipeline: GPURenderPipeline
   private ambientRenderPipeline: GPURenderPipeline
 
-  private targetTextureView: GPUTextureView
   private deferredPointLightRenderPipeline: GPURenderPipeline
+
+  private defaultShadowMapData: ShadowMapBindGroupData
 
   private static vertexDataMapping: VertexAttributeInfo[] = [
     {
@@ -60,32 +61,33 @@ export class DeferredRenderer implements RenderStrategy {
     },
   ]
 
-  constructor(device: GPUDevice, context: GPUCanvasContext) {
+  constructor(device: GPUDevice, targetTextureFormat: GPUTextureFormat) {
     this.device = device
-    this.context = context
 
     this.shadowMapper = new SunLightShadowMapper(device)
-    this.billboardRenderer = new ObscuredBillboardRenderer(device, context)
+    this.billboardRenderer = new ObscuredBillboardRenderer(device, targetTextureFormat)
     this.gBuffer = this.createGBuffer()
+
+    this.defaultShadowMapData = new ShadowMapBindGroupData(device, 1)
 
     const deferredShadingVertexModule = this.device.createShaderModule({
       code: deferredRenderingVert,
     })
 
     this.writeGBufferPipeline = this.createWriteGBufferPipeline()
-    this.ambientRenderPipeline = this.createAmbientRenderPipeline(deferredShadingVertexModule)
+    this.ambientRenderPipeline = this.createAmbientRenderPipeline(targetTextureFormat, deferredShadingVertexModule)
     this.deferredSunLightRenderPipeline = this.createDeferredRenderPipeline(
-      [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.sunLightBindGroupLayout],
+      targetTextureFormat,
+      [this.gBuffer.getBindGroupLayout(), CameraComponent.getBindGroupLayout(device), LightComponent.getBindGroupLayout(device), ShadowMapComponent.getBindGroupLayout(device)],
       deferredShadingVertexModule,
       true
     )
     this.deferredPointLightRenderPipeline = this.createDeferredRenderPipeline(
-      [this.gBuffer.getBindGroupLayout(), TransformComponent.bindGroupLayout, LightComponent.pointLightBindGroupLayout],
+      targetTextureFormat,
+      [this.gBuffer.getBindGroupLayout(), CameraComponent.getBindGroupLayout(device), LightComponent.getBindGroupLayout(device), ShadowMapComponent.getBindGroupLayout(device)],
       deferredShadingVertexModule,
       false
     )
-
-    this.targetTextureView = this.context.getCurrentTexture().createView()
   }
 
   private createGBuffer(): GBuffer {
@@ -101,7 +103,7 @@ export class DeferredRenderer implements RenderStrategy {
   private createWriteGBufferPipeline(): GPURenderPipeline {
     return this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [CameraComponent.bindGroupLayout, TransformComponent.bindGroupLayout, PbrMaterial.bindGroupLayout],
+        bindGroupLayouts: [BufferBindGroupData.getLayout(this.device), BufferBindGroupData.getLayout(this.device), PbrMaterial.bindGroupLayout],
       }),
       vertex: {
         module: this.device.createShaderModule({
@@ -149,18 +151,13 @@ export class DeferredRenderer implements RenderStrategy {
     }
   }
 
-  private writeGBuffer(commandEncoder: GPUCommandEncoder, modelsData: ModelData[], cameraData: CameraData): void {
-    const target = this.context.getCurrentTexture()
+  private writeGBuffer(commandEncoder: GPUCommandEncoder, target: GPUTexture, modelsData: ModelData[], cameraData: CameraData): void {
     const gBufferPass = commandEncoder.beginRenderPass(this.createWriteGBufferPassDescriptor(target))
     gBufferPass.setPipeline(this.writeGBufferPipeline)
-    gBufferPass.setBindGroup(0, cameraData.camera.bindGroup!)
+    gBufferPass.setBindGroup(0, cameraData.camera.getBindGroupData(this.device).bindGroup)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
-      if (transform.matricesBuffer == undefined) {
-        return
-      }
-
-      gBufferPass.setBindGroup(1, transform.bindGroup!)
+      gBufferPass.setBindGroup(1, transform.getBindGroupData(this.device).bindGroup)
       meshRenderer.primitives.forEach(({ meshLoader, materialLoader }) => {
         const mesh = meshLoader.getAssetData()
         const type = mesh.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
@@ -184,7 +181,7 @@ export class DeferredRenderer implements RenderStrategy {
     gBufferPass.end()
   }
 
-  private createAmbientRenderPipeline(deferredShadingVertexModule: GPUShaderModule): GPURenderPipeline {
+  private createAmbientRenderPipeline(targetTextureFormat: GPUTextureFormat, deferredShadingVertexModule: GPUShaderModule): GPURenderPipeline {
     return this.device.createRenderPipeline({
       label: 'Ambient',
       layout: this.device.createPipelineLayout({
@@ -199,7 +196,7 @@ export class DeferredRenderer implements RenderStrategy {
         }),
         targets: [
           {
-            format: this.context.getCurrentTexture().format,
+            format: targetTextureFormat,
             blend: {
               color: {
                 srcFactor: 'one',
@@ -226,7 +223,12 @@ export class DeferredRenderer implements RenderStrategy {
     renderPass.draw(6)
   }
 
-  private createDeferredRenderPipeline(bindGroupLayouts: GPUBindGroupLayout[], deferredShadingVertexModule: GPUShaderModule, isSunLight: boolean): GPURenderPipeline {
+  private createDeferredRenderPipeline(
+    targetTextureFormat: GPUTextureFormat,
+    bindGroupLayouts: GPUBindGroupLayout[],
+    deferredShadingVertexModule: GPUShaderModule,
+    isSunLight: boolean
+  ): GPURenderPipeline {
     return this.device.createRenderPipeline({
       label: isSunLight ? 'Sun light shading' : 'Point light shading',
       layout: this.device.createPipelineLayout({
@@ -241,7 +243,7 @@ export class DeferredRenderer implements RenderStrategy {
         }),
         targets: [
           {
-            format: this.context.getCurrentTexture().format,
+            format: targetTextureFormat,
             blend: {
               color: {
                 srcFactor: 'one',
@@ -262,13 +264,12 @@ export class DeferredRenderer implements RenderStrategy {
     })
   }
 
-  private createDeferredRenderPassDescriptor(): GPURenderPassDescriptor {
-    this.targetTextureView = this.context.getCurrentTexture().createView()
+  private createDeferredRenderPassDescriptor(targetView: GPUTextureView): GPURenderPassDescriptor {
     return {
       label: 'Deferred Shading',
       colorAttachments: [
         {
-          view: this.targetTextureView,
+          view: targetView,
           clearValue: [0, 0, 0, 1],
           loadOp: 'clear',
           storeOp: 'store',
@@ -277,41 +278,68 @@ export class DeferredRenderer implements RenderStrategy {
     }
   }
 
-  private doShadingForLightType(renderPass: GPURenderPassEncoder, pipeline: GPURenderPipeline, lightsData: LightData[], cameraData: CameraData): void {
+  private doShadingForLightType(
+    renderPass: GPURenderPassEncoder,
+    pipeline: GPURenderPipeline,
+    lightsData: LightData[],
+    shadowCastingLights: ShadowMapLightData[],
+    cameraData: CameraData
+  ): void {
     renderPass.setPipeline(pipeline)
     renderPass.setBindGroup(0, this.gBuffer.getBindGroup())
-    // reuse scene bind group for now
-    renderPass.setBindGroup(1, cameraData.camera.bindGroup!)
+    renderPass.setBindGroup(1, cameraData.camera.getBindGroupData(this.device).bindGroup)
 
     lightsData.forEach(({ light }) => {
-      renderPass.setBindGroup(2, light.shadingBindGroup!)
-      renderPass.draw(6)
+      if (!light.castShadow) {
+        renderPass.setBindGroup(2, light.getBindGroupData(this.device).bindGroup)
+        renderPass.setBindGroup(3, this.defaultShadowMapData.bindGroup)
+        renderPass.draw(6)
+      }
+    })
+
+    shadowCastingLights.forEach(({ transform, light, shadowMap }) => {
+      if (shadowMap == undefined) {
+        console.warn(`Light ${transform.name} has castShadow set to true but does not have a ShadowMapComponent.`)
+      } else {
+        renderPass.setBindGroup(2, light.getBindGroupData(this.device).bindGroup)
+        renderPass.setBindGroup(3, shadowMap.getBindGroupData(this.device).bindGroup)
+        renderPass.draw(6)
+      }
     })
   }
 
-  private doShading(commandEncoder: GPUCommandEncoder, lightsData: LightData[], cameraData: CameraData): void {
-    const deferredRenderingPass = commandEncoder.beginRenderPass(this.createDeferredRenderPassDescriptor())
+  private doShading(
+    commandEncoder: GPUCommandEncoder,
+    targetView: GPUTextureView,
+    lightsData: LightData[],
+    shadowCastingLights: ShadowMapLightData[],
+    cameraData: CameraData
+  ): void {
+    const deferredRenderingPass = commandEncoder.beginRenderPass(this.createDeferredRenderPassDescriptor(targetView))
 
-    const pointLightsData = lightsData.filter((lightData) => lightData.light.lightType == LightType.POINT)
-    const sunLightsData = lightsData.filter((lightData) => lightData.light.lightType == LightType.SUN)
+    const pointLightsData = lightsData.filter(({ light }) => light.lightType == LightType.POINT)
+    const sunLightsData = lightsData.filter(({ light }) => light.lightType == LightType.SUN)
 
-    // For now, sun light <=> has shadow map
+    const shadowCastingPointLightsData = shadowCastingLights.filter(({ light }) => light.lightType == LightType.POINT)
+    const shadowCastingSunLightsData = shadowCastingLights.filter(({ light }) => light.lightType == LightType.SUN)
+
     this.doAmbient(deferredRenderingPass)
-    this.doShadingForLightType(deferredRenderingPass, this.deferredPointLightRenderPipeline, pointLightsData, cameraData)
-    this.doShadingForLightType(deferredRenderingPass, this.deferredSunLightRenderPipeline, sunLightsData, cameraData)
+    this.doShadingForLightType(deferredRenderingPass, this.deferredPointLightRenderPipeline, pointLightsData, shadowCastingPointLightsData, cameraData)
+    this.doShadingForLightType(deferredRenderingPass, this.deferredSunLightRenderPipeline, sunLightsData, shadowCastingSunLightsData, cameraData)
     deferredRenderingPass.end()
   }
 
-  public render({ modelsData, lightsData, activeCameraData, billboardsData }: RenderData): void {
+  public render(target: GPUTexture, { modelsData, lightsData, activeCameraData, billboardsData, lightsWithShadowMap }: RenderData): void {
     if (!activeCameraData) return
-
+    const targetView = target.createView()
     const commandEncoder = this.device.createCommandEncoder()
 
-    lightsData.filter(({ light }) => light.castsShadow).forEach((lightData) => this.shadowMapper.renderShadowMap(commandEncoder, modelsData, lightData, activeCameraData))
-    this.writeGBuffer(commandEncoder, modelsData, activeCameraData)
-    this.doShading(commandEncoder, lightsData, activeCameraData)
+    const shadowCastingLights = lightsWithShadowMap.filter(({ light }) => light.castShadow)
+    shadowCastingLights.forEach((shadowMappingData) => this.shadowMapper.renderShadowMap(commandEncoder, modelsData, shadowMappingData, activeCameraData))
+    this.writeGBuffer(commandEncoder, target, modelsData, activeCameraData)
+    this.doShading(commandEncoder, targetView, lightsData, shadowCastingLights, activeCameraData)
 
-    this.billboardRenderer.render(commandEncoder, this.gBuffer.getDepthAttachment().view, billboardsData, activeCameraData, this.targetTextureView)
+    this.billboardRenderer.render(commandEncoder, this.gBuffer.getDepthAttachment().view, billboardsData, activeCameraData, targetView)
 
     this.device.queue.submit([commandEncoder.finish()])
   }

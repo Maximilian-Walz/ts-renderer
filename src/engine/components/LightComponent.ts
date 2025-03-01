@@ -1,24 +1,17 @@
 import { Mat4, mat4, vec3, Vec3, vec4 } from 'wgpu-matrix'
 import { ComponentType } from '.'
-import { Component } from './Component'
+import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
+import { BindGroupDataComponent } from './Component'
 
 export enum LightType {
   SUN,
   POINT,
 }
 
-export class LightComponent extends Component {
+export class LightComponent extends BindGroupDataComponent<BufferBindGroupData> {
   color: Vec3
   power: number
-  castsShadow: Boolean
-  buffer: GPUBuffer | undefined
-  shadowMap: GPUTexture | undefined
-  shadowMapView: GPUTextureView | undefined
-  shadingBindGroup: GPUBindGroup | undefined
-  shadowMappingBindGroup: GPUBindGroup | undefined
-  static pointLightBindGroupLayout: GPUBindGroupLayout
-  static sunLightBindGroupLayout: GPUBindGroupLayout
-  static shadowMappingBindGroupLayout: GPUBindGroupLayout
+  castShadow: Boolean
   lightType: LightType
 
   constructor(color?: Vec3, power?: number, lightType?: LightType, castsShadow?: Boolean) {
@@ -26,7 +19,15 @@ export class LightComponent extends Component {
     this.color = color ?? vec3.fromValues(1.0, 1.0, 1.0)
     this.power = power ?? 3
     this.lightType = lightType ?? LightType.POINT
-    this.castsShadow = castsShadow ?? false
+    this.castShadow = castsShadow ?? false
+  }
+
+  public createBindGroupData(device: GPUDevice): BufferBindGroupData {
+    return new BufferBindGroupData(device, 208)
+  }
+
+  public static override getBindGroupLayout(device: GPUDevice): GPUBindGroupLayout {
+    return BufferBindGroupData.getLayout(device)
   }
 
   getProjection(invCameraViewProjection: Mat4, lightViewMatrix: Mat4): Mat4 {
@@ -64,7 +65,7 @@ export class LightComponent extends Component {
       type: this.lightType,
       color: this.color,
       power: this.power,
-      castsShadow: this.castsShadow,
+      castsShadow: this.castShadow,
     }
   }
 }
