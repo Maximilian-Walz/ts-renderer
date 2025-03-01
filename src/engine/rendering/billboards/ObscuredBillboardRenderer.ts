@@ -88,12 +88,12 @@ export class ObscuredBillboardRenderer {
     })
   }
 
-  public render(commandEncoder: GPUCommandEncoder, depthTexture: GPUTextureView, billboardsData: BillboardsData[], activeCamera: CameraData) {
+  public render(commandEncoder: GPUCommandEncoder, depthTexture: GPUTextureView, billboardsData: BillboardsData[], activeCamera: CameraData, targetView: GPUTextureView) {
     const billboardPass = commandEncoder.beginRenderPass({
       label: 'Debug overlays',
       colorAttachments: [
         {
-          view: this.context.getCurrentTexture().createView(),
+          view: targetView,
           loadOp: 'load',
           storeOp: 'store',
         },

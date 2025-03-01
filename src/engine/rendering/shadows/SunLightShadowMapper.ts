@@ -56,7 +56,7 @@ export class SunLightShadowMapper extends ShadowMapper {
       label: 'Shadow mapping',
       colorAttachments: [],
       depthStencilAttachment: {
-        view: lightData.light.shadowMap!.createView(),
+        view: lightData.light.shadowMapView!,
         depthClearValue: 1.0,
         depthLoadOp: 'clear',
         depthStoreOp: 'store',

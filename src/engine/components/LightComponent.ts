@@ -13,6 +13,7 @@ export class LightComponent extends Component {
   castsShadow: Boolean
   buffer: GPUBuffer | undefined
   shadowMap: GPUTexture | undefined
+  shadowMapView: GPUTextureView | undefined
   shadingBindGroup: GPUBindGroup | undefined
   shadowMappingBindGroup: GPUBindGroup | undefined
   static pointLightBindGroupLayout: GPUBindGroupLayout

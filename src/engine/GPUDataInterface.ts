@@ -203,13 +203,15 @@ export class GPUDataInterface {
           format: 'depth32float',
         })
 
+        light.shadowMapView = light.shadowMap.createView()
+
         light.shadingBindGroup = this.device.createBindGroup({
           layout: LightComponent.sunLightBindGroupLayout,
           entries: [
             lightBaseDataEntry,
             {
               binding: 1,
-              resource: light.shadowMap.createView(),
+              resource: light.shadowMapView,
             },
             {
               binding: 2,

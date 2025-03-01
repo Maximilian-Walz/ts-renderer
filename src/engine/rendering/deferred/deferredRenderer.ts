@@ -27,12 +27,14 @@ export class DeferredRenderer implements RenderStrategy {
   private context: GPUCanvasContext
 
   private shadowMapper: ShadowMapper
-  private debugRenderer: ObscuredBillboardRenderer
+  private billboardRenderer: ObscuredBillboardRenderer
 
   private gBuffer: GBuffer
   private writeGBufferPipeline: GPURenderPipeline
   private deferredSunLightRenderPipeline: GPURenderPipeline
   private ambientRenderPipeline: GPURenderPipeline
+
+  private targetTextureView: GPUTextureView
   private deferredPointLightRenderPipeline: GPURenderPipeline
 
   private static vertexDataMapping: VertexAttributeInfo[] = [
@@ -63,7 +65,7 @@ export class DeferredRenderer implements RenderStrategy {
     this.context = context
 
     this.shadowMapper = new SunLightShadowMapper(device)
-    this.debugRenderer = new ObscuredBillboardRenderer(device, context)
+    this.billboardRenderer = new ObscuredBillboardRenderer(device, context)
     this.gBuffer = this.createGBuffer()
 
     const deferredShadingVertexModule = this.device.createShaderModule({
@@ -82,6 +84,8 @@ export class DeferredRenderer implements RenderStrategy {
       deferredShadingVertexModule,
       false
     )
+
+    this.targetTextureView = this.context.getCurrentTexture().createView()
   }
 
   private createGBuffer(): GBuffer {
@@ -259,11 +263,12 @@ export class DeferredRenderer implements RenderStrategy {
   }
 
   private createDeferredRenderPassDescriptor(): GPURenderPassDescriptor {
+    this.targetTextureView = this.context.getCurrentTexture().createView()
     return {
       label: 'Deferred Shading',
       colorAttachments: [
         {
-          view: this.context.getCurrentTexture().createView(),
+          view: this.targetTextureView,
           clearValue: [0, 0, 0, 1],
           loadOp: 'clear',
           storeOp: 'store',
@@ -306,7 +311,7 @@ export class DeferredRenderer implements RenderStrategy {
     this.writeGBuffer(commandEncoder, modelsData, activeCameraData)
     this.doShading(commandEncoder, lightsData, activeCameraData)
 
-    this.debugRenderer.render(commandEncoder, this.gBuffer.getDepthAttachment().view, billboardsData, activeCameraData)
+    this.billboardRenderer.render(commandEncoder, this.gBuffer.getDepthAttachment().view, billboardsData, activeCameraData, this.targetTextureView)
 
     this.device.queue.submit([commandEncoder.finish()])
   }
