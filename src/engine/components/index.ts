@@ -11,6 +11,7 @@ export enum ComponentType {
   CAMERA_CONTROLLER = 'cameraController',
   BILLBOARD = 'billboard',
   SHADOW_MAP = 'shadowMap',
+  SCRIPT = 'script',
 }
 
 export * from './BillboardComponent'
@@ -18,6 +19,7 @@ export * from './CameraComponent'
 export * from './Component'
 export * from './LightComponent'
 export * from './MeshRendererComponent'
+export * from './ScriptComponent'
 export * from './ShadowMapComponent'
 export * from './TransformComponent'
 

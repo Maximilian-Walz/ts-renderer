@@ -1,6 +1,6 @@
 import Stats from 'stats.js'
 import { AssetManager } from './assets/AssetManager'
-import { CameraComponent, CameraControllerComponent, ComponentType, TransformComponent } from './components'
+import { CameraComponent, CameraControllerComponent, ComponentType, ScriptComponent, TransformComponent } from './components'
 import { GPUDataInterface } from './GPUDataInterface'
 import { InputManager } from './InputManager'
 import { EntityId } from './scenes/Entity'
@@ -8,7 +8,7 @@ import { Scene } from './scenes/Scene'
 import { SceneManger } from './scenes/SceneManager'
 import { CameraController } from './systems/CameraController'
 import { BillboardsData, CameraData, LightData, ModelData, RenderData, Renderer, ShadowMapLightData } from './systems/Renderer'
-import { Rotator } from './systems/Rotator'
+import { ScriptExecutor } from './systems/ScriptExecutor'
 
 export class Engine {
   public assetManager!: AssetManager
@@ -17,7 +17,7 @@ export class Engine {
 
   private inputManager: InputManager
   private renderer!: Renderer
-  private rotator: Rotator
+  private scriptExecutor: ScriptExecutor
   private cameraController: CameraController
   private stats: Stats = new Stats()
 
@@ -30,7 +30,7 @@ export class Engine {
     this.inputManager = new InputManager()
 
     // Systems
-    this.rotator = new Rotator()
+    this.scriptExecutor = new ScriptExecutor()
     this.cameraController = new CameraController(this.inputManager)
   }
 
@@ -106,8 +106,9 @@ export class Engine {
 
     if (this.sceneManager.hasActiveScene()) {
       const activeScene = this.sceneManager.getActiveScene()
-      const rotatableModels = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.AUTO_ROTATE])
-      //this.rotator.rotate(rotatableModels)
+
+      const scriptsData = activeScene.getComponents([ComponentType.SCRIPT]) as { scriptComponent: ScriptComponent }[]
+      this.scriptExecutor.updateScripts(scriptsData.map((scriptData) => scriptData.scriptComponent))
 
       const controlledEntities = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA_CONTROLLER])
       this.cameraController.update(
@@ -115,6 +116,7 @@ export class Engine {
           return { transform: components.transform as TransformComponent, controller: components.cameraController as CameraControllerComponent }
         })
       )
+
       if (this.activeCameraId != undefined) {
         this.renderer.render(this.getRenderData(activeScene, this.activeCameraId))
       }
