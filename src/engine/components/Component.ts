@@ -12,7 +12,7 @@ export abstract class Component {
 }
 
 export abstract class BindGroupDataComponent<T extends BindGroupData> extends Component {
-  private bindGroupData: T | undefined
+  protected bindGroupData: T | undefined
 
   public abstract createBindGroupData(device: GPUDevice): T
 
@@ -20,10 +20,14 @@ export abstract class BindGroupDataComponent<T extends BindGroupData> extends Co
     throw Error('Method not implemented! Use derived class')
   }
 
-  public getBindGroupData(device: GPUDevice): T {
+  public getOrCreateBindGroupData(device: GPUDevice): T {
     if (this.bindGroupData == undefined) {
       this.bindGroupData = this.createBindGroupData(device)
     }
+    return this.bindGroupData
+  }
+
+  public getBindGroupData() {
     return this.bindGroupData
   }
 }

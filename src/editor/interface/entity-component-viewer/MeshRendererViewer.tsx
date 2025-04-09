@@ -16,7 +16,7 @@ export function MeshRendererViewer({ entity }: Props) {
   }
 
   return (
-    <ComponentViewer title="Mesh Renderer" icon={<LuBox />}>
+    <ComponentViewer title="Mesh Renderer" icon={<LuBox />} contentKey={entity.entityId}>
       <div className="join join-vertical">
         <div className="self-end">
           <LabelInput label="Name" initialValue={(meshRenderer.name ??= '')} onChange={(value) => (meshRenderer.name = value)} />

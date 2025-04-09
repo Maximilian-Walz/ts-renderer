@@ -154,10 +154,10 @@ export class DeferredRenderer {
   private writeGBuffer(commandEncoder: GPUCommandEncoder, target: GPUTexture, modelsData: ModelData[], cameraData: CameraData): void {
     const gBufferPass = commandEncoder.beginRenderPass(this.createWriteGBufferPassDescriptor(target))
     gBufferPass.setPipeline(this.writeGBufferPipeline)
-    gBufferPass.setBindGroup(0, cameraData.camera.getBindGroupData(this.device).bindGroup)
+    gBufferPass.setBindGroup(0, cameraData.camera.getOrCreateBindGroupData(this.device).bindGroup)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
-      gBufferPass.setBindGroup(1, transform.getBindGroupData(this.device).bindGroup)
+      gBufferPass.setBindGroup(1, transform.getOrCreateBindGroupData(this.device).bindGroup)
       meshRenderer.primitives.forEach(({ meshLoader, materialLoader }) => {
         const mesh = meshLoader.getAssetData()
         const type = mesh.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'
@@ -287,24 +287,20 @@ export class DeferredRenderer {
   ): void {
     renderPass.setPipeline(pipeline)
     renderPass.setBindGroup(0, this.gBuffer.getBindGroup())
-    renderPass.setBindGroup(1, cameraData.camera.getBindGroupData(this.device).bindGroup)
+    renderPass.setBindGroup(1, cameraData.camera.getOrCreateBindGroupData(this.device).bindGroup)
 
     lightsData.forEach(({ light }) => {
       if (!light.castShadow) {
-        renderPass.setBindGroup(2, light.getBindGroupData(this.device).bindGroup)
+        renderPass.setBindGroup(2, light.getOrCreateBindGroupData(this.device).bindGroup)
         renderPass.setBindGroup(3, this.defaultShadowMapData.bindGroup)
         renderPass.draw(6)
       }
     })
 
-    shadowCastingLights.forEach(({ transform, light, shadowMap }) => {
-      if (shadowMap == undefined) {
-        console.warn(`Light ${transform.name} has castShadow set to true but does not have a ShadowMapComponent.`)
-      } else {
-        renderPass.setBindGroup(2, light.getBindGroupData(this.device).bindGroup)
-        renderPass.setBindGroup(3, shadowMap.getBindGroupData(this.device).bindGroup)
-        renderPass.draw(6)
-      }
+    shadowCastingLights.forEach(({ light, shadowMap }) => {
+      renderPass.setBindGroup(2, light.getOrCreateBindGroupData(this.device).bindGroup)
+      renderPass.setBindGroup(3, shadowMap.getOrCreateBindGroupData(this.device).bindGroup)
+      renderPass.draw(6)
     })
   }
 

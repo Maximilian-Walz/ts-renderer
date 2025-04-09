@@ -1,8 +1,8 @@
 import { BillboardsData, CameraData } from '../../systems/Renderer'
 import { BufferBindGroupData } from '../bind-group-data/BufferBindGroupData'
 import { TextureBindGroupData } from '../bind-group-data/TextureBindGroupData'
-import debugOverlayFrag from './obscuredBillboardRendering.frag.wgsl'
-import debugOverlayVert from './obscuredBillboardRendering.vert.wgsl'
+import obscuredBillboardFrag from './obscuredBillboardRendering.frag.wgsl'
+import obscuredBillboardVert from './obscuredBillboardRendering.vert.wgsl'
 
 export class ObscuredBillboardRenderer {
   private device: GPUDevice
@@ -42,7 +42,7 @@ export class ObscuredBillboardRenderer {
       }),
       vertex: {
         module: this.device.createShaderModule({
-          code: debugOverlayVert,
+          code: obscuredBillboardVert,
         }),
         buffers: [
           {
@@ -59,7 +59,7 @@ export class ObscuredBillboardRenderer {
       },
       fragment: {
         module: this.device.createShaderModule({
-          code: debugOverlayFrag,
+          code: obscuredBillboardFrag,
         }),
         targets: [
           {
@@ -109,11 +109,11 @@ export class ObscuredBillboardRenderer {
     })
 
     billboardPass.setPipeline(this.pipeline)
-    billboardPass.setBindGroup(0, activeCamera.camera.getBindGroupData(this.device).bindGroup)
+    billboardPass.setBindGroup(0, activeCamera.camera.getOrCreateBindGroupData(this.device).bindGroup)
     billboardPass.setVertexBuffer(0, this.quadBuffer)
     billboardsData.forEach(({ transform, billboard }) => {
-      billboardPass.setBindGroup(1, transform.getBindGroupData(this.device).bindGroup)
-      billboardPass.setBindGroup(2, billboard.getBindGroupData(this.device).bindGroup)
+      billboardPass.setBindGroup(1, transform.getOrCreateBindGroupData(this.device).bindGroup)
+      billboardPass.setBindGroup(2, billboard.getOrCreateBindGroupData(this.device).bindGroup)
       billboardPass.draw(4)
     })
     billboardPass.end()

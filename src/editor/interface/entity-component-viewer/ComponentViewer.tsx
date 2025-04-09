@@ -4,11 +4,12 @@ import { MdKeyboardArrowDown, MdKeyboardArrowLeft } from 'react-icons/md'
 
 type Props = {
   title: string
+  contentKey: string
   children: ReactElement | ReactElement[]
   icon?: JSX.Element
 }
 
-export function ComponentViewer({ title, children, icon = <LuBoxSelect /> }: Props) {
+export function ComponentViewer({ title, contentKey, children, icon = <LuBoxSelect /> }: Props) {
   const [expanded, setExpanded] = useState<boolean>(false)
 
   return (
@@ -23,7 +24,7 @@ export function ComponentViewer({ title, children, icon = <LuBoxSelect /> }: Pro
         </div>
         {expanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowLeft />}
       </div>
-      <div hidden={!expanded} className="m-3">
+      <div hidden={!expanded} className="m-3" key={contentKey}>
         {children}
       </div>
     </div>

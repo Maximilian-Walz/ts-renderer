@@ -52,18 +52,18 @@ export class SunLightShadowMapper extends ShadowMapper {
       label: 'Shadow mapping',
       colorAttachments: [],
       depthStencilAttachment: {
-        view: shadowMap.getBindGroupData(this.device).textureView,
+        view: shadowMap.getOrCreateBindGroupData(this.device).textureView,
         depthClearValue: 1.0,
         depthLoadOp: 'clear',
         depthStoreOp: 'store',
       },
     })
     shadowPass.setPipeline(this.shadowPipeline)
-    shadowPass.setBindGroup(0, light.getBindGroupData(this.device).bindGroup)
-    shadowPass.setBindGroup(1, cameraData.camera.getBindGroupData(this.device).bindGroup)
+    shadowPass.setBindGroup(0, light.getOrCreateBindGroupData(this.device).bindGroup)
+    shadowPass.setBindGroup(1, cameraData.camera.getOrCreateBindGroupData(this.device).bindGroup)
 
     modelsData.forEach(({ transform, meshRenderer }) => {
-      shadowPass.setBindGroup(2, transform.getBindGroupData(this.device).bindGroup)
+      shadowPass.setBindGroup(2, transform.getOrCreateBindGroupData(this.device).bindGroup)
       meshRenderer.primitives.forEach(({ meshLoader }) => {
         const mesh = meshLoader.getAssetData()
         const type = mesh.indexBufferAccessor.componentType == BufferDataComponentType.UNSIGNED_SHORT ? 'uint16' : 'uint32'

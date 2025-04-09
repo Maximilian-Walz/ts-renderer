@@ -80,7 +80,7 @@ export function CameraViewer({ entity }: Props) {
   }
 
   return (
-    <ComponentViewer title="Camera" icon={<LuCamera />}>
+    <ComponentViewer title="Camera" icon={<LuCamera />} contentKey={entity.entityId}>
       <div className="join join-vertical space-y-1">
         <LabelInput label="Name" initialValue={(camera.name ??= '')} onChange={(value) => (camera.name = value)} />
         {cameraSwitch(camera.cameraType)}

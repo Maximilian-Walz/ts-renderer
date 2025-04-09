@@ -79,7 +79,7 @@ export function NumberInput({ initialValue, onChange, label, labelContained = fa
   const wheelTimeout = useRef<number | boolean>()
 
   const handleWheel = (event: React.WheelEvent<HTMLInputElement>) => {
-    let scaledAmount = (step * (event.deltaX + event.deltaY)) / 100
+    let scaledAmount = (step * event.deltaX) / 100
     if (event.shiftKey) {
       scaledAmount /= 10
     } else if (event.ctrlKey) {
@@ -129,7 +129,11 @@ export function NumberInput({ initialValue, onChange, label, labelContained = fa
 
   // Block the body from scrolling (or any other element)
   useEffect(() => {
-    const cancelWheel = (event: WheelEvent) => wheelTimeout.current && event.preventDefault()
+    const cancelWheel = (event: WheelEvent) => {
+      if (event.deltaX > 0) {
+        wheelTimeout.current && event.preventDefault()
+      }
+    }
     document.body.addEventListener('wheel', cancelWheel, { passive: false })
     return () => document.body.removeEventListener('wheel', cancelWheel)
   }, [])

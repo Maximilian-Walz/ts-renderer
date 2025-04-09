@@ -36,7 +36,7 @@ export function TransformViewer({ entity }: Props) {
   ]
 
   return (
-    <ComponentViewer title="Transform" icon={<LuAxis3D />}>
+    <ComponentViewer title="Transform" icon={<LuAxis3D />} contentKey={entity.entityId}>
       <div className="join join-vertical space-y-2">
         <div className="self-end">
           <LabelInput label="Name" initialValue={(transform.name ??= '')} onChange={(value) => (transform.name = value)} />

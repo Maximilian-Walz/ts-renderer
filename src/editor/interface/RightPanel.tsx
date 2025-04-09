@@ -3,6 +3,7 @@ import { useSelectedEntity } from '../state/EntitySelectionProvider'
 import { CameraViewer } from './entity-component-viewer/CameraViewer'
 import { LightViewer } from './entity-component-viewer/LightViewer'
 import { MeshRendererViewer } from './entity-component-viewer/MeshRendererViewer'
+import { ShadowMapViewer } from './entity-component-viewer/ShadowMapViewer'
 import { TransformViewer } from './entity-component-viewer/TransformViewer'
 
 export function RightPanel() {
@@ -16,6 +17,7 @@ export function RightPanel() {
             <TransformViewer entity={entity} />
             <CameraViewer entity={entity} />
             <LightViewer entity={entity} />
+            <ShadowMapViewer entity={entity} />
             <MeshRendererViewer entity={entity} />
           </div>
         </>

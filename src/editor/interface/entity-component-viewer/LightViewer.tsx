@@ -23,11 +23,12 @@ export function LightViewer({ entity }: Props) {
   ]
 
   return (
-    <ComponentViewer title="Light" icon={<LuLightbulb />}>
+    <ComponentViewer title="Light" icon={<LuLightbulb />} contentKey={entity.entityId}>
       <div className="self-end">
         <NumberInput label="Power" initialValue={light.power} minValue={0} onChange={(value) => (light.power = value)} />
       </div>
-      <VectorInput label="Color" icon={<LuPalette />} initialValue={color} minValue={0} maxValue={1} targetValue={() => light.color} />
+      <VectorInput label="Color" icon={<LuPalette />} initialValue={color} minValue={0} maxValue={1} targetValue={light.color} />
+      <input type="checkbox" className="checkbox" defaultChecked={light.castShadow as boolean} onChange={(event) => (light.castShadow = event.target.checked)} />
     </ComponentViewer>
   )
 }

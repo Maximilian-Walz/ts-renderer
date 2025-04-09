@@ -99,7 +99,7 @@ export class GPUDataInterface {
       const invModelMatrix = mat4.invert(modelMatrix)
       const normalModelMatrix = mat4.transpose(invModelMatrix)
       const matrices = new Float32Array([...modelMatrix, ...invModelMatrix, ...normalModelMatrix])
-      this.device.queue.writeBuffer(transform.getBindGroupData(this.device).buffer, 0, matrices.buffer, matrices.byteOffset, matrices.byteLength)
+      this.device.queue.writeBuffer(transform.getOrCreateBindGroupData(this.device).buffer, 0, matrices.buffer, matrices.byteOffset, matrices.byteLength)
     })
   }
 
@@ -124,7 +124,7 @@ export class GPUDataInterface {
 
       const viewProjectionMatrix = mat4.mul(light.getProjection(cameraInvViewProjection, invViewMatrix), invViewMatrix)
       const lightBaseData = new Float32Array([...firstEntry, ...viewProjectionMatrix, ...light.color, light.power])
-      this.device.queue.writeBuffer(light.getBindGroupData(this.device).buffer, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
+      this.device.queue.writeBuffer(light.getOrCreateBindGroupData(this.device).buffer, 0, lightBaseData.buffer, lightBaseData.byteOffset, lightBaseData.byteLength)
     })
   }
 
@@ -141,7 +141,7 @@ export class GPUDataInterface {
       camera.invViewProjection = invViewProjectionMatrix
 
       const cameraMatrices = new Float32Array([...viewProjectionMatrix, ...invViewProjectionMatrix, ...invViewMatrix, ...projectionMatrix])
-      this.device.queue.writeBuffer(camera.getBindGroupData(this.device).buffer, 0, cameraMatrices.buffer, cameraMatrices.byteOffset, cameraMatrices.byteLength)
+      this.device.queue.writeBuffer(camera.getOrCreateBindGroupData(this.device).buffer, 0, cameraMatrices.buffer, cameraMatrices.byteOffset, cameraMatrices.byteLength)
     })
   }
 }
