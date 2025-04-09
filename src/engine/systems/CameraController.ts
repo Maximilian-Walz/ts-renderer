@@ -1,11 +1,9 @@
 import { mat4, quat, utils, vec3 } from 'wgpu-matrix'
-import { CameraControllerComponent, TransformComponent } from '../components'
+import { TransformComponent } from '../components'
 import { InputManager } from '../InputManager'
 
 type ControlledEntity = {
   transform: TransformComponent
-  // TODO: Controller component should contain some settings in the future
-  controller: CameraControllerComponent
 }
 
 export class CameraController {

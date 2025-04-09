@@ -1,13 +1,14 @@
 import { ComponentType } from '.'
 import { BindGroupData } from '../rendering/bind-group-data/BindGroupData'
+import { Entity } from '../scenes/Entity'
 
 export abstract class Component {
-  [x: string]: any
   public readonly type: ComponentType
-  public abstract toJson(): Object
+  public readonly entity: Entity
 
-  constructor(type: ComponentType) {
+  constructor(type: ComponentType, entity: Entity) {
     this.type = type
+    this.entity = entity
   }
 }
 

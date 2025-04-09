@@ -1,11 +1,19 @@
 import { Mat4, mat4, vec3, Vec3, vec4 } from 'wgpu-matrix'
 import { ComponentType } from '.'
 import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
+import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
 
 export enum LightType {
   SUN,
   POINT,
+}
+
+export type LightProps = {
+  color?: Vec3
+  power?: number
+  lightType?: LightType
+  castsShadow?: Boolean
 }
 
 export class LightComponent extends BindGroupDataComponent<BufferBindGroupData> {
@@ -14,12 +22,12 @@ export class LightComponent extends BindGroupDataComponent<BufferBindGroupData> 
   castShadow: Boolean
   lightType: LightType
 
-  constructor(color?: Vec3, power?: number, lightType?: LightType, castsShadow?: Boolean) {
-    super(ComponentType.LIGHT)
-    this.color = color ?? vec3.fromValues(1.0, 1.0, 1.0)
-    this.power = power ?? 3
-    this.lightType = lightType ?? LightType.POINT
-    this.castShadow = castsShadow ?? false
+  constructor(entity: Entity, props: LightProps) {
+    super(ComponentType.LIGHT, entity)
+    this.color = props.color ?? vec3.fromValues(1.0, 1.0, 1.0)
+    this.power = props.power ?? 3
+    this.lightType = props.lightType ?? LightType.POINT
+    this.castShadow = props.castsShadow ?? false
   }
 
   public createBindGroupData(device: GPUDevice): BufferBindGroupData {
@@ -58,14 +66,5 @@ export class LightComponent extends BindGroupDataComponent<BufferBindGroupData> 
     // TODO: Implement Cascaded Shadow Maps (CSMs)?
     // TODO: Use scene AABB in combinatin with frustum to calculate tight near and far planes
     return mat4.ortho(minX, maxX, minY, maxY, 0.1, 100)
-  }
-
-  toJson(): Object {
-    return {
-      type: this.lightType,
-      color: this.color,
-      power: this.power,
-      castsShadow: this.castShadow,
-    }
   }
 }

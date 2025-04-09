@@ -1,14 +1,19 @@
 import { ComponentType } from '.'
 import { TextureAssetLoader } from '../assets/loaders/TextureAssetLoader'
 import { TextureBindGroupData } from '../rendering/bind-group-data/TextureBindGroupData'
+import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
+
+export type BillboardProps = {
+  textureLoader: TextureAssetLoader
+}
 
 export class BillboardComponent extends BindGroupDataComponent<TextureBindGroupData> {
   textureLoader: TextureAssetLoader
 
-  constructor(textureLoader: TextureAssetLoader) {
-    super(ComponentType.BILLBOARD)
-    this.textureLoader = textureLoader
+  constructor(entity: Entity, props: BillboardProps) {
+    super(ComponentType.BILLBOARD, entity)
+    this.textureLoader = props.textureLoader
   }
 
   public createBindGroupData(device: GPUDevice): TextureBindGroupData {
@@ -17,9 +22,5 @@ export class BillboardComponent extends BindGroupDataComponent<TextureBindGroupD
 
   public static override getBindGroupLayout(device: GPUDevice): GPUBindGroupLayout {
     return TextureBindGroupData.getLayout(device)
-  }
-
-  public toJson(): Object {
-    throw new Error('Method not implemented.')
   }
 }

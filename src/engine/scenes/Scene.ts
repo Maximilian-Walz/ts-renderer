@@ -1,4 +1,4 @@
-import { Component, ComponentType, TransformComponent } from '../components'
+import { Component, ComponentType, TransformComponent, TransformProps } from '../components'
 import { Entity, EntityId } from './Entity'
 
 export type SceneId = string
@@ -38,12 +38,12 @@ export class Scene {
     this.entities.set(entity.entityId, entity)
   }
 
-  public createEntity(entityId: string, tranform: TransformComponent): Entity {
+  public createEntity(entityId: string, tranformProps: TransformProps): Entity {
     if (this.entities.has(entityId)) {
       throw new Error(`Entity with id ${entityId} already exists`)
     }
 
-    const entity = new Entity(entityId, tranform)
+    const entity = new Entity(entityId, tranformProps)
     this.addEntity(entity)
     return entity
   }
@@ -79,11 +79,6 @@ export class Scene {
       //        - Probably need both: For most in-game stuff a deep copy,
       //          but for the editor we need a shallow copy of the game
       //          since we want to apply changes to the actual game entities
-
-      entity
-        .getComponents()
-        .filter((component) => component.type != ComponentType.TRANSFORM)
-        .forEach((component) => instancedEntity.addComponent(component))
     })
   }
 }

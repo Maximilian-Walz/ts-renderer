@@ -1,9 +1,22 @@
 import { vec3 } from 'wgpu-matrix'
 import { CoolGame } from '../coolGame/CoolGame'
-import { BillboardComponent, CameraComponent, CameraControllerComponent, CameraType, ComponentType, LightComponent, LightType, TransformComponent } from '../engine/components'
+import {
+  BillboardComponent,
+  BillboardProps,
+  CameraComponent,
+  CameraProps,
+  CameraType,
+  ComponentType,
+  LightComponent,
+  LightType,
+  ScriptComponent,
+  TransformComponent,
+  TransformProps,
+} from '../engine/components'
 import { Game } from '../engine/Game'
 import { Entity } from '../engine/scenes/Entity'
 import { Scene, SceneId } from '../engine/scenes/Scene'
+import { CameraControllerScript } from './scripts/CameraControllerScript'
 
 const staticTextures: { identifier: string; path: string }[] = [
   { identifier: 'lightbulb', path: '/assets/textures/lightbulb.png' },
@@ -40,23 +53,40 @@ export class Editor extends Game {
   }
 
   private addEditorCamera(scene: Scene) {
-    let targetTransform = new TransformComponent()
+    const transformProps: TransformProps = {
+      name: 'Editor Cam',
+      position: vec3.fromValues(0, 0, 10),
+      parentTransform: undefined,
+    }
+
+    const cameraProps: CameraProps = {
+      cameraType: CameraType.PERSPECTIVE,
+      projectionData: {
+        fov: 1,
+        aspect: 1,
+      },
+      zNear: 0.1,
+      zFar: 100,
+    }
+
     const editorCamId = 'editor-cam'
-    const editorCam = scene.createEntity(editorCamId, TransformComponent.fromValues(vec3.fromValues(0, 0, 10), undefined, undefined, targetTransform))
-    editorCam.addComponent(new CameraComponent(CameraType.PERSPECTIVE, { fov: 1, aspect: 1 }, 0.1, 100))
-    editorCam.addComponent(new CameraControllerComponent())
+    const editorCam = scene.createEntity(editorCamId, transformProps)
+    editorCam.addComponent(CameraComponent, cameraProps)
+    editorCam.addComponent(ScriptComponent, { CameraControllerScript })
     this.engine.setActiveCamera(editorCamId)
   }
 
   private addBillboards(scene: Scene) {
     scene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA]).forEach(({ transform }) => {
-      const billboard = scene.createEntity(`camera_${(transform as TransformComponent).name}_billboard`, new TransformComponent(transform as TransformComponent))
-      billboard.addComponent(new BillboardComponent(this.engine.assetManager.getTextureLoader('camera')))
+      const billboard = scene.createEntity(`camera_${(transform as TransformComponent).name}_billboard`, { parentTransform: transform as TransformComponent } as TransformProps)
+      billboard.addComponent(BillboardComponent, { textureLoader: this.engine.assetManager.getTextureLoader('camera') } as BillboardProps)
     })
 
     scene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT]).forEach(({ transform, light }) => {
-      const billboard = scene.createEntity(`light_${(transform as TransformComponent).name}_billboard`, new TransformComponent(transform as TransformComponent))
-      billboard.addComponent(new BillboardComponent(this.engine.assetManager.getTextureLoader((light as LightComponent).lightType == LightType.SUN ? 'sun' : 'lightbulb')))
+      const billboard = scene.createEntity(`light_${(transform as TransformComponent).name}_billboard`, { parentTransform: transform as TransformComponent } as TransformProps)
+      billboard.addComponent(BillboardComponent, {
+        textureLoader: this.engine.assetManager.getTextureLoader((light as LightComponent).lightType == LightType.SUN ? 'sun' : 'lightbulb'),
+      } as BillboardProps)
     })
   }
 

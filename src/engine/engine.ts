@@ -1,12 +1,11 @@
 import Stats from 'stats.js'
 import { AssetManager } from './assets/AssetManager'
-import { CameraComponent, CameraControllerComponent, ComponentType, ScriptComponent, TransformComponent } from './components'
+import { CameraComponent, ComponentType, ScriptComponent, TransformComponent } from './components'
 import { GPUDataInterface } from './GPUDataInterface'
 import { InputManager } from './InputManager'
 import { EntityId } from './scenes/Entity'
 import { Scene } from './scenes/Scene'
 import { SceneManger } from './scenes/SceneManager'
-import { CameraController } from './systems/CameraController'
 import { BillboardsData, CameraData, LightData, ModelData, RenderData, Renderer, ShadowMapLightData } from './systems/Renderer'
 import { ScriptExecutor } from './systems/ScriptExecutor'
 
@@ -18,7 +17,6 @@ export class Engine {
   private inputManager: InputManager
   private renderer!: Renderer
   private scriptExecutor: ScriptExecutor
-  private cameraController: CameraController
   private stats: Stats = new Stats()
 
   private activeCameraId?: EntityId
@@ -31,7 +29,6 @@ export class Engine {
 
     // Systems
     this.scriptExecutor = new ScriptExecutor()
-    this.cameraController = new CameraController(this.inputManager)
   }
 
   async init(device?: GPUDevice) {
@@ -109,13 +106,6 @@ export class Engine {
 
       const scriptsData = activeScene.getComponents([ComponentType.SCRIPT]) as { scriptComponent: ScriptComponent }[]
       this.scriptExecutor.updateScripts(scriptsData.map((scriptData) => scriptData.scriptComponent))
-
-      const controlledEntities = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA_CONTROLLER])
-      this.cameraController.update(
-        controlledEntities.map((components) => {
-          return { transform: components.transform as TransformComponent, controller: components.cameraController as CameraControllerComponent }
-        })
-      )
 
       if (this.activeCameraId != undefined) {
         this.renderer.render(this.getRenderData(activeScene, this.activeCameraId))

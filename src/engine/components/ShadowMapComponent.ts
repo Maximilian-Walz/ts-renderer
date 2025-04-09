@@ -1,13 +1,18 @@
 import { ComponentType } from '.'
 import { ShadowMapBindGroupData } from '../rendering/bind-group-data/ShadowMapBindGroupData'
+import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
+
+export type ShadowMapProps = {
+  size?: number
+}
 
 export class ShadowMapComponent extends BindGroupDataComponent<ShadowMapBindGroupData> {
   private _size: number
 
-  constructor(size?: number) {
-    super(ComponentType.SHADOW_MAP)
-    this._size = size ?? 2048
+  constructor(entity: Entity, props?: ShadowMapProps) {
+    super(ComponentType.SHADOW_MAP, entity)
+    this._size = props?.size ?? 2048
   }
 
   public createBindGroupData(device: GPUDevice): ShadowMapBindGroupData {
@@ -29,9 +34,5 @@ export class ShadowMapComponent extends BindGroupDataComponent<ShadowMapBindGrou
     console.log(size)
     this._size = size
     this.bindGroupData?.updateShadowMapSize(size)
-  }
-
-  public toJson(): Object {
-    throw new Error('Method not implemented.')
   }
 }

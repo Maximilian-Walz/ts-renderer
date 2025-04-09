@@ -1,6 +1,8 @@
 import { mat4, Mat4 } from 'wgpu-matrix'
-import { BindGroupDataComponent, ComponentType } from '.'
+import { ComponentType } from '.'
 import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
+import { Entity } from '../scenes/Entity'
+import { BindGroupDataComponent } from './Component'
 
 export enum CameraType {
   PERSPECTIVE,
@@ -17,22 +19,32 @@ export type OrthographicData = {
   yMag: number
 }
 
+export type CameraProps = {
+  name?: string
+  cameraType: CameraType
+  projectionData: PerspectiveData | OrthographicData
+  zNear?: number
+  zFar?: number
+  useCanvasAspect?: boolean
+}
+
 export class CameraComponent extends BindGroupDataComponent<BufferBindGroupData> {
   name?: string
   cameraType: CameraType
   useCanvasAspect?: boolean
-  data: PerspectiveData | OrthographicData
+  projectionData: PerspectiveData | OrthographicData
   zNear: number
   zFar: number
   invViewProjection?: Mat4
 
-  constructor(cameraType: CameraType, data: PerspectiveData | OrthographicData, zNear?: number, zFar?: number) {
-    super(ComponentType.CAMERA)
-    this.cameraType = cameraType
-    this.useCanvasAspect = true
-    this.data = data
-    this.zNear = zNear ?? 1
-    this.zFar = zFar ?? 100
+  constructor(entity: Entity, props: CameraProps) {
+    super(ComponentType.CAMERA, entity)
+    this.name = props.name
+    this.cameraType = props.cameraType
+    this.useCanvasAspect = this.useCanvasAspect ?? true
+    this.projectionData = props.projectionData
+    this.zNear = props.zNear ?? 1
+    this.zFar = props.zFar ?? 100
   }
 
   public createBindGroupData(device: GPUDevice): BufferBindGroupData {
@@ -47,25 +59,13 @@ export class CameraComponent extends BindGroupDataComponent<BufferBindGroupData>
     let data
     switch (this.cameraType) {
       case CameraType.PERSPECTIVE:
-        data = this.data as PerspectiveData
+        data = this.projectionData as PerspectiveData
         if (this.useCanvasAspect && (!cavasWidth || !canvasHeight)) throw Error('Camera is canvas constrained but no canvas width or height is provided.')
         const aspect = this.useCanvasAspect ? cavasWidth! / canvasHeight! : data.aspect
         return mat4.perspective(data.fov, aspect, this.zNear, this.zFar)
       case CameraType.ORTHOGRAPHIC:
-        data = this.data as OrthographicData
+        data = this.projectionData as OrthographicData
         return mat4.ortho(data.xMag, data.xMag, data.yMag, data.yMag, this.zNear, this.zFar)
-    }
-  }
-
-  toJson(): Object {
-    return {
-      type: this.type,
-      name: this.name,
-      data: this.data,
-      cameraType: this.cameraType,
-      useCanvasAspect: this.useCanvasAspect,
-      zNear: this.zNear,
-      zFar: this.zFar,
     }
   }
 }

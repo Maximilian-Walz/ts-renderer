@@ -3,7 +3,7 @@ import { ScriptComponent } from '../components'
 
 export class ScriptExecutor {
   private executeForAllScripts(scriptComponents: ScriptComponent[], lifecycleFunction: (script: Script) => void) {
-    scriptComponents.flatMap((scriptComponent) => scriptComponent.getScripts()).forEach((script) => lifecycleFunction(script))
+    scriptComponents.flatMap((scriptComponent) => scriptComponent.scripts).forEach((script) => lifecycleFunction(script))
   }
 
   public startScripts(scriptComponent: ScriptComponent[]) {

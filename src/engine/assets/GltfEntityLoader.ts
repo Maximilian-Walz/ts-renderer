@@ -1,6 +1,19 @@
 import { Camera, GlTf, Mesh, Node, Scene } from 'gltf-loader-ts/lib/gltf'
-import { mat4, quat, vec3 } from 'wgpu-matrix'
-import { CameraComponent, CameraType, LightComponent, LightType, MeshRendererComponent, PrimitiveRenderData, TransformComponent } from '../components'
+import { mat3, mat4, quat, vec3 } from 'wgpu-matrix'
+import {
+  CameraComponent,
+  CameraProps,
+  CameraType,
+  ComponentType,
+  LightComponent,
+  LightProps,
+  LightType,
+  MeshRendererComponent,
+  MeshRendererProps,
+  PrimitiveRenderData,
+  TransformComponent,
+  TransformProps,
+} from '../components'
 import { Entity } from '../scenes/Entity'
 import { Scene as EngineScene, SceneId } from '../scenes/Scene'
 import { AssetManager } from './AssetManager'
@@ -37,28 +50,37 @@ export class GltfEntityLoader {
     return engineScene
   }
 
-  private addEntitiesFromNodes(engineScene: EngineScene, nodeIndex: number, parentTransform?: TransformComponent) {
+  private addEntitiesFromNodes(engineScene: EngineScene, nodeIndex: number, parentEntity?: Entity) {
     const node = this.nodes[nodeIndex]
 
-    let transformComponent: TransformComponent
+    let position, scale, rotation
     if (node.matrix) {
-      transformComponent = TransformComponent.fromMatrix(mat4.create(...node.matrix), parentTransform)
+      const matrix = mat4.create(...node.matrix)
+      position = vec3.getTranslation(matrix)
+      scale = vec3.getScaling(matrix)
+      rotation = quat.fromMat(mat3.fromMat4(matrix))
     } else {
-      const translation = node.translation ? vec3.fromValues(...node.translation) : undefined
-      const rotation = node.rotation ? quat.fromValues(...node.rotation) : undefined
-      const scale = node.scale ? vec3.fromValues(...node.scale) : undefined
-      transformComponent = TransformComponent.fromValues(translation, rotation, scale, parentTransform)
+      position = node.translation ? vec3.fromValues(...node.translation) : undefined
+      rotation = node.rotation ? quat.fromValues(...node.rotation) : undefined
+      scale = node.scale ? vec3.fromValues(...node.scale) : undefined
     }
-    transformComponent.name = node.name
 
-    const entity = engineScene.createEntity(node.name, transformComponent)
-    if (node.mesh != undefined) entity.addComponent(this.loadMeshRenderer(node.mesh))
-    if (node.camera != undefined) entity.addComponent(this.loadCamera(this.cameras[node.camera]))
+    let transformProps: TransformProps = {
+      name: node.name,
+      position: position,
+      rotation: rotation,
+      scale: scale,
+      parentTransform: parentEntity?.getComponent(ComponentType.TRANSFORM) as TransformComponent,
+    }
+
+    const entity = engineScene.createEntity(node.name, transformProps)
+    if (node.mesh != undefined) entity.addComponent(MeshRendererComponent, this.loadMeshRenderer(node.mesh))
+    if (node.camera != undefined) entity.addComponent(CameraComponent, this.loadCamera(this.cameras[node.camera]))
     if (node.extensions != undefined) this.loadExtensions(entity, node.extensions)
-    if (node.children != undefined) node.children.forEach((childIndex: number) => this.addEntitiesFromNodes(engineScene, childIndex, transformComponent))
+    if (node.children != undefined) node.children.forEach((childIndex: number) => this.addEntitiesFromNodes(engineScene, childIndex, entity))
   }
 
-  private loadMeshRenderer(meshIndex: number): MeshRendererComponent {
+  private loadMeshRenderer(meshIndex: number): MeshRendererProps {
     const mesh = this.meshes[meshIndex]
 
     const primitives: PrimitiveRenderData[] = []
@@ -78,39 +100,46 @@ export class GltfEntityLoader {
       }
     })
 
-    const meshRenderer = new MeshRendererComponent()
-    meshRenderer.name = mesh.name
-    meshRenderer.primitives = primitives
-    return meshRenderer
+    return {
+      name: mesh.name,
+      primitives: primitives,
+    }
   }
 
-  private loadCamera(camera: Camera): CameraComponent {
-    let cameraComponent: CameraComponent
+  private loadCamera(camera: Camera): CameraProps {
     if (camera.type == 'perspective') {
       const perspectiveData = camera.perspective!
-      const cameraData = {
-        fov: perspectiveData.yfov,
-        aspect: (perspectiveData.aspectRatio ??= 1),
+      return {
+        name: camera.name,
+        cameraType: CameraType.PERSPECTIVE,
+        projectionData: {
+          fov: perspectiveData.yfov,
+          aspect: (perspectiveData.aspectRatio ??= 1),
+        },
+        zNear: perspectiveData.znear,
+        zFar: perspectiveData.zfar,
+        useCanvasAspect: !perspectiveData.aspectRatio,
       }
-      cameraComponent = new CameraComponent(CameraType.PERSPECTIVE, cameraData, perspectiveData.znear, perspectiveData.zfar)
-      cameraComponent.useCanvasAspect = !perspectiveData.aspectRatio
     } else {
       const orthographicData = camera.orthographic!
-      const cameraData = {
-        xMag: orthographicData.xmag,
-        yMag: orthographicData.ymag,
+      return {
+        name: camera.name,
+        cameraType: CameraType.ORTHOGRAPHIC,
+        projectionData: {
+          xMag: orthographicData.xmag,
+          yMag: orthographicData.ymag,
+        },
+        zNear: orthographicData.znear,
+        zFar: orthographicData.zfar,
       }
-      cameraComponent = new CameraComponent(CameraType.ORTHOGRAPHIC, cameraData, orthographicData.znear, orthographicData.zfar)
     }
-    cameraComponent.name = camera.name
-    return cameraComponent
   }
 
   private loadExtensions(entity: Entity, extensions: any) {
-    if (extensions.KHR_lights_punctual != undefined) entity.addComponent(this.loadLight(extensions.KHR_lights_punctual.light))
+    if (extensions.KHR_lights_punctual != undefined) entity.addComponent(LightComponent, this.loadLight(extensions.KHR_lights_punctual.light))
   }
 
-  private loadLight(lightIndex: number): LightComponent {
+  private loadLight(lightIndex: number): LightProps {
     const light = this.extensions.KHR_lights_punctual.lights[lightIndex]
 
     let type: LightType
@@ -118,12 +147,17 @@ export class GltfEntityLoader {
       case 'directional':
         type = LightType.SUN
         break
-      case 'pont':
+      case 'point':
         type = LightType.POINT
       default:
         type = LightType.POINT
     }
 
-    return new LightComponent(light.color, 2, type, type == LightType.SUN)
+    return {
+      color: light.color,
+      power: 2,
+      lightType: type,
+      castsShadow: type == LightType.SUN,
+    }
   }
 }

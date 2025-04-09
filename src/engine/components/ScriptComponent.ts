@@ -1,24 +1,28 @@
-import { Component, ComponentType } from '.'
+import { ComponentType } from '.'
 import { Script } from '../assets/Script'
+import { Entity } from '../scenes/Entity'
+import { Component } from './Component'
+
+export type ScriptInitData = {
+  scriptType: new (...args: any[]) => Script
+  args: any[]
+}
+
+export type ScriptProps = {
+  scriptsInitData?: ScriptInitData[]
+}
 
 export class ScriptComponent extends Component {
-  private scripts: Script[] = []
+  public readonly scripts: Script[] = []
 
-  constructor() {
-    super(ComponentType.SHADOW_MAP)
+  constructor(entity: Entity, props: ScriptProps) {
+    super(ComponentType.SHADOW_MAP, entity)
+    props.scriptsInitData?.forEach(({ scriptType, args }) => this.addScript(scriptType, ...args))
   }
 
   public addScript<T extends Script>(TCreator: new (...args: any[]) => T, ...args: any[]): void {
     const script = new TCreator(...args)
     script.onCreate()
     this.scripts.push(script)
-  }
-
-  public getScripts(): Script[] {
-    return this.scripts
-  }
-
-  public toJson(): Object {
-    throw new Error('Method not implemented.')
   }
 }

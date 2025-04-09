@@ -15,18 +15,18 @@ function PerspectiveViewer({ camera }: { camera: CameraComponent }) {
     <>
       <NumberInput
         label={'Field of View'}
-        initialValue={(camera.data as PerspectiveData).fov}
+        initialValue={(camera.projectionData as PerspectiveData).fov}
         precision={4}
         step={0.1}
-        onChange={(value) => ((camera.data as PerspectiveData).fov = value)}
+        onChange={(value) => ((camera.projectionData as PerspectiveData).fov = value)}
       />
-      {camera.useCanvasData && (
+      {camera.useCanvasAspect && (
         <NumberInput
           label={'Aspect Ratio'}
-          initialValue={(camera.data as PerspectiveData).aspect}
+          initialValue={(camera.projectionData as PerspectiveData).aspect}
           precision={4}
           step={0.1}
-          onChange={(value) => ((camera.data as PerspectiveData).aspect = value)}
+          onChange={(value) => ((camera.projectionData as PerspectiveData).aspect = value)}
         />
       )}
       <div className="form-control space-y-0.5">
@@ -43,17 +43,17 @@ function OrthographicViewer({ camera }: { camera: CameraComponent }) {
     <>
       <NumberInput
         label={'xMag'}
-        initialValue={(camera.data as OrthographicData).xMag}
+        initialValue={(camera.projectionData as OrthographicData).xMag}
         precision={4}
         step={0.1}
-        onChange={(value) => ((camera.data as OrthographicData).xMag = value)}
+        onChange={(value) => ((camera.projectionData as OrthographicData).xMag = value)}
       />
       <NumberInput
         label={'yMag'}
-        initialValue={(camera.data as OrthographicData).yMag}
+        initialValue={(camera.projectionData as OrthographicData).yMag}
         precision={4}
         step={0.1}
-        onChange={(value) => ((camera.data as OrthographicData).yMag = value)}
+        onChange={(value) => ((camera.projectionData as OrthographicData).yMag = value)}
       />
       <div className="form-control space-y-0.5">
         <div className="label-text -mb-4">Clip</div>

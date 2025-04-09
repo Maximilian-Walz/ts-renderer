@@ -21,6 +21,6 @@ export class CoolGame extends Game {
 
     const activeScene = this.engine.sceneManager.getActiveScene()
     const sunLight = activeScene.getEntity('Light')
-    sunLight.addComponent(new ShadowMapComponent())
+    sunLight.addComponent(ShadowMapComponent)
   }
 }
