@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { LuCircleDashed } from 'react-icons/lu'
-import { ComponentType, ShadowMapComponent } from '../../../engine/components'
+import { ShadowMapComponent } from '../../../engine/components'
 import { Entity } from '../../../engine/scenes/Entity'
 import { NumberInput } from '../../components/NumberInput'
 import { ComponentViewer } from './ComponentViewer'
@@ -10,7 +10,7 @@ type Props = {
 }
 
 export function ShadowMapViewer({ entity }: Props) {
-  const shadowMap = entity.getComponentOrUndefined(ComponentType.SHADOW_MAP) as ShadowMapComponent
+  const shadowMap = entity.getComponentOrUndefined(ShadowMapComponent)
   if (shadowMap == undefined) {
     return null
   }

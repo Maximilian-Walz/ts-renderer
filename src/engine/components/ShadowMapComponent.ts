@@ -1,6 +1,5 @@
 import { ComponentType } from '.'
 import { ShadowMapBindGroupData } from '../rendering/bind-group-data/ShadowMapBindGroupData'
-import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
 
 export type ShadowMapProps = {
@@ -8,8 +7,12 @@ export type ShadowMapProps = {
 }
 
 export class ShadowMapComponent extends BindGroupDataComponent<ShadowMapBindGroupData, ShadowMapProps> {
-  constructor(entity: Entity, props: ShadowMapProps) {
-    super(ComponentType.SHADOW_MAP, entity, props)
+  get type(): ComponentType {
+    return ShadowMapComponent.getType()
+  }
+
+  public static override getType(): ComponentType {
+    return ComponentType.SHADOW_MAP
   }
 
   public createBindGroupData(device: GPUDevice): ShadowMapBindGroupData {

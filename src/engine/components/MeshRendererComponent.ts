@@ -1,7 +1,6 @@
 import { ComponentType } from '.'
 import { MeshAssetLoader } from '../assets/loaders/MeshAssetLoader'
 import { PbrMaterialAssetLoader } from '../assets/loaders/PbrMaterialAssetLoader'
-import { Entity } from '../scenes/Entity'
 import { Component } from './Component'
 
 export type PrimitiveRenderData = {
@@ -14,8 +13,12 @@ export type MeshRendererProps = {
 }
 
 export class MeshRendererComponent extends Component<MeshRendererProps> {
-  constructor(entity: Entity, props: MeshRendererProps) {
-    super(ComponentType.MESH_RENDERER, entity, props)
+  get type(): ComponentType {
+    return MeshRendererComponent.getType()
+  }
+
+  public static override getType(): ComponentType {
+    return ComponentType.MESH_RENDERER
   }
 
   get primitives() {

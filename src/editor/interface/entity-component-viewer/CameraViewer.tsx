@@ -1,6 +1,6 @@
 import React from 'react'
 import { LuCamera } from 'react-icons/lu'
-import { CameraComponent, CameraType, ComponentType, OrthographicData, PerspectiveData } from '../../../engine/components'
+import { CameraComponent, CameraType, OrthographicData, PerspectiveData } from '../../../engine/components'
 import { Entity } from '../../../engine/scenes/Entity'
 import { NumberInput } from '../../components/NumberInput'
 import { ComponentViewer } from './ComponentViewer'
@@ -64,7 +64,7 @@ function OrthographicViewer({ camera }: { camera: CameraComponent }) {
 }
 
 export function CameraViewer({ entity }: Props) {
-  const camera = entity.getComponentOrUndefined(ComponentType.CAMERA) as CameraComponent
+  const camera = entity.getComponentOrUndefined(CameraComponent)
   if (camera == undefined) {
     return null
   }

@@ -1,7 +1,6 @@
 import { Mat4, Quat, Vec3, mat4 } from 'wgpu-matrix'
 import { ComponentType } from '.'
 import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
-import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
 
 export type TransformProps = {
@@ -12,8 +11,12 @@ export type TransformProps = {
 }
 
 export class TransformComponent extends BindGroupDataComponent<BufferBindGroupData, TransformProps> {
-  constructor(entity: Entity, props: TransformProps) {
-    super(ComponentType.TRANSFORM, entity, props)
+  get type(): ComponentType {
+    return TransformComponent.getType()
+  }
+
+  public static override getType(): ComponentType {
+    return ComponentType.TRANSFORM
   }
 
   public createBindGroupData(device: GPUDevice): BufferBindGroupData {

@@ -1,4 +1,3 @@
-export const NUM_OF_COMPONENT_TYPES = 6
 export enum ComponentType {
   TRANSFORM = 'transform',
   CAMERA = 'camera',

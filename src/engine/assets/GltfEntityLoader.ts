@@ -4,7 +4,6 @@ import {
   CameraComponent,
   CameraProps,
   CameraType,
-  ComponentType,
   LightComponent,
   LightProps,
   LightType,
@@ -69,7 +68,7 @@ export class GltfEntityLoader {
       position: position ?? vec3.zero(),
       rotation: rotation ?? quat.identity(),
       scale: scale ?? vec3.fromValues(1, 1, 1),
-      parent: parentEntity?.getComponent(ComponentType.TRANSFORM) as TransformComponent,
+      parent: parentEntity?.getComponent(TransformComponent),
     }
 
     const entity = engineScene.createEntity(node.name, transformProps)

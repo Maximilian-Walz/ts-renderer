@@ -1,7 +1,6 @@
 import { Mat4, mat4, Vec3, vec4 } from 'wgpu-matrix'
 import { ComponentType } from '.'
 import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
-import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
 
 export enum LightType {
@@ -17,8 +16,12 @@ export type LightProps = {
 }
 
 export class LightComponent extends BindGroupDataComponent<BufferBindGroupData, LightProps> {
-  constructor(entity: Entity, props: LightProps) {
-    super(ComponentType.LIGHT, entity, props)
+  get type(): ComponentType {
+    return LightComponent.getType()
+  }
+
+  public static override getType(): ComponentType {
+    return ComponentType.LIGHT
   }
 
   public override createBindGroupData(device: GPUDevice): BufferBindGroupData {

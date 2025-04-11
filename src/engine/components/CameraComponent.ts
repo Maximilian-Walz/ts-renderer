@@ -1,7 +1,6 @@
 import { mat4, Mat4 } from 'wgpu-matrix'
 import { ComponentType } from '.'
 import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
-import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
 
 export enum CameraType {
@@ -32,8 +31,12 @@ export type CameraProps = {
 export class CameraComponent extends BindGroupDataComponent<BufferBindGroupData, CameraProps> {
   invViewProjection?: Mat4
 
-  constructor(entity: Entity, props: CameraProps) {
-    super(ComponentType.CAMERA, entity, props)
+  get type(): ComponentType {
+    return CameraComponent.getType()
+  }
+
+  public static override getType(): ComponentType {
+    return ComponentType.CAMERA
   }
 
   public override createBindGroupData(device: GPUDevice): BufferBindGroupData {

@@ -60,7 +60,7 @@ export class Editor extends Game {
       position: vec3.fromValues(0, 0, 10),
       rotation: quat.identity(),
       scale: vec3.fromValues(1, 1, 1),
-      parent: editorCamTarget.getTransform(), // TODO: Previously this was just another transform component, however now they dont exist without an corresponding entity. Think about how this should be done now
+      parent: editorCamTarget.getComponent(TransformComponent), // TODO: Previously this was just another transform component, however now they dont exist without an corresponding entity. Think about how this should be done now
     }
 
     const cameraProps: CameraProps = {

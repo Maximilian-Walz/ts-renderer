@@ -1,6 +1,6 @@
 import { mat4, quat, utils, vec3 } from 'wgpu-matrix'
 import { Script } from '../../engine/assets/Script'
-import { ComponentType, TransformComponent } from '../../engine/components'
+import { TransformComponent } from '../../engine/components'
 import { Engine } from '../../engine/Engine'
 
 export class CameraControllerScript extends Script {
@@ -9,7 +9,7 @@ export class CameraControllerScript extends Script {
   public onInit(engine: Engine): void {}
 
   public onUpdate(engine: Engine): void {
-    const transform = this.entity.getComponent(ComponentType.TRANSFORM) as TransformComponent
+    const transform = this.entity.getComponent(TransformComponent)
     this.applyCameraScale(transform, engine.inputManager.touchpadPinchDelta)
     if (engine.inputManager.mouseButtons[0]) {
       if (engine.inputManager.keys.get('ShiftLeft')) {

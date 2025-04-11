@@ -1,4 +1,4 @@
-import { Component, ComponentType, TransformComponent, TransformProps } from '../components'
+import { Component, ComponentClass, ComponentType, TransformComponent, TransformProps } from '../components'
 
 export type EntityId = string
 
@@ -11,27 +11,32 @@ export class Entity {
     this.addComponent(TransformComponent, transformProps)
   }
 
-  public hasComponent(type: ComponentType): boolean {
-    return this.componentMap.has(type)
+  public hasComponent<T extends Component<any>>(componentClass: ComponentClass<T>): boolean {
+    return this.componentMap.has(componentClass.getType())
   }
 
-  public getComponentOrUndefined(type: ComponentType): Component<any> | undefined {
+  public getComponent<T extends Component<any>>(componentClass: ComponentClass<T>): T {
+    const type = componentClass.getType()
+    if (!this.componentMap.has(type)) {
+      throw new Error(`Entity with id ${this.entityId} does not have component of type ${type}.`)
+    }
+    return this.componentMap.get(type) as T
+  }
+
+  public getComponentFromTypeOrUndefined(type: ComponentType): Component<any> | undefined {
     return this.componentMap.get(type)
+  }
+
+  public getComponentOrUndefined<T extends Component<any>>(componentClass: ComponentClass<T>): T | undefined {
+    const type = componentClass.getType()
+    if (!this.componentMap.has(type)) {
+      return undefined
+    }
+    return this.componentMap.get(type) as T
   }
 
   public getComponents(): Component<any>[] {
     return Array.from(this.componentMap.values())
-  }
-
-  public getComponent(type: ComponentType): Component<any> {
-    if (!this.componentMap.has(type)) {
-      throw new Error(`Entity with id ${this.entityId} does not have component of type ${type}.`)
-    }
-    return this.componentMap.get(type)!
-  }
-
-  public getTransform(): TransformComponent {
-    return this.componentMap.get(ComponentType.TRANSFORM) as TransformComponent
   }
 
   public getComponentTypes(): ComponentType[] {

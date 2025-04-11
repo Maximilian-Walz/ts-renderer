@@ -53,7 +53,7 @@ export class Scene {
     this.entities.forEach((entity) => {
       let record: ComponentRecord = {}
       Object.keys(ComponentType).forEach(
-        (type) => (record[ComponentType[type as keyof typeof ComponentType]] = entity.getComponentOrUndefined(ComponentType[type as keyof typeof ComponentType]))
+        (type) => (record[ComponentType[type as keyof typeof ComponentType]] = entity.getComponentFromTypeOrUndefined(ComponentType[type as keyof typeof ComponentType]))
       )
 
       const containsAll = componentTypes.every((type) => record[type] != undefined)
@@ -66,10 +66,10 @@ export class Scene {
   }
 
   public instanceScene(sourceScene: Scene, parentEntityId?: EntityId) {
-    const parentEntityTransform = parentEntityId != undefined ? (this.getEntity(parentEntityId).getComponent(ComponentType.TRANSFORM) as TransformComponent) : undefined
+    const parentEntityTransform = parentEntityId != undefined ? this.getEntity(parentEntityId).getComponent(TransformComponent) : undefined
 
     sourceScene.getEntities().forEach((entity) => {
-      const tranform = entity.getComponent(ComponentType.TRANSFORM) as TransformComponent
+      const tranform = entity.getComponent(TransformComponent)
       if (tranform.parent == undefined) {
         tranform.parent = parentEntityTransform
       }

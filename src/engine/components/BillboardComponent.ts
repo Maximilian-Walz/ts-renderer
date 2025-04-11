@@ -1,7 +1,6 @@
 import { ComponentType } from '.'
 import { TextureAssetLoader } from '../assets/loaders/TextureAssetLoader'
 import { TextureBindGroupData } from '../rendering/bind-group-data/TextureBindGroupData'
-import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
 
 export type BillboardProps = {
@@ -9,8 +8,12 @@ export type BillboardProps = {
 }
 
 export class BillboardComponent extends BindGroupDataComponent<TextureBindGroupData, BillboardProps> {
-  constructor(entity: Entity, props: BillboardProps) {
-    super(ComponentType.BILLBOARD, entity, props)
+  get type(): ComponentType {
+    return BillboardComponent.getType()
+  }
+
+  public static override getType(): ComponentType {
+    return ComponentType.BILLBOARD
   }
 
   public override createBindGroupData(device: GPUDevice): TextureBindGroupData {

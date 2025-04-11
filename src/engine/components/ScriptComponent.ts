@@ -1,6 +1,5 @@
 import { ComponentType } from '.'
 import { Script } from '../assets/Script'
-import { Entity } from '../scenes/Entity'
 import { Component } from './Component'
 
 export type ScriptInitData = {
@@ -13,10 +12,14 @@ export type ScriptProps = {
 }
 
 export class ScriptComponent extends Component<ScriptProps> {
+  get type(): ComponentType {
+    return ScriptComponent.getType()
+  }
+
   private _scripts!: Script[]
 
-  constructor(entity: Entity, props: ScriptProps) {
-    super(ComponentType.SCRIPT, entity, props)
+  public static override getType(): ComponentType {
+    return ComponentType.SCRIPT
   }
 
   protected override onInit(props: ScriptProps): void {

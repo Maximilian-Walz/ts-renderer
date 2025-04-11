@@ -87,8 +87,8 @@ export class Engine {
       lightsWithShadowMap: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT, ComponentType.SHADOW_MAP]) as ShadowMapLightData[],
       billboardsData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.BILLBOARD]) as BillboardsData[],
       activeCameraData: {
-        transform: activeCamera.getComponent(ComponentType.TRANSFORM) as TransformComponent,
-        camera: activeCamera.getComponent(ComponentType.CAMERA) as CameraComponent,
+        transform: activeCamera.getComponent(TransformComponent),
+        camera: activeCamera.getComponent(CameraComponent),
       },
     }
   }

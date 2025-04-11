@@ -1,6 +1,6 @@
 import React from 'react'
 import { LuAxis3D, LuMove3D, LuRotate3D, LuScale3D } from 'react-icons/lu'
-import { ComponentType, TransformComponent } from '../../../engine/components'
+import { TransformComponent } from '../../../engine/components'
 import { Entity } from '../../../engine/scenes/Entity'
 import { VectorInput } from '../../components/VectorInput'
 import { ComponentViewer } from './ComponentViewer'
@@ -10,7 +10,7 @@ type Props = {
 }
 
 export function TransformViewer({ entity }: Props) {
-  const transform = entity.getComponentOrUndefined(ComponentType.TRANSFORM) as TransformComponent
+  const transform = entity.getComponentOrUndefined(TransformComponent)
   if (transform == undefined) {
     return null
   }

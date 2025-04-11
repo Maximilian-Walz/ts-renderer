@@ -1,6 +1,6 @@
 import React from 'react'
 import { LuLightbulb, LuPalette } from 'react-icons/lu'
-import { ComponentType, LightComponent } from '../../../engine/components'
+import { LightComponent } from '../../../engine/components'
 import { Entity } from '../../../engine/scenes/Entity'
 import { NumberInput } from '../../components/NumberInput'
 import { VectorInput } from '../../components/VectorInput'
@@ -11,7 +11,7 @@ type Props = {
 }
 
 export function LightViewer({ entity }: Props) {
-  const light = entity.getComponentOrUndefined(ComponentType.LIGHT) as LightComponent
+  const light = entity.getComponentOrUndefined(LightComponent)
   if (light == undefined) {
     return null
   }

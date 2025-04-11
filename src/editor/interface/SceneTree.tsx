@@ -1,16 +1,16 @@
 import React, { useState } from 'react'
 import { LuAxis3D, LuBox, LuCamera, LuLightbulb } from 'react-icons/lu'
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md'
-import { ComponentType, TransformComponent } from '../../engine/components'
+import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../../engine/components'
 import { Entity } from '../../engine/scenes/Entity'
 import { useEditor } from '../state/EditorProvider'
 import { useSelectedEntityId, useSetSelectedEntityId } from '../state/EntitySelectionProvider'
 import { useSelectedScene } from '../state/SceneSelectionProvider'
 
 function getIcon(entity: Entity): JSX.Element {
-  if (entity.hasComponent(ComponentType.CAMERA)) return <LuCamera />
-  else if (entity.hasComponent(ComponentType.LIGHT)) return <LuLightbulb />
-  else if (entity.hasComponent(ComponentType.MESH_RENDERER)) return <LuBox />
+  if (entity.hasComponent(CameraComponent)) return <LuCamera />
+  else if (entity.hasComponent(LightComponent)) return <LuLightbulb />
+  else if (entity.hasComponent(MeshRendererComponent)) return <LuBox />
   else return <LuAxis3D />
 }
 
@@ -21,7 +21,7 @@ type NodeProps = {
 
 function Node({ entity, childrenMap }: NodeProps) {
   const [expanded, setExpanded] = useState<boolean>(false)
-  const transform = entity.getComponent(ComponentType.TRANSFORM) as TransformComponent
+  const transform = entity.getComponent(TransformComponent)
   const expandable = childrenMap.get(transform) != undefined
   const icon = getIcon(entity)
 
@@ -71,7 +71,7 @@ export function SceneTree() {
 
   const entities = scene.getEntities()
   Array.from(entities.values()).forEach((entity) => {
-    const parent = (entity.getComponent(ComponentType.TRANSFORM) as TransformComponent).parent
+    const parent = entity.getComponent(TransformComponent).parent
     if (parent == undefined) {
       rootEntities.push(entity)
     } else {
