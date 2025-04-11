@@ -66,11 +66,10 @@ export class GltfEntityLoader {
     }
 
     let transformProps: TransformProps = {
-      name: node.name,
-      position: position,
-      rotation: rotation,
-      scale: scale,
-      parentTransform: parentEntity?.getComponent(ComponentType.TRANSFORM) as TransformComponent,
+      position: position ?? vec3.zero(),
+      rotation: rotation ?? quat.identity(),
+      scale: scale ?? vec3.fromValues(1, 1, 1),
+      parent: parentEntity?.getComponent(ComponentType.TRANSFORM) as TransformComponent,
     }
 
     const entity = engineScene.createEntity(node.name, transformProps)
@@ -101,7 +100,6 @@ export class GltfEntityLoader {
     })
 
     return {
-      name: mesh.name,
       primitives: primitives,
     }
   }
@@ -110,20 +108,18 @@ export class GltfEntityLoader {
     if (camera.type == 'perspective') {
       const perspectiveData = camera.perspective!
       return {
-        name: camera.name,
         cameraType: CameraType.PERSPECTIVE,
         projectionData: {
           fov: perspectiveData.yfov,
           aspect: (perspectiveData.aspectRatio ??= 1),
         },
         zNear: perspectiveData.znear,
-        zFar: perspectiveData.zfar,
+        zFar: perspectiveData.zfar ?? 100,
         useCanvasAspect: !perspectiveData.aspectRatio,
       }
     } else {
       const orthographicData = camera.orthographic!
       return {
-        name: camera.name,
         cameraType: CameraType.ORTHOGRAPHIC,
         projectionData: {
           xMag: orthographicData.xmag,
@@ -157,7 +153,7 @@ export class GltfEntityLoader {
       color: light.color,
       power: 2,
       lightType: type,
-      castsShadow: type == LightType.SUN,
+      castShadow: type == LightType.SUN,
     }
   }
 }

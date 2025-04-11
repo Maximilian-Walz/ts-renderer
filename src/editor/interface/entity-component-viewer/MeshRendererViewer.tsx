@@ -2,7 +2,6 @@ import React from 'react'
 import { LuBox } from 'react-icons/lu'
 import { ComponentType, MeshRendererComponent } from '../../../engine/components'
 import { Entity } from '../../../engine/scenes/Entity'
-import { LabelInput } from '../../components/LabelInput'
 import { ComponentViewer } from './ComponentViewer'
 
 type Props = {
@@ -15,13 +14,5 @@ export function MeshRendererViewer({ entity }: Props) {
     return null
   }
 
-  return (
-    <ComponentViewer title="Mesh Renderer" icon={<LuBox />} contentKey={entity.entityId}>
-      <div className="join join-vertical">
-        <div className="self-end">
-          <LabelInput label="Name" initialValue={(meshRenderer.name ??= '')} onChange={(value) => (meshRenderer.name = value)} />
-        </div>
-      </div>
-    </ComponentViewer>
-  )
+  return <ComponentViewer title="Mesh Renderer" icon={<LuBox />} contentKey={entity.entityId}></ComponentViewer>
 }

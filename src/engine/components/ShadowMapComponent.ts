@@ -4,35 +4,32 @@ import { Entity } from '../scenes/Entity'
 import { BindGroupDataComponent } from './Component'
 
 export type ShadowMapProps = {
-  size?: number
+  size: number
 }
 
-export class ShadowMapComponent extends BindGroupDataComponent<ShadowMapBindGroupData> {
-  private _size: number
-
-  constructor(entity: Entity, props?: ShadowMapProps) {
-    super(ComponentType.SHADOW_MAP, entity)
-    this._size = props?.size ?? 2048
+export class ShadowMapComponent extends BindGroupDataComponent<ShadowMapBindGroupData, ShadowMapProps> {
+  constructor(entity: Entity, props: ShadowMapProps) {
+    super(ComponentType.SHADOW_MAP, entity, props)
   }
 
   public createBindGroupData(device: GPUDevice): ShadowMapBindGroupData {
-    return new ShadowMapBindGroupData(device, this.size)
+    return new ShadowMapBindGroupData(device, this.props.size)
   }
 
   public static override getBindGroupLayout(device: GPUDevice): GPUBindGroupLayout {
     return ShadowMapBindGroupData.getLayout(device)
   }
 
-  get size() {
-    return this._size
-  }
-
   public upateSize(size: number) {
-    if (this._size == size) {
+    if (this.props.size == size) {
       return
     }
     console.log(size)
-    this._size = size
+    this.props.size = size
     this.bindGroupData?.updateShadowMapSize(size)
+  }
+
+  get size() {
+    return this.props.size
   }
 }

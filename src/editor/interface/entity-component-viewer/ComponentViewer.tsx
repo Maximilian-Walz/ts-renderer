@@ -5,7 +5,7 @@ import { MdKeyboardArrowDown, MdKeyboardArrowLeft } from 'react-icons/md'
 type Props = {
   title: string
   contentKey: string
-  children: ReactElement | ReactElement[]
+  children?: ReactElement | ReactElement[]
   icon?: JSX.Element
 }
 

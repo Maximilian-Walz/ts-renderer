@@ -10,17 +10,15 @@ export type PrimitiveRenderData = {
 }
 
 export type MeshRendererProps = {
-  name?: string
   primitives: PrimitiveRenderData[]
 }
 
-export class MeshRendererComponent extends Component {
-  name?: string
-  primitives: PrimitiveRenderData[] = []
-
+export class MeshRendererComponent extends Component<MeshRendererProps> {
   constructor(entity: Entity, props: MeshRendererProps) {
-    super(ComponentType.MESH_RENDERER, entity)
-    this.name = props.name
-    this.primitives = props.primitives
+    super(ComponentType.MESH_RENDERER, entity, props)
+  }
+
+  get primitives() {
+    return this.props.primitives
   }
 }

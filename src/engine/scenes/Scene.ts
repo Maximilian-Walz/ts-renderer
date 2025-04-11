@@ -3,7 +3,7 @@ import { Entity, EntityId } from './Entity'
 
 export type SceneId = string
 
-export type ComponentRecord = Partial<Record<ComponentType, Component | undefined>>
+export type ComponentRecord = Partial<Record<ComponentType, Component<any> | undefined>>
 export type ComponentQueryResult = ComponentRecord[]
 
 export class Scene {

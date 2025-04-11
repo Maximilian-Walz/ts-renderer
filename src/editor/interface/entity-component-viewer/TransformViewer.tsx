@@ -2,7 +2,6 @@ import React from 'react'
 import { LuAxis3D, LuMove3D, LuRotate3D, LuScale3D } from 'react-icons/lu'
 import { ComponentType, TransformComponent } from '../../../engine/components'
 import { Entity } from '../../../engine/scenes/Entity'
-import { LabelInput } from '../../components/LabelInput'
 import { VectorInput } from '../../components/VectorInput'
 import { ComponentViewer } from './ComponentViewer'
 
@@ -38,9 +37,6 @@ export function TransformViewer({ entity }: Props) {
   return (
     <ComponentViewer title="Transform" icon={<LuAxis3D />} contentKey={entity.entityId}>
       <div className="join join-vertical space-y-2">
-        <div className="self-end">
-          <LabelInput label="Name" initialValue={(transform.name ??= '')} onChange={(value) => (transform.name = value)} />
-        </div>
         <VectorInput label="Position" icon={<LuMove3D />} initialValue={position} targetValue={transform.position} />
         <VectorInput label="Rotation" icon={<LuRotate3D />} initialValue={rotation} minValue={-1} maxValue={1} targetValue={transform.rotation} />
         <VectorInput label="Scale" icon={<LuScale3D />} initialValue={scale} targetValue={transform.scale} />

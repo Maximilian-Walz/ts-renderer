@@ -2,7 +2,6 @@ import React from 'react'
 import { LuCamera } from 'react-icons/lu'
 import { CameraComponent, CameraType, ComponentType, OrthographicData, PerspectiveData } from '../../../engine/components'
 import { Entity } from '../../../engine/scenes/Entity'
-import { LabelInput } from '../../components/LabelInput'
 import { NumberInput } from '../../components/NumberInput'
 import { ComponentViewer } from './ComponentViewer'
 
@@ -81,10 +80,7 @@ export function CameraViewer({ entity }: Props) {
 
   return (
     <ComponentViewer title="Camera" icon={<LuCamera />} contentKey={entity.entityId}>
-      <div className="join join-vertical space-y-1">
-        <LabelInput label="Name" initialValue={(camera.name ??= '')} onChange={(value) => (camera.name = value)} />
-        {cameraSwitch(camera.cameraType)}
-      </div>
+      <div className="join join-vertical space-y-1">{cameraSwitch(camera.cameraType)}</div>
     </ComponentViewer>
   )
 }

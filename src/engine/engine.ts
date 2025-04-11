@@ -13,8 +13,8 @@ export class Engine {
   public assetManager!: AssetManager
   public gpuDataInterface!: GPUDataInterface
   public sceneManager: SceneManger
+  public inputManager: InputManager
 
-  private inputManager: InputManager
   private renderer!: Renderer
   private scriptExecutor: ScriptExecutor
   private stats: Stats = new Stats()
@@ -28,7 +28,7 @@ export class Engine {
     this.inputManager = new InputManager()
 
     // Systems
-    this.scriptExecutor = new ScriptExecutor()
+    this.scriptExecutor = new ScriptExecutor(this)
   }
 
   async init(device?: GPUDevice) {
@@ -104,8 +104,8 @@ export class Engine {
     if (this.sceneManager.hasActiveScene()) {
       const activeScene = this.sceneManager.getActiveScene()
 
-      const scriptsData = activeScene.getComponents([ComponentType.SCRIPT]) as { scriptComponent: ScriptComponent }[]
-      this.scriptExecutor.updateScripts(scriptsData.map((scriptData) => scriptData.scriptComponent))
+      const scriptsData = activeScene.getComponents([ComponentType.SCRIPT]) as { script: ScriptComponent }[]
+      this.scriptExecutor.updateScripts(scriptsData.map((scriptData) => scriptData.script))
 
       if (this.activeCameraId != undefined) {
         this.renderer.render(this.getRenderData(activeScene, this.activeCameraId))
