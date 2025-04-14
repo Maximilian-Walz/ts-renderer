@@ -4,16 +4,25 @@ import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGrou
 import { BindGroupDataComponent } from './Component'
 
 export type TransformProps = {
-  position: Vec3
-  rotation: Quat
-  scale: Vec3
+  position?: Vec3
+  rotation?: Quat
+  scale?: Vec3
 }
 
 export class TransformComponent extends BindGroupDataComponent<BufferBindGroupData, TransformProps> {
   public globalTransform: Mat4 = mat4.identity()
+  public position: Vec3 = vec3.zero()
+  public rotation: Quat = quat.identity()
+  public scale: Vec3 = vec3.fromValues(1, 1, 1)
 
   get type(): ComponentType {
     return TransformComponent.getType()
+  }
+
+  public override onCreate(props: TransformProps) {
+    props.position && vec3.copy(props.position, this.position)
+    props.rotation && quat.copy(props.rotation, this.rotation)
+    props.scale && vec3.copy(props.scale, this.scale)
   }
 
   public static override getType(): ComponentType {
@@ -40,29 +49,5 @@ export class TransformComponent extends BindGroupDataComponent<BufferBindGroupDa
     const matrix = mat4.mul(translation, rotation)
     mat4.scale(matrix, this.scale, matrix)
     return matrix
-  }
-
-  get position() {
-    return this.props.position
-  }
-
-  get rotation() {
-    return this.props.rotation
-  }
-
-  get scale() {
-    return this.props.scale
-  }
-
-  set position(position: Vec3) {
-    this.props.position = position
-  }
-
-  set rotation(rotation: Quat) {
-    this.props.rotation = rotation
-  }
-
-  set scale(scale: Vec3) {
-    this.props.scale = scale
   }
 }

@@ -64,9 +64,9 @@ export class GltfEntityLoader {
     }
 
     let transformProps: TransformProps = {
-      position: position ?? vec3.zero(),
-      rotation: rotation ?? quat.identity(),
-      scale: scale ?? vec3.fromValues(1, 1, 1),
+      position: position,
+      rotation: rotation,
+      scale: scale,
     }
 
     const entity = engineScene.createEntity(node.name, transformProps, { parentId: parentEntityId })

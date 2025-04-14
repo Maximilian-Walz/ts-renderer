@@ -1,9 +1,10 @@
 import { quat, vec3 } from 'wgpu-matrix'
 import { CoolGame } from '../coolGame/CoolGame'
-import { BillboardComponent, CameraComponent, CameraType, ComponentType, LightComponent, LightType, ScriptComponent, TransformProps } from '../engine/components'
+import { BillboardComponent, CameraComponent, CameraType, ComponentType, LightComponent, LightType, ScriptComponent } from '../engine/components'
 import { Game } from '../engine/Game'
 import { Entity } from '../engine/scenes/Entity'
 import { Scene, SceneId } from '../engine/scenes/Scene'
+import { FollowEntity } from './scripts/FollowEntity'
 import { OrbitingCameraController } from './scripts/OrbitingCameraController'
 
 const staticTextures: { identifier: string; path: string }[] = [
@@ -65,25 +66,21 @@ export class Editor extends Game {
   }
 
   private addBillboards(scene: Scene) {
-    const defaultTransformProps = {
-      position: vec3.zero(),
-      rotation: quat.identity(),
-      scale: vec3.fromValues(1, 1, 1),
-    } as TransformProps
-
     const cameraTextureLoader = this.engine.assetManager.getTextureLoader('camera')
     scene.getComponents([ComponentType.CAMERA]).forEach(({ camera }) => {
-      const targetId = camera?.entity.entityId
-      const billboard = scene.createEntity(`camera_${targetId}_billboard`, defaultTransformProps, { parentId: targetId })
+      const target = camera?.entity
+      const billboard = scene.createEntity(`camera_${target?.entityId}_billboard`)
       billboard.addComponent(BillboardComponent, { textureLoader: cameraTextureLoader })
+      billboard.addComponent(ScriptComponent, { scripts: [{ scriptType: FollowEntity, props: { target: target } }] })
     })
 
     const sunTexture = this.engine.assetManager.getTextureLoader('sun')
     const lightbulbTexture = this.engine.assetManager.getTextureLoader('lightbulb')
     scene.getComponents([ComponentType.LIGHT]).forEach(({ light }) => {
-      const targetId = light?.entity.entityId
-      const billboard = scene.createEntity(`light_${targetId}_billboard`, defaultTransformProps, { parentId: targetId })
+      const target = light!.entity
+      const billboard = scene.createEntity(`light_${target.entityId}_billboard`)
       billboard.addComponent(BillboardComponent, { textureLoader: (light as LightComponent).lightType == LightType.SUN ? sunTexture : lightbulbTexture })
+      billboard.addComponent(ScriptComponent, { scripts: [{ scriptType: FollowEntity, props: { target: target } }] })
     })
   }
 
@@ -94,5 +91,6 @@ export class Editor extends Game {
       this.addBillboards(copy)
     }
     this.engine.sceneManager.setActiveScene(sceneId)
+    this.engine.reloadScene()
   }
 }

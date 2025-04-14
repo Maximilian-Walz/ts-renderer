@@ -6,9 +6,9 @@ export class Entity {
   public readonly entityId: EntityId
   private componentMap: Map<ComponentType, Component<any>> = new Map()
 
-  constructor(entityId: EntityId, transformProps: TransformProps, hierarchyProps?: HierarchyProps) {
+  constructor(entityId: EntityId, transformProps?: TransformProps, hierarchyProps?: HierarchyProps) {
     this.entityId = entityId
-    this.addComponent(TransformComponent, transformProps)
+    this.addComponent(TransformComponent, transformProps ?? {})
     this.addComponent(HierarchyComponent, hierarchyProps ?? {})
   }
 
@@ -46,6 +46,7 @@ export class Entity {
 
   public addComponent<Props, T extends Component<Props>>(TCreator: new (entity: Entity, props: Props) => T, props: Partial<Props>): T {
     const component = new TCreator(this, props as Props)
+    component.onCreate(props as Props)
     if (this.componentMap.has(component.type)) {
       console.warn(`Entiy with id ${this.entityId} alreay had compnenty of type ${component.type}, which is now overriden.`)
     }

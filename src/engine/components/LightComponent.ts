@@ -1,4 +1,4 @@
-import { Mat4, mat4, Vec3, vec4 } from 'wgpu-matrix'
+import { Mat4, mat4, vec3, Vec3, vec4 } from 'wgpu-matrix'
 import { ComponentType } from '.'
 import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
 import { BindGroupDataComponent } from './Component'
@@ -9,15 +9,21 @@ export enum LightType {
 }
 
 export type LightProps = {
-  color: Vec3
-  power: number
-  lightType: LightType
-  castShadow: boolean
+  color?: Vec3
+  power?: number
+  lightType?: LightType
+  castShadow?: boolean
 }
 
 export class LightComponent extends BindGroupDataComponent<BufferBindGroupData, LightProps> {
+  public color: Vec3 = vec3.fromValues(1, 1, 1)
+
   get type(): ComponentType {
     return LightComponent.getType()
+  }
+
+  public override onCreate(props: LightProps): void {
+    props.color && vec3.copy(props.color, this.color)
   }
 
   public static override getType(): ComponentType {
@@ -63,34 +69,26 @@ export class LightComponent extends BindGroupDataComponent<BufferBindGroupData, 
   }
 
   get power() {
-    return this.props.power
-  }
-
-  get color() {
-    return this.props.color
+    return this.props.power ?? 1
   }
 
   get lightType() {
-    return this.props.lightType
+    return this.props.lightType ?? LightType.POINT
   }
 
   get castShadow() {
-    return this.props.castShadow
+    return this.props.castShadow ?? false
   }
 
   set power(power: number) {
-    this.power = power
-  }
-
-  set color(color: Vec3) {
-    this.color = color
+    this.props.power = power
   }
 
   set lightType(lightType: LightType) {
-    this.lightType = lightType
+    this.props.lightType = lightType
   }
 
   set castShadow(castShadow: boolean) {
-    this.castShadow = castShadow
+    this.props.castShadow = castShadow
   }
 }

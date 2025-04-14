@@ -11,7 +11,6 @@ export abstract class Component<Props> {
   constructor(entity: Entity, props: Props) {
     this.entity = entity
     this.props = props
-    this.onInit(props)
   }
 
   public static getType(): ComponentType {
@@ -20,7 +19,7 @@ export abstract class Component<Props> {
 
   abstract get type(): ComponentType
 
-  protected onInit(_props: Props): void {}
+  public onCreate(_props: Props): void {}
 
   public getProps(): Props {
     return this.props

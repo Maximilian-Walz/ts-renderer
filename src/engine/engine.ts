@@ -97,6 +97,12 @@ export class Engine {
     }
   }
 
+  public reloadScene() {
+    const activeScene = this.sceneManager.getActiveScene()
+    const hierarchiesData = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.HIERARCHY]) as HierarchyData[]
+    this.hierarchyBuilder.rebuildHierarchy(activeScene, hierarchiesData)
+  }
+
   private loop() {
     if (this.abortScheduled) {
       this.abortScheduled = false
@@ -107,9 +113,7 @@ export class Engine {
 
     if (this.sceneManager.hasActiveScene()) {
       const activeScene = this.sceneManager.getActiveScene()
-
-      const hierarchiesData = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.HIERARCHY]) as HierarchyData[]
-      this.hierarchyBuilder.rebuildHierarchy(activeScene, hierarchiesData)
+      this.hierarchyBuilder.updateGlobalTransforms()
 
       const scriptsData = activeScene.getComponents([ComponentType.SCRIPT]) as { script: ScriptComponent }[]
       this.scriptExecutor.updateScripts(scriptsData.map((scriptData) => scriptData.script))

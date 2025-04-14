@@ -38,7 +38,7 @@ export class Scene {
     this.entities.set(entity.entityId, entity)
   }
 
-  public createEntity(entityId: string, tranformProps: TransformProps, hierarchyProps?: HierarchyProps): Entity {
+  public createEntity(entityId: string, tranformProps?: TransformProps, hierarchyProps?: HierarchyProps): Entity {
     if (this.entities.has(entityId)) {
       throw new Error(`Entity with id ${entityId} already exists`)
     }

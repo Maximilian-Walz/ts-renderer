@@ -13,7 +13,7 @@ export class HierarchyBuilder {
   private rootTransforms: TransformComponent[] = []
 
   public rebuildHierarchy(activeScene: Scene, hierarchiesData: HierarchyData[]): void {
-    this.parentToChildren = new Map()
+    this.parentToChildren.clear()
 
     hierarchiesData.forEach(({ hierarchy }) => {
       hierarchy.children = []

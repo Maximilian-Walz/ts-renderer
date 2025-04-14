@@ -3,7 +3,7 @@ import { Script } from '../../engine/assets/Script'
 import { TransformComponent } from '../../engine/components'
 import { Engine } from '../../engine/Engine'
 
-export class OrbitingCameraController extends Script {
+export class OrbitingCameraController extends Script<{}> {
   private target: Vec3 = vec3.zero()
   private distance: number = 10
   private phi: number = 0

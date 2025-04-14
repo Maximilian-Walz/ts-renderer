@@ -9,7 +9,7 @@ export class ScriptExecutor {
     this.engine = engine
   }
 
-  private executeForAllScripts(scriptComponents: ScriptComponent[], lifecycleFunction: (script: Script) => void) {
+  private executeForAllScripts(scriptComponents: ScriptComponent[], lifecycleFunction: (script: Script<any>) => void) {
     scriptComponents.flatMap((scriptComponent) => scriptComponent.scripts).forEach((script) => lifecycleFunction(script))
   }
 
