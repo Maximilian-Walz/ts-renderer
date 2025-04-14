@@ -1,4 +1,4 @@
-import { Mat4, Quat, Vec3, mat4 } from 'wgpu-matrix'
+import { Mat4, Quat, Vec3, mat4, quat, vec3 } from 'wgpu-matrix'
 import { ComponentType } from '.'
 import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
 import { BindGroupDataComponent } from './Component'
@@ -7,10 +7,11 @@ export type TransformProps = {
   position: Vec3
   rotation: Quat
   scale: Vec3
-  parent?: TransformComponent
 }
 
 export class TransformComponent extends BindGroupDataComponent<BufferBindGroupData, TransformProps> {
+  public globalTransform: Mat4 = mat4.identity()
+
   get type(): ComponentType {
     return TransformComponent.getType()
   }
@@ -27,12 +28,10 @@ export class TransformComponent extends BindGroupDataComponent<BufferBindGroupDa
     return BufferBindGroupData.getLayout(device)
   }
 
-  static calculateGlobalTransform(transform: TransformComponent): Mat4 {
-    if (transform.parent != undefined) {
-      return mat4.multiply(this.calculateGlobalTransform(transform.parent), transform.toMatrix())
-    } else {
-      return transform.toMatrix()
-    }
+  public setFromMatrix(matrix: Mat4) {
+    this.position = vec3.getTranslation(matrix)
+    this.scale = vec3.getScaling(matrix)
+    this.rotation = quat.fromMat(matrix)
   }
 
   public toMatrix() {
@@ -55,23 +54,15 @@ export class TransformComponent extends BindGroupDataComponent<BufferBindGroupDa
     return this.props.scale
   }
 
-  get parent() {
-    return this.props.parent
-  }
-
   set position(position: Vec3) {
-    this.position = position
+    this.props.position = position
   }
 
   set rotation(rotation: Quat) {
-    this.rotation = rotation
+    this.props.rotation = rotation
   }
 
   set scale(scale: Vec3) {
-    this.scale = scale
-  }
-
-  set parent(parent: TransformComponent | undefined) {
-    this.parent = parent
+    this.props.scale = scale
   }
 }

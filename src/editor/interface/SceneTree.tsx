@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
 import { LuAxis3D, LuBox, LuCamera, LuLightbulb } from 'react-icons/lu'
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md'
-import { CameraComponent, LightComponent, MeshRendererComponent, TransformComponent } from '../../engine/components'
+import { CameraComponent, HierarchyComponent, LightComponent, MeshRendererComponent } from '../../engine/components'
 import { Entity } from '../../engine/scenes/Entity'
-import { useEditor } from '../state/EditorProvider'
 import { useSelectedEntityId, useSetSelectedEntityId } from '../state/EntitySelectionProvider'
 import { useSelectedScene } from '../state/SceneSelectionProvider'
 
@@ -16,13 +15,13 @@ function getIcon(entity: Entity): JSX.Element {
 
 type NodeProps = {
   entity: Entity
-  childrenMap: Map<TransformComponent, Entity[]>
+  children: Entity[]
 }
 
-function Node({ entity, childrenMap }: NodeProps) {
+function Node({ entity, children }: NodeProps) {
   const [expanded, setExpanded] = useState<boolean>(false)
-  const transform = entity.getComponent(TransformComponent)
-  const expandable = childrenMap.get(transform) != undefined
+
+  const expandable = children.length > 0
   const icon = getIcon(entity)
 
   const selectedEnityId = useSelectedEntityId()
@@ -46,10 +45,10 @@ function Node({ entity, childrenMap }: NodeProps) {
       </div>
       {expanded && expandable && (
         <div>
-          {childrenMap.get(transform)!.map((_, index) => (
+          {children.map((child, index) => (
             <div key={index} className="flex">
               <div className="divider divider-start divider-horizontal -mr-0.5 ml-0" />
-              <Node {...{ entity, childrenMap }} />
+              <Node entity={child} children={child.getComponent(HierarchyComponent).children} />
             </div>
           ))}
         </div>
@@ -59,33 +58,20 @@ function Node({ entity, childrenMap }: NodeProps) {
 }
 
 export function SceneTree() {
-  const editor = useEditor()
-
-  const rootEntities: Entity[] = []
-  const childrenMap: Map<TransformComponent, Entity[]> = new Map()
-
   const scene = useSelectedScene()
   if (scene == undefined) {
     return <div>No scene selected</div>
   }
 
-  const entities = scene.getEntities()
-  Array.from(entities.values()).forEach((entity) => {
-    const parent = entity.getComponent(TransformComponent).parent
-    if (parent == undefined) {
-      rootEntities.push(entity)
-    } else {
-      if (!childrenMap.has(parent)) {
-        childrenMap.set(parent, [])
-      }
-      childrenMap.get(parent)?.push(entity)
-    }
-  })
+  const roots = scene
+    .getEntities()
+    .map((entity) => entity.getComponent(HierarchyComponent))
+    .filter((hierarchy) => hierarchy.parentId == undefined)
 
   return (
     <div className="rounded-xl">
-      {rootEntities.map((entity, index) => (
-        <Node key={index} {...{ entity, childrenMap }} />
+      {roots.map((rootHierarchy, index) => (
+        <Node key={index} entity={rootHierarchy.entity} children={rootHierarchy.children} />
       ))}
     </div>
   )

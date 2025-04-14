@@ -1,4 +1,4 @@
-import { Component, ComponentType, TransformComponent, TransformProps } from '../components'
+import { Component, ComponentType, HierarchyProps, TransformProps } from '../components'
 import { Entity, EntityId } from './Entity'
 
 export type SceneId = string
@@ -38,12 +38,12 @@ export class Scene {
     this.entities.set(entity.entityId, entity)
   }
 
-  public createEntity(entityId: string, tranformProps: TransformProps): Entity {
+  public createEntity(entityId: string, tranformProps: TransformProps, hierarchyProps?: HierarchyProps): Entity {
     if (this.entities.has(entityId)) {
       throw new Error(`Entity with id ${entityId} already exists`)
     }
 
-    const entity = new Entity(entityId, tranformProps)
+    const entity = new Entity(entityId, tranformProps, hierarchyProps)
     this.addEntity(entity)
     return entity
   }
@@ -63,22 +63,5 @@ export class Scene {
     })
 
     return result
-  }
-
-  public instanceScene(sourceScene: Scene, parentEntityId?: EntityId) {
-    const parentEntityTransform = parentEntityId != undefined ? this.getEntity(parentEntityId).getComponent(TransformComponent) : undefined
-
-    sourceScene.getEntities().forEach((entity) => {
-      const tranform = entity.getComponent(TransformComponent)
-      if (tranform.parent == undefined) {
-        tranform.parent = parentEntityTransform
-      }
-      const instancedEntity = this.createEntity(entity.entityId, tranform)
-
-      // TODO: Need to think about what instancing means (deep or shallow copy?)
-      //        - Probably need both: For most in-game stuff a deep copy,
-      //          but for the editor we need a shallow copy of the game
-      //          since we want to apply changes to the actual game entities
-    })
   }
 }

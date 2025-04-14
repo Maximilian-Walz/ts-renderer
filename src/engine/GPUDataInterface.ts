@@ -95,7 +95,7 @@ export class GPUDataInterface {
 
   public writeTransformBuffers(transforms: TransformComponent[]) {
     transforms.forEach((transform) => {
-      const modelMatrix = TransformComponent.calculateGlobalTransform(transform)
+      const modelMatrix = transform.globalTransform
       const invModelMatrix = mat4.invert(modelMatrix)
       const normalModelMatrix = mat4.transpose(invModelMatrix)
       const matrices = new Float32Array([...modelMatrix, ...invModelMatrix, ...normalModelMatrix])
@@ -105,7 +105,7 @@ export class GPUDataInterface {
 
   public writeLightBuffers(lightsData: LightData[], activeCamerData: CameraData) {
     lightsData.forEach(({ transform, light }) => {
-      const viewMatrix = TransformComponent.calculateGlobalTransform(transform)
+      const viewMatrix = transform.globalTransform
       const invViewMatrix = mat4.invert(viewMatrix)
 
       let firstEntry
@@ -131,7 +131,7 @@ export class GPUDataInterface {
   public writeCamraBuffers(cameraData: CameraData[], canvasWidth: number, canvasHeight: number) {
     cameraData.forEach(({ transform, camera }) => {
       const projectionMatrix = camera.getProjection(canvasWidth, canvasHeight)
-      const viewMatrix = TransformComponent.calculateGlobalTransform(transform)
+      const viewMatrix = transform.globalTransform
       const invViewMatrix = mat4.invert(viewMatrix)
       const viewProjectionMatrix = mat4.mul(projectionMatrix, invViewMatrix)
       const invProjectionMatrix = mat4.invert(projectionMatrix)

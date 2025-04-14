@@ -48,9 +48,7 @@ export class SceneManger {
   }
 
   // TODO: Should copy everything down to component level
-  public instanceScene(sourceScene: Scene, targetScene: Scene = this.activeScene!, parentEntityId?: EntityId) {
-    targetScene.instanceScene(sourceScene, parentEntityId)
-  }
+  public instanceScene(sourceScene: Scene, targetScene: Scene = this.activeScene!, parentEntityId?: EntityId) {}
 
   // TODO: Shouldn't be the same entities but only the same components (at least for the editor use-case)
   // Shallow copy: Different scene object but the same entities.

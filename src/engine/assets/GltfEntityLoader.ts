@@ -10,10 +10,9 @@ import {
   MeshRendererComponent,
   MeshRendererProps,
   PrimitiveRenderData,
-  TransformComponent,
   TransformProps,
 } from '../components'
-import { Entity } from '../scenes/Entity'
+import { Entity, EntityId } from '../scenes/Entity'
 import { Scene as EngineScene, SceneId } from '../scenes/Scene'
 import { AssetManager } from './AssetManager'
 
@@ -49,7 +48,7 @@ export class GltfEntityLoader {
     return engineScene
   }
 
-  private addEntitiesFromNodes(engineScene: EngineScene, nodeIndex: number, parentEntity?: Entity) {
+  private addEntitiesFromNodes(engineScene: EngineScene, nodeIndex: number, parentEntityId?: EntityId) {
     const node = this.nodes[nodeIndex]
 
     let position, scale, rotation
@@ -68,14 +67,13 @@ export class GltfEntityLoader {
       position: position ?? vec3.zero(),
       rotation: rotation ?? quat.identity(),
       scale: scale ?? vec3.fromValues(1, 1, 1),
-      parent: parentEntity?.getComponent(TransformComponent),
     }
 
-    const entity = engineScene.createEntity(node.name, transformProps)
+    const entity = engineScene.createEntity(node.name, transformProps, { parentId: parentEntityId })
     if (node.mesh != undefined) entity.addComponent(MeshRendererComponent, this.loadMeshRenderer(node.mesh))
     if (node.camera != undefined) entity.addComponent(CameraComponent, this.loadCamera(this.cameras[node.camera]))
     if (node.extensions != undefined) this.loadExtensions(entity, node.extensions)
-    if (node.children != undefined) node.children.forEach((childIndex: number) => this.addEntitiesFromNodes(engineScene, childIndex, entity))
+    if (node.children != undefined) node.children.forEach((childIndex: number) => this.addEntitiesFromNodes(engineScene, childIndex, entity.entityId))
   }
 
   private loadMeshRenderer(meshIndex: number): MeshRendererProps {

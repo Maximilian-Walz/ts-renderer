@@ -1,23 +1,10 @@
 import { quat, vec3 } from 'wgpu-matrix'
 import { CoolGame } from '../coolGame/CoolGame'
-import {
-  BillboardComponent,
-  BillboardProps,
-  CameraComponent,
-  CameraProps,
-  CameraType,
-  ComponentType,
-  LightComponent,
-  LightType,
-  ScriptComponent,
-  ScriptProps,
-  TransformComponent,
-  TransformProps,
-} from '../engine/components'
+import { BillboardComponent, CameraComponent, CameraType, ComponentType, LightComponent, LightType, ScriptComponent, TransformProps } from '../engine/components'
 import { Game } from '../engine/Game'
 import { Entity } from '../engine/scenes/Entity'
 import { Scene, SceneId } from '../engine/scenes/Scene'
-import { CameraControllerScript } from './scripts/CameraControllerScript'
+import { OrbitingCameraController } from './scripts/OrbitingCameraController'
 
 const staticTextures: { identifier: string; path: string }[] = [
   { identifier: 'lightbulb', path: '/assets/textures/lightbulb.png' },
@@ -54,16 +41,13 @@ export class Editor extends Game {
   }
 
   private addEditorCamera(scene: Scene) {
-    const editorCamTarget = scene.createEntity('editor-cam-target', { position: vec3.zero(), rotation: quat.identity(), scale: vec3.fromValues(1, 1, 1) })
-
-    const transformProps: TransformProps = {
+    const transformProps = {
       position: vec3.fromValues(0, 0, 10),
       rotation: quat.identity(),
       scale: vec3.fromValues(1, 1, 1),
-      parent: editorCamTarget.getComponent(TransformComponent), // TODO: Previously this was just another transform component, however now they dont exist without an corresponding entity. Think about how this should be done now
     }
 
-    const cameraProps: CameraProps = {
+    const cameraProps = {
       cameraType: CameraType.PERSPECTIVE,
       projectionData: {
         fov: 1,
@@ -75,9 +59,7 @@ export class Editor extends Game {
 
     const editorCam = scene.createEntity('edior-cam', transformProps)
     editorCam.addComponent(CameraComponent, cameraProps)
-    editorCam.addComponent(ScriptComponent, {
-      scripts: [{ scriptType: CameraControllerScript }],
-    } as ScriptProps)
+    editorCam.addComponent(ScriptComponent, { scripts: [{ scriptType: OrbitingCameraController }] })
 
     this.engine.setActiveCamera(editorCam.entityId)
   }
@@ -89,16 +71,19 @@ export class Editor extends Game {
       scale: vec3.fromValues(1, 1, 1),
     } as TransformProps
 
-    scene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA]).forEach(({ transform }) => {
-      const billboard = scene.createEntity(`camera_${(transform as TransformComponent).entity.entityId}_billboard`, defaultTransformProps)
-      billboard.addComponent(BillboardComponent, { textureLoader: this.engine.assetManager.getTextureLoader('camera') } as BillboardProps)
+    const cameraTextureLoader = this.engine.assetManager.getTextureLoader('camera')
+    scene.getComponents([ComponentType.CAMERA]).forEach(({ camera }) => {
+      const targetId = camera?.entity.entityId
+      const billboard = scene.createEntity(`camera_${targetId}_billboard`, defaultTransformProps, { parentId: targetId })
+      billboard.addComponent(BillboardComponent, { textureLoader: cameraTextureLoader })
     })
 
-    scene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT]).forEach(({ transform, light }) => {
-      const billboard = scene.createEntity(`light_${(transform as TransformComponent).entity.entityId}_billboard`, defaultTransformProps)
-      billboard.addComponent(BillboardComponent, {
-        textureLoader: this.engine.assetManager.getTextureLoader((light as LightComponent).lightType == LightType.SUN ? 'sun' : 'lightbulb'),
-      } as BillboardProps)
+    const sunTexture = this.engine.assetManager.getTextureLoader('sun')
+    const lightbulbTexture = this.engine.assetManager.getTextureLoader('lightbulb')
+    scene.getComponents([ComponentType.LIGHT]).forEach(({ light }) => {
+      const targetId = light?.entity.entityId
+      const billboard = scene.createEntity(`light_${targetId}_billboard`, defaultTransformProps, { parentId: targetId })
+      billboard.addComponent(BillboardComponent, { textureLoader: (light as LightComponent).lightType == LightType.SUN ? sunTexture : lightbulbTexture })
     })
   }
 

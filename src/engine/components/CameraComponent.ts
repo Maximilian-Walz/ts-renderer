@@ -90,11 +90,11 @@ export class CameraComponent extends BindGroupDataComponent<BufferBindGroupData,
   }
 
   set zNear(zNear: number) {
-    this.zNear = zNear
+    this.props.zNear = zNear
   }
 
   set zFar(zFar: number) {
-    this.zFar = zFar
+    this.props.zFar = zFar
   }
 
   set useCanvasAspect(useCanvasAspect: boolean) {

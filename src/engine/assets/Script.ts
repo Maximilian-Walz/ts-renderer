@@ -10,8 +10,8 @@ export abstract class Script {
     this.entity = entity
   }
 
-  public abstract onCreate(): void
-  public abstract onInit(engine: Engine): void
-  public abstract onUpdate(engine: Engine): void
-  public abstract onDestroy(engine: Engine): void
+  public onCreate(): void {}
+  public onInit(_engine: Engine): void {}
+  public onUpdate(_engine: Engine): void {}
+  public onDestroy(_engine: Engine): void {}
 }

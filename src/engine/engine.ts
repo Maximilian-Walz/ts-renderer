@@ -6,6 +6,7 @@ import { InputManager } from './InputManager'
 import { EntityId } from './scenes/Entity'
 import { Scene } from './scenes/Scene'
 import { SceneManger } from './scenes/SceneManager'
+import { HierarchyBuilder, HierarchyData } from './systems/HierarchyBuilder'
 import { BillboardsData, CameraData, LightData, ModelData, RenderData, Renderer, ShadowMapLightData } from './systems/Renderer'
 import { ScriptExecutor } from './systems/ScriptExecutor'
 
@@ -17,6 +18,8 @@ export class Engine {
 
   private renderer!: Renderer
   private scriptExecutor: ScriptExecutor
+  private hierarchyBuilder: HierarchyBuilder
+
   private stats: Stats = new Stats()
 
   private activeCameraId?: EntityId
@@ -29,6 +32,7 @@ export class Engine {
 
     // Systems
     this.scriptExecutor = new ScriptExecutor(this)
+    this.hierarchyBuilder = new HierarchyBuilder()
   }
 
   async init(device?: GPUDevice) {
@@ -103,6 +107,9 @@ export class Engine {
 
     if (this.sceneManager.hasActiveScene()) {
       const activeScene = this.sceneManager.getActiveScene()
+
+      const hierarchiesData = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.HIERARCHY]) as HierarchyData[]
+      this.hierarchyBuilder.rebuildHierarchy(activeScene, hierarchiesData)
 
       const scriptsData = activeScene.getComponents([ComponentType.SCRIPT]) as { script: ScriptComponent }[]
       this.scriptExecutor.updateScripts(scriptsData.map((scriptData) => scriptData.script))

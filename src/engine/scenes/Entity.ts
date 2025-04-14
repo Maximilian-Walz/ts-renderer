@@ -1,4 +1,4 @@
-import { Component, ComponentClass, ComponentType, TransformComponent, TransformProps } from '../components'
+import { Component, ComponentClass, ComponentType, HierarchyComponent, HierarchyProps, TransformComponent, TransformProps } from '../components'
 
 export type EntityId = string
 
@@ -6,9 +6,10 @@ export class Entity {
   public readonly entityId: EntityId
   private componentMap: Map<ComponentType, Component<any>> = new Map()
 
-  constructor(entityId: EntityId, transformProps: TransformProps) {
+  constructor(entityId: EntityId, transformProps: TransformProps, hierarchyProps?: HierarchyProps) {
     this.entityId = entityId
     this.addComponent(TransformComponent, transformProps)
+    this.addComponent(HierarchyComponent, hierarchyProps ?? {})
   }
 
   public hasComponent<T extends Component<any>>(componentClass: ComponentClass<T>): boolean {
@@ -43,8 +44,8 @@ export class Entity {
     return Array.from(this.componentMap.keys())
   }
 
-  public addComponent<Props, T extends Component<Props>>(TCreator: new (entity: Entity, props: Props) => T, props: Props): T {
-    const component = new TCreator(this, props)
+  public addComponent<Props, T extends Component<Props>>(TCreator: new (entity: Entity, props: Props) => T, props: Partial<Props>): T {
+    const component = new TCreator(this, props as Props)
     if (this.componentMap.has(component.type)) {
       console.warn(`Entiy with id ${this.entityId} alreay had compnenty of type ${component.type}, which is now overriden.`)
     }
