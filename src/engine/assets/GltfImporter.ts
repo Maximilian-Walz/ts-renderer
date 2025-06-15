@@ -137,6 +137,8 @@ export class GltfImporter {
           return
         }
 
+        loadAttributeIfPresent(VertexAttributeType.TEXCOORD_0)
+
         if (!loadAttributeIfPresent(VertexAttributeType.TANGENT)) {
           console.warn(`No tangents found. Calculating tangents not implemented yet. Skipping primitive of mesh ${mesh.name}.`)
           return
