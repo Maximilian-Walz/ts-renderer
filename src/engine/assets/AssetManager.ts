@@ -1,8 +1,8 @@
 import { GPUDataInterface } from '../GPUDataInterface'
 import { AssetLoader } from './loaders/AssetLoader'
 import { BufferAssetLoader } from './loaders/BufferAssetLoader'
+import { MaterialAssetLoader } from './loaders/MaterialAssetLoader'
 import { MeshAssetLoader } from './loaders/MeshAssetLoader'
-import { MaterialAssetLoader } from './loaders/PbrMaterialAssetLoader'
 import { TextureAssetLoader, TextureData } from './loaders/TextureAssetLoader'
 import { MaterialCreator, MaterialProps } from './materials/Material'
 import { DefaultPbrMaterial, DefaultPbrMaterialProps } from './materials/pbr/DefaultPbrMaterial'
@@ -36,7 +36,7 @@ export class AssetManager {
 
   public async loadDefaultAssets() {
     await Promise.all(defaultTexturesInfo.map(({ identifier, path }) => this.addTextureFromPath(identifier, path).then(() => this.getTextureLoader(identifier).registerUsage())))
-    this.addPbrMaterial('default', DefaultPbrMaterial, DefaultPbrMaterialProps.fromDefaultTextures(this), 'Default Material')
+    this.addMaterial('default', DefaultPbrMaterial, DefaultPbrMaterialProps.fromDefaultTextures(this), 'Default Material')
   }
 
   private getAssetLoader<LoaderType extends AssetLoader<any>>(assetLoaders: Map<string, LoaderType>, identifier: string): LoaderType {
@@ -63,7 +63,7 @@ export class AssetManager {
     return this.getAssetLoader(this.textureAssetLoaders, identifier)
   }
 
-  public addPbrMaterial<T extends MaterialProps>(identifier: string, MaterialCreator: MaterialCreator<T>, materialProps: T, displayName?: string) {
+  public addMaterial<T extends MaterialProps>(identifier: string, MaterialCreator: MaterialCreator<T>, materialProps: T, displayName?: string) {
     const loader = new MaterialAssetLoader(this.gpuDataInterface, MaterialCreator, materialProps, displayName)
     this.materialAssetLoaders.set(identifier, loader)
   }

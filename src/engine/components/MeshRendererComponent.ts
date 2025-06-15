@@ -1,6 +1,6 @@
 import { ComponentType } from '.'
+import { MaterialAssetLoader } from '../assets/loaders/MaterialAssetLoader'
 import { MeshAssetLoader } from '../assets/loaders/MeshAssetLoader'
-import { MaterialAssetLoader } from '../assets/loaders/PbrMaterialAssetLoader'
 import { Component } from './Component'
 
 export type PrimitiveRenderData = {

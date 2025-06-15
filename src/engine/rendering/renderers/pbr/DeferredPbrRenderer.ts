@@ -4,7 +4,7 @@ import { ModelData, ShadowMapLightData } from '../../../systems/RendererSystem'
 import deferredRenderingVert from './deferredRendering.vert.wgsl'
 import { GBuffer } from './GBuffer'
 
-import { DefaultPbrMaterial } from '../../../assets/materials/pbr/DefaultPbrMaterial'
+import { ShadingType } from '../../../assets/materials/Material'
 import { PbrMaterial } from '../../../assets/materials/pbr/PbrMaterial'
 import { BufferDataComponentType, getBufferDataTypeByteCount } from '../../../assets/Mesh'
 import { ShadowMapBindGroupData } from '../../bind-group-data/ShadowMapBindGroupData'
@@ -73,7 +73,11 @@ export class DeferredPbrRenderer extends Renderer {
     modelsData.forEach(({ transform, meshRenderer }) => {
       gBufferPass.setBindGroup(1, transform.getOrCreateBindGroupData(this.device).bindGroup)
       meshRenderer.primitives.forEach(({ meshLoader, materialLoader }) => {
-        const material = materialLoader.getAssetData() as DefaultPbrMaterial
+        const material = materialLoader.getAssetData() as PbrMaterial
+        if (material.type != ShadingType.PBR) {
+          return
+        }
+
         gBufferPass.setPipeline(material.getPipeline())
         gBufferPass.setBindGroup(2, material.getBindGroup())
 
@@ -204,14 +208,11 @@ export class DeferredPbrRenderer extends Renderer {
         renderPass.setBindGroup(3, this.defaultShadowMapData.bindGroup)
         renderPass.draw(6)
       } else {
-        if (shadowMap == undefined) {
-          console.warn("Light with 'cast shadow' enabled requires a shadow map component.")
-          return
+        if (shadowMap != undefined) {
+          renderPass.setBindGroup(2, light.getOrCreateBindGroupData(this.device).bindGroup)
+          renderPass.setBindGroup(3, shadowMap.getOrCreateBindGroupData(this.device).bindGroup)
+          renderPass.draw(6)
         }
-
-        renderPass.setBindGroup(2, light.getOrCreateBindGroupData(this.device).bindGroup)
-        renderPass.setBindGroup(3, shadowMap.getOrCreateBindGroupData(this.device).bindGroup)
-        renderPass.draw(6)
       }
     })
   }

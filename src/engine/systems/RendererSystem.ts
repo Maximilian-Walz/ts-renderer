@@ -3,6 +3,7 @@ import { GPUDataInterface } from '../GPUDataInterface'
 import { ObscuredBillboardRenderer } from '../rendering/renderers/billboards/ObscuredBillboardRenderer'
 import { DeferredPbrRenderer } from '../rendering/renderers/pbr/DeferredPbrRenderer'
 import { SunLightShadowMapper } from '../rendering/renderers/shadows/SunLightShadowMapper'
+import UnlitRenderer from '../rendering/renderers/unlit/UnlitRenderer'
 import RenderingProcedure from '../rendering/RenderingProcedure'
 import RenderingStage from '../rendering/RenderingStage'
 import { EntityId } from '../scenes/Entity'
@@ -68,8 +69,9 @@ export class RendererSystem {
     const shadowMapping = new RenderingStage(new SunLightShadowMapper(device))
     const pbr = new RenderingStage(new DeferredPbrRenderer(device, canvasFormat))
     const billboards = new RenderingStage(new ObscuredBillboardRenderer(device, canvasFormat))
+    const unlit = new RenderingStage(new UnlitRenderer(device))
 
-    this.renderingProcedure = new RenderingProcedure(device, [shadowMapping, pbr, billboards])
+    this.renderingProcedure = new RenderingProcedure(device, [shadowMapping, pbr, billboards, unlit])
   }
 
   public setRenderTarget(canvas: HTMLCanvasElement) {

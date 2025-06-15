@@ -113,7 +113,7 @@ export class GltfImporter {
       }
 
       if (materialData.emissiveFactor) materialProps.emissiveFactor = vec3.fromValues(...materialData.emissiveFactor)
-      this.assetManager.addPbrMaterial(this.createMaterialId(index), DefaultPbrMaterial, materialProps, materialData.name)
+      this.assetManager.addMaterial(this.createMaterialId(index), DefaultPbrMaterial, materialProps, materialData.name)
     })
   }
 
@@ -135,10 +135,6 @@ export class GltfImporter {
         if (!requiredAttributesLoaded) {
           console.error(`Could not load primitive of mesh ${mesh.name}`)
           return
-        }
-
-        if (!loadAttributeIfPresent(VertexAttributeType.TEXCOORD_0)) {
-          console.warn(`No texcoords found for primitive of mesh ${mesh.name}`)
         }
 
         if (!loadAttributeIfPresent(VertexAttributeType.TANGENT)) {

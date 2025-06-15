@@ -3,9 +3,9 @@ import { BufferBindGroupData } from '../../../rendering/bind-group-data/BufferBi
 import { GPUTextureData } from '../../../systems/RendererSystem'
 import { AssetManager } from '../../AssetManager'
 import { GBufferFormat, MaterialProps, TextureIdentifier } from '../Material'
+import defaultProjection from '../defaultProjection.vert.wgsl'
 import { PbrMaterial } from './PbrMaterial'
 import defaultPbrFrag from './defaultPbr.frag.wgsl'
-import defaultPbrVert from './defaultPbr.vert.wgsl'
 
 export type DefaultTextures = {
   white: GPUTextureData
@@ -75,7 +75,7 @@ export class DefaultPbrMaterial extends PbrMaterial {
         }),
         vertex: {
           module: device.createShaderModule({
-            code: defaultPbrVert,
+            code: defaultProjection,
           }),
           buffers: this.getVertexDataMapping().map(({ format, stride }, index) => {
             return {
