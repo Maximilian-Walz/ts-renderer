@@ -1,5 +1,5 @@
 import { GPUDataInterface } from '../../GPUDataInterface'
-import { GPUTextureData } from '../../systems/Renderer'
+import { GPUTextureData } from '../../systems/RendererSystem'
 import { AssetLoader } from './AssetLoader'
 
 export type TextureData = ImageBitmap | HTMLImageElement

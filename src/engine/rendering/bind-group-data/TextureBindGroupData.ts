@@ -1,4 +1,4 @@
-import { GPUTextureData } from '../../systems/Renderer'
+import { GPUTextureData } from '../../systems/RendererSystem'
 import { BindGroupData } from './BindGroupData'
 
 export class TextureBindGroupData extends BindGroupData {

@@ -1,13 +1,12 @@
 import Stats from 'stats.js'
 import { AssetManager } from './assets/AssetManager'
-import { CameraComponent, ComponentType, ScriptComponent, TransformComponent } from './components'
+import { ComponentType, ScriptComponent } from './components'
 import { GPUDataInterface } from './GPUDataInterface'
 import { InputManager } from './InputManager'
 import { EntityId } from './scenes/Entity'
-import { Scene } from './scenes/Scene'
 import { SceneManger } from './scenes/SceneManager'
 import { HierarchyBuilder, HierarchyData } from './systems/HierarchyBuilder'
-import { BillboardsData, CameraData, LightData, ModelData, RenderData, Renderer, ShadowMapLightData } from './systems/Renderer'
+import { RendererSystem } from './systems/RendererSystem'
 import { ScriptExecutor } from './systems/ScriptExecutor'
 
 export class Engine {
@@ -16,7 +15,7 @@ export class Engine {
   public sceneManager: SceneManger
   public inputManager: InputManager
 
-  private renderer!: Renderer
+  private renderer!: RendererSystem
   private scriptExecutor: ScriptExecutor
   private hierarchyBuilder: HierarchyBuilder
 
@@ -55,7 +54,7 @@ export class Engine {
 
     this.gpuDataInterface = new GPUDataInterface(device)
     this.assetManager = new AssetManager(this.gpuDataInterface)
-    this.renderer = new Renderer(device, this.gpuDataInterface)
+    this.renderer = new RendererSystem(device, this.gpuDataInterface)
     await this.assetManager.loadDefaultAssets()
   }
 
@@ -82,21 +81,6 @@ export class Engine {
     this.abortScheduled = true
   }
 
-  private getRenderData(activeScene: Scene, activeCameraId: EntityId): RenderData {
-    const activeCamera = this.sceneManager.getActiveScene().getEntity(activeCameraId)
-    return {
-      modelsData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as ModelData[],
-      lightsData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT]) as LightData[],
-      camerasData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.CAMERA]) as CameraData[],
-      lightsWithShadowMap: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT, ComponentType.SHADOW_MAP]) as ShadowMapLightData[],
-      billboardsData: activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.BILLBOARD]) as BillboardsData[],
-      activeCameraData: {
-        transform: activeCamera.getComponent(TransformComponent),
-        camera: activeCamera.getComponent(CameraComponent),
-      },
-    }
-  }
-
   public reloadScene() {
     const activeScene = this.sceneManager.getActiveScene()
     const hierarchiesData = activeScene.getComponents([ComponentType.TRANSFORM, ComponentType.HIERARCHY]) as HierarchyData[]
@@ -119,7 +103,7 @@ export class Engine {
       this.scriptExecutor.updateScripts(scriptsData.map((scriptData) => scriptData.script))
 
       if (this.activeCameraId != undefined) {
-        this.renderer.render(this.getRenderData(activeScene, this.activeCameraId))
+        this.renderer.render(activeScene, this.activeCameraId)
       }
 
       this.inputManager.clearDeltas()

@@ -4,7 +4,8 @@ import { vec3, vec4 } from 'wgpu-matrix'
 import { SceneManger } from '../scenes/SceneManager'
 import { AssetManager } from './AssetManager'
 import { GltfEntityLoader } from './GltfEntityLoader'
-import { PbrMaterial, TextureIdentifier } from './Material'
+import { TextureIdentifier } from './materials/Material'
+import { DefaultPbrMaterial, DefaultPbrMaterialProps } from './materials/pbr/DefaultPbrMaterial'
 import { BufferAccessor, BufferDataType, VertexAttributeType } from './Mesh'
 
 enum TextureWrapMode {
@@ -96,23 +97,23 @@ export class GltfImporter {
 
   private importMaterials(materials: Material[]) {
     materials.forEach((materialData, index) => {
-      const material = PbrMaterial.fromDefaultTextures(this.assetManager)
+      const materialProps = DefaultPbrMaterialProps.fromDefaultTextures(this.assetManager)
       const pbr = materialData.pbrMetallicRoughness
-      if (pbr?.baseColorTexture) material.albedoTexture = this.parseTextureInfo(pbr.baseColorTexture)
-      if (pbr?.metallicRoughnessTexture) material.metallicRoughnessTexture = this.parseTextureInfo(pbr.metallicRoughnessTexture)
-      if (materialData.normalTexture) material.normalTexture = this.parseTextureInfo(materialData.normalTexture as TextureInfo)
-      if (materialData.occlusionTexture != undefined) material.occlusionTexture = this.parseTextureInfo(materialData.occlusionTexture as TextureInfo)
-      if (materialData.emissiveTexture != undefined) material.emissiveTexture = this.parseTextureInfo(materialData.emissiveTexture)
+      if (pbr?.baseColorTexture) materialProps.albedoTexture = this.parseTextureInfo(pbr.baseColorTexture)
+      if (pbr?.metallicRoughnessTexture) materialProps.metallicRoughnessTexture = this.parseTextureInfo(pbr.metallicRoughnessTexture)
+      if (materialData.normalTexture) materialProps.normalTexture = this.parseTextureInfo(materialData.normalTexture as TextureInfo)
+      if (materialData.occlusionTexture != undefined) materialProps.occlusionTexture = this.parseTextureInfo(materialData.occlusionTexture as TextureInfo)
+      if (materialData.emissiveTexture != undefined) materialProps.emissiveTexture = this.parseTextureInfo(materialData.emissiveTexture)
 
       if (materialData.pbrMetallicRoughness) {
         const pbr = materialData.pbrMetallicRoughness
-        if (pbr.baseColorFactor) material.albedoFactor = vec4.fromValues(...pbr.baseColorFactor)
-        if (pbr.metallicFactor) material.metallicFactor = pbr.metallicFactor
-        if (pbr.roughnessFactor) material.roughnessFactor = pbr.roughnessFactor
+        if (pbr.baseColorFactor) materialProps.albedoFactor = vec4.fromValues(...pbr.baseColorFactor)
+        if (pbr.metallicFactor) materialProps.metallicFactor = pbr.metallicFactor
+        if (pbr.roughnessFactor) materialProps.roughnessFactor = pbr.roughnessFactor
       }
 
-      if (materialData.emissiveFactor) material.emissiveFactor = vec3.fromValues(...materialData.emissiveFactor)
-      this.assetManager.addPbrMaterial(this.createMaterialId(index), material, materialData.name)
+      if (materialData.emissiveFactor) materialProps.emissiveFactor = vec3.fromValues(...materialData.emissiveFactor)
+      this.assetManager.addPbrMaterial(this.createMaterialId(index), DefaultPbrMaterial, materialProps, materialData.name)
     })
   }
 

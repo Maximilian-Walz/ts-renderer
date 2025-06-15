@@ -1,10 +1,10 @@
-import { BufferDataComponentType, getBufferDataTypeByteCount, VertexAttributeType } from '../../assets/Mesh'
-import { CameraComponent, LightComponent, TransformComponent } from '../../components'
-import { CameraData, ModelData, ShadowMapLightData } from '../../systems/Renderer'
-import { ShadowMapper } from './ShadowMapper'
+import { BufferDataComponentType, getBufferDataTypeByteCount, VertexAttributeType } from '../../../assets/Mesh'
+import { CameraComponent, ComponentType, LightComponent, LightType, TransformComponent } from '../../../components'
+import { ModelData, ShadowMapLightData } from '../../../systems/RendererSystem'
+import { Renderer, RenderingData } from '../Renderer'
 import shadowMapperVert from './shadowMapper.vert.wgsl'
 
-export class SunLightShadowMapper extends ShadowMapper {
+export class SunLightShadowMapper extends Renderer {
   private shadowPipeline: GPURenderPipeline
 
   constructor(device: GPUDevice) {
@@ -47,12 +47,12 @@ export class SunLightShadowMapper extends ShadowMapper {
     })
   }
 
-  public renderShadowMap(commandEncoder: GPUCommandEncoder, modelsData: ModelData[], { light, shadowMap }: ShadowMapLightData, cameraData: CameraData) {
+  public renderShadowMap(commandEncoder: GPUCommandEncoder, shadowCasters: ModelData[], { light, shadowMap }: ShadowMapLightData, camera: CameraComponent) {
     const shadowPass = commandEncoder.beginRenderPass({
       label: 'Shadow mapping',
       colorAttachments: [],
       depthStencilAttachment: {
-        view: shadowMap.getOrCreateBindGroupData(this.device).textureView,
+        view: shadowMap!.getOrCreateBindGroupData(this.device).textureView,
         depthClearValue: 1.0,
         depthLoadOp: 'clear',
         depthStoreOp: 'store',
@@ -60,9 +60,9 @@ export class SunLightShadowMapper extends ShadowMapper {
     })
     shadowPass.setPipeline(this.shadowPipeline)
     shadowPass.setBindGroup(0, light.getOrCreateBindGroupData(this.device).bindGroup)
-    shadowPass.setBindGroup(1, cameraData.camera.getOrCreateBindGroupData(this.device).bindGroup)
+    shadowPass.setBindGroup(1, camera.getOrCreateBindGroupData(this.device).bindGroup)
 
-    modelsData.forEach(({ transform, meshRenderer }) => {
+    shadowCasters.forEach(({ transform, meshRenderer }) => {
       shadowPass.setBindGroup(2, transform.getOrCreateBindGroupData(this.device).bindGroup)
       meshRenderer.primitives.forEach(({ meshLoader }) => {
         const mesh = meshLoader.getAssetData()
@@ -80,5 +80,18 @@ export class SunLightShadowMapper extends ShadowMapper {
     })
 
     shadowPass.end()
+  }
+
+  public render(commandEncoder: GPUCommandEncoder, renderingData: RenderingData): RenderingData {
+    const { scene, cameraId } = renderingData
+    const shadowCasters = scene.getComponents([ComponentType.TRANSFORM, ComponentType.MESH_RENDERER]) as ModelData[]
+    const consideredLights = (scene.getComponents([ComponentType.TRANSFORM, ComponentType.LIGHT, ComponentType.SHADOW_MAP]) as ShadowMapLightData[]).filter(
+      ({ light }) => light.castShadow && light.lightType == LightType.SUN
+    )
+
+    const activeCamera = scene.getEntity(cameraId).getComponent(CameraComponent)
+    consideredLights.forEach((shadowMappingData) => this.renderShadowMap(commandEncoder, shadowCasters, shadowMappingData, activeCamera))
+
+    return renderingData
   }
 }

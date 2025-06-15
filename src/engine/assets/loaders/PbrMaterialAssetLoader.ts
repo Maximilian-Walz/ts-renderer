@@ -1,23 +1,21 @@
 import { GPUDataInterface } from '../../GPUDataInterface'
-import { GPUMaterial, PbrMaterial } from '../Material'
+import { Material, MaterialCreator, MaterialProps } from '../materials/Material'
 import { AssetLoader } from './AssetLoader'
 
-export class PbrMaterialAssetLoader extends AssetLoader<GPUMaterial> {
-  private materialData!: PbrMaterial
+export class MaterialAssetLoader<T extends MaterialProps> extends AssetLoader<Material> {
+  private MaterialCreator: MaterialCreator<T>
+  private materialProps: T
 
-  constructor(gpuDataInterface: GPUDataInterface, materialData: PbrMaterial, displayName?: string) {
+  constructor(gpuDataInterface: GPUDataInterface, MaterialCreator: MaterialCreator<T>, materialProps: T, displayName?: string) {
     super(gpuDataInterface, displayName)
-    this.materialData = materialData
+    this.MaterialCreator = MaterialCreator
+    this.materialProps = materialProps
   }
 
   protected loadAssetDataToGPU(): void {
-    this.gpuAssetData = this.gpuDataInterface.createPbrMaterial(this.materialData)
+    this.gpuAssetData = this.gpuDataInterface.createMaterial(this.MaterialCreator, this.materialProps)
   }
   protected unloadAssetDatoFromGPU(): void {
-    this.materialData.albedoTexture.textureData.deregisterUsage()
-    this.materialData.metallicRoughnessTexture.textureData.deregisterUsage()
-    this.materialData.normalTexture.textureData.deregisterUsage()
-    this.materialData.occlusionTexture.textureData.deregisterUsage()
-    this.materialData.emissiveTexture.textureData.deregisterUsage()
+    this.materialProps.destroyGpuData()
   }
 }

@@ -1,10 +1,10 @@
 import { ComponentType } from '.'
 import { MeshAssetLoader } from '../assets/loaders/MeshAssetLoader'
-import { PbrMaterialAssetLoader } from '../assets/loaders/PbrMaterialAssetLoader'
+import { MaterialAssetLoader } from '../assets/loaders/PbrMaterialAssetLoader'
 import { Component } from './Component'
 
 export type PrimitiveRenderData = {
-  materialLoader: PbrMaterialAssetLoader
+  materialLoader: MaterialAssetLoader<any>
   meshLoader: MeshAssetLoader
 }
 

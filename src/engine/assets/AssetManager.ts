@@ -2,9 +2,10 @@ import { GPUDataInterface } from '../GPUDataInterface'
 import { AssetLoader } from './loaders/AssetLoader'
 import { BufferAssetLoader } from './loaders/BufferAssetLoader'
 import { MeshAssetLoader } from './loaders/MeshAssetLoader'
-import { PbrMaterialAssetLoader } from './loaders/PbrMaterialAssetLoader'
+import { MaterialAssetLoader } from './loaders/PbrMaterialAssetLoader'
 import { TextureAssetLoader, TextureData } from './loaders/TextureAssetLoader'
-import { PbrMaterial } from './Material'
+import { MaterialCreator, MaterialProps } from './materials/Material'
+import { DefaultPbrMaterial, DefaultPbrMaterialProps } from './materials/pbr/DefaultPbrMaterial'
 import { Mesh } from './Mesh'
 
 const defaultTexturesInfo: { identifier: string; path: string }[] = [
@@ -26,7 +27,7 @@ export class AssetManager {
 
   private textureAssetLoaders: Map<string, TextureAssetLoader> = new Map()
   private meshAssetLoaders: Map<string, MeshAssetLoader> = new Map()
-  private materialAssetLoaders: Map<string, PbrMaterialAssetLoader> = new Map()
+  private materialAssetLoaders: Map<string, MaterialAssetLoader<any>> = new Map()
   private bufferAssetLoaders: Map<string, BufferAssetLoader> = new Map()
 
   constructor(gpuDataInterface: GPUDataInterface) {
@@ -35,7 +36,7 @@ export class AssetManager {
 
   public async loadDefaultAssets() {
     await Promise.all(defaultTexturesInfo.map(({ identifier, path }) => this.addTextureFromPath(identifier, path).then(() => this.getTextureLoader(identifier).registerUsage())))
-    this.addPbrMaterial('default', PbrMaterial.fromDefaultTextures(this), 'Default Material')
+    this.addPbrMaterial('default', DefaultPbrMaterial, DefaultPbrMaterialProps.fromDefaultTextures(this), 'Default Material')
   }
 
   private getAssetLoader<LoaderType extends AssetLoader<any>>(assetLoaders: Map<string, LoaderType>, identifier: string): LoaderType {
@@ -62,12 +63,12 @@ export class AssetManager {
     return this.getAssetLoader(this.textureAssetLoaders, identifier)
   }
 
-  public addPbrMaterial(identifier: string, material: PbrMaterial, displayName?: string) {
-    const loader = new PbrMaterialAssetLoader(this.gpuDataInterface, material, displayName)
+  public addPbrMaterial<T extends MaterialProps>(identifier: string, MaterialCreator: MaterialCreator<T>, materialProps: T, displayName?: string) {
+    const loader = new MaterialAssetLoader(this.gpuDataInterface, MaterialCreator, materialProps, displayName)
     this.materialAssetLoaders.set(identifier, loader)
   }
 
-  public getMaterialLoader(identifier: string): PbrMaterialAssetLoader {
+  public getMaterialLoader(identifier: string): MaterialAssetLoader<any> {
     return this.getAssetLoader(this.materialAssetLoaders, identifier)
   }
 

@@ -1,17 +1,17 @@
-import { BillboardsData, CameraData } from '../../systems/Renderer'
-import { BufferBindGroupData } from '../bind-group-data/BufferBindGroupData'
-import { TextureBindGroupData } from '../bind-group-data/TextureBindGroupData'
+import { CameraComponent, ComponentType } from '../../../components'
+import { BillboardsData } from '../../../systems/RendererSystem'
+import { BufferBindGroupData } from '../../bind-group-data/BufferBindGroupData'
+import { TextureBindGroupData } from '../../bind-group-data/TextureBindGroupData'
+import { Renderer, RenderingData } from '../Renderer'
 import obscuredBillboardFrag from './obscuredBillboardRendering.frag.wgsl'
 import obscuredBillboardVert from './obscuredBillboardRendering.vert.wgsl'
 
-export class ObscuredBillboardRenderer {
-  private device: GPUDevice
-
+export class ObscuredBillboardRenderer extends Renderer {
   private quadBuffer: GPUBuffer
   private pipeline: GPURenderPipeline
 
   constructor(device: GPUDevice, targetTextureFormat: GPUTextureFormat) {
-    this.device = device
+    super(device)
 
     this.quadBuffer = this.createQuadBuffer()
     this.pipeline = this.createPipeline(targetTextureFormat, [
@@ -91,25 +91,30 @@ export class ObscuredBillboardRenderer {
     })
   }
 
-  public render(commandEncoder: GPUCommandEncoder, depthTexture: GPUTextureView, billboardsData: BillboardsData[], activeCamera: CameraData, targetView: GPUTextureView) {
+  public render(commandEncoder: GPUCommandEncoder, renderingData: RenderingData): RenderingData {
+    const { target, depth, scene, cameraId } = renderingData
+
     const billboardPass = commandEncoder.beginRenderPass({
       label: 'Debug overlays',
       colorAttachments: [
         {
-          view: targetView,
+          view: target,
           loadOp: 'load',
           storeOp: 'store',
         },
       ],
-      depthStencilAttachment: {
-        view: depthTexture,
+      depthStencilAttachment: depth && {
+        view: depth,
         depthLoadOp: 'load',
         depthStoreOp: 'discard',
       },
     })
 
+    const camera = scene.getEntity(cameraId).getComponent(CameraComponent)
+    const billboardsData = scene.getComponents([ComponentType.TRANSFORM, ComponentType.BILLBOARD]) as BillboardsData[]
+
     billboardPass.setPipeline(this.pipeline)
-    billboardPass.setBindGroup(0, activeCamera.camera.getOrCreateBindGroupData(this.device).bindGroup)
+    billboardPass.setBindGroup(0, camera.getOrCreateBindGroupData(this.device).bindGroup)
     billboardPass.setVertexBuffer(0, this.quadBuffer)
     billboardsData.forEach(({ transform, billboard }) => {
       billboardPass.setBindGroup(1, transform.getOrCreateBindGroupData(this.device).bindGroup)
@@ -117,5 +122,7 @@ export class ObscuredBillboardRenderer {
       billboardPass.draw(4)
     })
     billboardPass.end()
+
+    return renderingData
   }
 }
