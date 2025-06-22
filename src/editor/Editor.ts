@@ -42,10 +42,10 @@ export class Editor extends Game {
   }
 
   public async loadGame(device: GPUDevice) {
-    console.log('Loading Game')
+    this.engine.eventManger.emit({ type: 'log', message: 'Loading Game' })
     this.game = new CoolGame()
     this.game.init(device).then(() => {
-      console.log('Game loaded')
+      this.engine.eventManger.emit({ type: 'log', message: 'Game loaded' })
     })
   }
 

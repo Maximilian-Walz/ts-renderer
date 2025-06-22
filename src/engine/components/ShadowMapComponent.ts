@@ -27,7 +27,6 @@ export class ShadowMapComponent extends BindGroupDataComponent<ShadowMapBindGrou
     if (this.props.size == size) {
       return
     }
-    console.log(size)
     this.props.size = size
     this.bindGroupData?.updateShadowMapSize(size)
   }

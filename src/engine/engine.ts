@@ -1,6 +1,7 @@
 import Stats from 'stats.js'
 import { AssetManager } from './assets/AssetManager'
 import { ComponentType, ScriptComponent } from './components'
+import { EventManager } from './events/EventManager'
 import { GPUDataInterface } from './GPUDataInterface'
 import { InputManager } from './InputManager'
 import { EntityId } from './scenes/Entity'
@@ -14,6 +15,7 @@ export class Engine {
   public gpuDataInterface!: GPUDataInterface
   public sceneManager: SceneManger
   public inputManager: InputManager
+  public eventManger: EventManager
 
   private renderer!: RendererSystem
   private scriptExecutor: ScriptExecutor
@@ -28,6 +30,7 @@ export class Engine {
   constructor() {
     this.sceneManager = new SceneManger()
     this.inputManager = new InputManager()
+    this.eventManger = new EventManager()
 
     // Systems
     this.scriptExecutor = new ScriptExecutor(this)
@@ -109,6 +112,8 @@ export class Engine {
       this.inputManager.clearDeltas()
       this.stats.end()
     }
+
+    this.eventManger.process()
     requestAnimationFrame(() => this.loop())
   }
 }
