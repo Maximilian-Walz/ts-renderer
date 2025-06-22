@@ -1,6 +1,18 @@
 import { quat, vec3 } from 'wgpu-matrix'
 import { CoolGame } from '../coolGame/CoolGame'
-import { BillboardComponent, CameraComponent, CameraType, ComponentType, LightComponent, LightType, ScriptComponent } from '../engine/components'
+import { GltfImporter } from '../engine/assets/GltfImporter'
+import { PlainUnlitMaterial, PlainUnlitMaterialProps } from '../engine/assets/materials/unlit/PlainUnlitMaterial'
+import {
+  BillboardComponent,
+  CameraComponent,
+  CameraType,
+  ComponentType,
+  LightComponent,
+  LightType,
+  MeshRendererComponent,
+  ScriptComponent,
+  TransformProps,
+} from '../engine/components'
 import { Game } from '../engine/Game'
 import { Entity } from '../engine/scenes/Entity'
 import { Scene, SceneId } from '../engine/scenes/Scene'
@@ -25,12 +37,16 @@ export class Editor extends Game {
         await this.engine.assetManager.addTextureFromPath(identifier, path, identifier)
       })
     )
+
+    await new GltfImporter(this.engine.assetManager, this.engine.sceneManager, 'arrow', '/assets/gltf/arrow.glb').importGltf()
   }
 
   public async loadGame(device: GPUDevice) {
     console.log('Loading Game')
     this.game = new CoolGame()
-    this.game.init(device).then(() => console.log('Game loaded'))
+    this.game.init(device).then(() => {
+      console.log('Game loaded')
+    })
   }
 
   public setEditorRenderTarget(canvas: HTMLCanvasElement) {
@@ -84,11 +100,31 @@ export class Editor extends Game {
     })
   }
 
+  private addGizmo(scene: Scene) {
+    const assetManager = this.engine.assetManager
+
+    assetManager.addMaterial('unlit_red', PlainUnlitMaterial, new PlainUnlitMaterialProps(vec3.fromValues(1, 0, 0)))
+    assetManager.addMaterial('unlit_green', PlainUnlitMaterial, new PlainUnlitMaterialProps(vec3.fromValues(0, 1, 0)))
+    assetManager.addMaterial('unlit_blue', PlainUnlitMaterial, new PlainUnlitMaterialProps(vec3.fromValues(0, 0, 1)))
+    const gizmo = scene.createEntity('gizmo').addComponent(ScriptComponent, { scripts: [{ scriptType: FollowEntity, props: { target: scene.getEntities()[0] } }] })
+    const gizmoId = gizmo.entityId
+    scene.createEntity('xArrow', { rotation: quat.fromEuler(0, 0, 0, 'xyz') } as TransformProps, { parentId: gizmoId }).addComponent(MeshRendererComponent, {
+      primitives: [{ materialLoader: assetManager.getMaterialLoader('unlit_red'), meshLoader: assetManager.getMeshLoader('arrow_mesh_0_primitive_0') }],
+    })
+    scene.createEntity('yArrow', { rotation: quat.fromEuler(0, 0, Math.PI / 2, 'xyz') } as TransformProps, { parentId: gizmoId }).addComponent(MeshRendererComponent, {
+      primitives: [{ materialLoader: assetManager.getMaterialLoader('unlit_green'), meshLoader: assetManager.getMeshLoader('arrow_mesh_0_primitive_0') }],
+    })
+    scene.createEntity('zArrow', { rotation: quat.fromEuler(0, -Math.PI / 2, 0, 'xyz') } as TransformProps, { parentId: gizmoId }).addComponent(MeshRendererComponent, {
+      primitives: [{ materialLoader: assetManager.getMaterialLoader('unlit_blue'), meshLoader: assetManager.getMeshLoader('arrow_mesh_0_primitive_0') }],
+    })
+  }
+
   public loadGameScene(sceneId: SceneId) {
     if (!this.engine.sceneManager.hasScene(sceneId)) {
       const copy = this.engine.sceneManager.addSceneCopy(this.game.engine.sceneManager.getScene(sceneId))
       this.addEditorCamera(copy)
       this.addBillboards(copy)
+      this.addGizmo(copy)
     }
     this.engine.sceneManager.setActiveScene(sceneId)
     this.engine.reloadScene()

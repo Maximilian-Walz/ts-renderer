@@ -1,9 +1,10 @@
 import { Vec3 } from 'wgpu-matrix'
 import { BufferBindGroupData } from '../../../rendering/bind-group-data/BufferBindGroupData'
-import { MaterialProps } from '../Material'
-import defaultProjection from '../defaultProjection.vert.wgsl'
-import { UnlitMaterial } from './UnlitMaterial'
+import { VertexAttributeType } from '../../Mesh'
+import { MaterialProps, VertexAttributeInfo } from '../Material'
 import plainUnlitFrag from './plainUnlit.frag.wgsl'
+import plainUnlitVert from './plainUnlit.vert.wgsl'
+import { UnlitMaterial } from './UnlitMaterial'
 
 export class PlainUnlitMaterialProps extends MaterialProps {
   public color: Vec3
@@ -45,7 +46,7 @@ export class PlainUnlitMaterial extends UnlitMaterial {
         }),
         vertex: {
           module: device.createShaderModule({
-            code: defaultProjection,
+            code: plainUnlitVert,
           }),
           buffers: this.getVertexDataMapping().map(({ format, stride }, index) => {
             return {
@@ -109,5 +110,25 @@ export class PlainUnlitMaterial extends UnlitMaterial {
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } }, // Color
       ],
     }
+  }
+
+  public override getVertexDataMapping(): VertexAttributeInfo[] {
+    return [
+      {
+        type: VertexAttributeType.POSITION,
+        format: 'float32x3',
+        stride: 12,
+      },
+      {
+        type: VertexAttributeType.NORMAL,
+        format: 'float32x3',
+        stride: 12,
+      },
+      {
+        type: VertexAttributeType.TANGENT,
+        format: 'float32x4',
+        stride: 16,
+      },
+    ]
   }
 }

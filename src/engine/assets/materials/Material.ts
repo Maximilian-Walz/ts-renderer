@@ -27,35 +27,34 @@ export interface MaterialCreator<T extends MaterialProps> {
 
 export abstract class Material {
   public readonly type: ShadingType
-  private static vertexDataMapping: VertexAttributeInfo[] = [
-    {
-      type: VertexAttributeType.POSITION,
-      format: 'float32x3',
-      stride: 12,
-    },
-    {
-      type: VertexAttributeType.NORMAL,
-      format: 'float32x3',
-      stride: 12,
-    },
-    {
-      type: VertexAttributeType.TANGENT,
-      format: 'float32x4',
-      stride: 16,
-    },
-    {
-      type: VertexAttributeType.TEXCOORD_0,
-      format: 'float32x2',
-      stride: 8,
-    },
-  ]
 
   constructor(type: ShadingType) {
     this.type = type
   }
 
-  public getVertexDataMapping() {
-    return Material.vertexDataMapping
+  public getVertexDataMapping(): VertexAttributeInfo[] {
+    return [
+      {
+        type: VertexAttributeType.POSITION,
+        format: 'float32x3',
+        stride: 12,
+      },
+      {
+        type: VertexAttributeType.NORMAL,
+        format: 'float32x3',
+        stride: 12,
+      },
+      {
+        type: VertexAttributeType.TANGENT,
+        format: 'float32x4',
+        stride: 16,
+      },
+      {
+        type: VertexAttributeType.TEXCOORD_0,
+        format: 'float32x2',
+        stride: 8,
+      },
+    ]
   }
 }
 

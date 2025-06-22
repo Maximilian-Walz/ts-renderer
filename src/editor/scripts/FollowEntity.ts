@@ -8,6 +8,6 @@ export type FollowEntityProps = {
 
 export class FollowEntity extends Script<FollowEntityProps> {
   public override onUpdate() {
-    this.entity.getComponent(TransformComponent).globalTransform = this.props.target.getComponent(TransformComponent).globalTransform
+    this.entity.getComponent(TransformComponent).position = this.props.target.getComponent(TransformComponent).position
   }
 }

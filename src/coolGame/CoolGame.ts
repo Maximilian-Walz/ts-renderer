@@ -1,7 +1,5 @@
-import { vec3 } from 'wgpu-matrix'
 import { GltfImporter } from '../engine/assets/GltfImporter'
-import { PlainUnlitMaterial, PlainUnlitMaterialProps } from '../engine/assets/materials/unlit/PlainUnlitMaterial'
-import { MeshRendererComponent, ShadowMapComponent } from '../engine/components'
+import { ShadowMapComponent } from '../engine/components'
 import { Game } from '../engine/Game'
 
 const gameScenes = {
@@ -24,13 +22,5 @@ export class CoolGame extends Game {
     const activeScene = this.engine.sceneManager.getActiveScene()
     const sunLight = activeScene.getEntity('Light')
     sunLight.addComponent(ShadowMapComponent, { size: 2048 })
-
-    const assetManager = this.engine.assetManager
-    assetManager.addMaterial('unlit_red', PlainUnlitMaterial, new PlainUnlitMaterialProps(vec3.fromValues(1, 0, 0)))
-
-    const unlitCube = activeScene.createEntity('unlitCube')
-    unlitCube.addComponent(MeshRendererComponent, {
-      primitives: [{ materialLoader: assetManager.getMaterialLoader('unlit_red'), meshLoader: assetManager.getMeshLoader('shadowTest_mesh_0_primitive_0') }],
-    })
   }
 }
