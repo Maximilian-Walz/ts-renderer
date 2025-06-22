@@ -67,8 +67,12 @@ export class Engine {
     this.initRendering()
   }
 
-  setActiveCamera(cameraId: string) {
+  setActiveCamera(cameraId: EntityId) {
     this.activeCameraId = cameraId
+  }
+
+  getActiveCamera(): EntityId | undefined {
+    return this.activeCameraId
   }
 
   private initRendering() {

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { EntityId } from '../../engine/scenes/Entity'
+import { useEditor } from './EditorProvider'
 import { useSelectedScene } from './SceneSelectionProvider'
 
 const SelectedEntityIdContext = createContext<EntityId | undefined>(undefined)
@@ -11,6 +12,15 @@ type Props = {
 
 export function EntitySelctionProvider({ children }: Props) {
   const [selectedEntityId, setSelectedEntityId] = useState<EntityId | undefined>(undefined)
+
+  const editor = useEditor()
+  const selectedScene = useSelectedScene()
+  useEffect(() => {
+    if (selectedEntityId != undefined) {
+      const selectedEntity = selectedScene?.getEntityOrUndefined(selectedEntityId)
+      editor?.engine.eventManger.emit({ type: 'entitySelect', entity: selectedEntity! })
+    }
+  }, [selectedEntityId])
 
   return (
     <SelectedEntityIdContext.Provider value={selectedEntityId}>

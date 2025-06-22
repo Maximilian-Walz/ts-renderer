@@ -19,6 +19,9 @@ import { Scene, SceneId } from '../engine/scenes/Scene'
 import { FollowEntity } from './scripts/FollowEntity'
 import { OrbitingCameraController } from './scripts/OrbitingCameraController'
 
+import './editorEvents'
+import { StickToSelectedEntity } from './scripts/StickToSelectedEntity'
+
 const staticTextures: { identifier: string; path: string }[] = [
   { identifier: 'lightbulb', path: '/assets/textures/lightbulb.png' },
   { identifier: 'sun', path: '/assets/textures/sun.png' },
@@ -106,7 +109,7 @@ export class Editor extends Game {
     assetManager.addMaterial('unlit_red', PlainUnlitMaterial, new PlainUnlitMaterialProps(vec3.fromValues(1, 0, 0)))
     assetManager.addMaterial('unlit_green', PlainUnlitMaterial, new PlainUnlitMaterialProps(vec3.fromValues(0, 1, 0)))
     assetManager.addMaterial('unlit_blue', PlainUnlitMaterial, new PlainUnlitMaterialProps(vec3.fromValues(0, 0, 1)))
-    const gizmo = scene.createEntity('gizmo').addComponent(ScriptComponent, { scripts: [{ scriptType: FollowEntity, props: { target: scene.getEntities()[0] } }] })
+    const gizmo = scene.createEntity('gizmo').addComponent(ScriptComponent, { scripts: [{ scriptType: StickToSelectedEntity }] })
     const gizmoId = gizmo.entityId
     scene.createEntity('xArrow', { rotation: quat.fromEuler(0, 0, 0, 'xyz') } as TransformProps, { parentId: gizmoId }).addComponent(MeshRendererComponent, {
       primitives: [{ materialLoader: assetManager.getMaterialLoader('unlit_red'), meshLoader: assetManager.getMeshLoader('arrow_mesh_0_primitive_0') }],
