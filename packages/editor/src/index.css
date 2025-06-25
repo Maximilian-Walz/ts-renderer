@@ -1,0 +1,47 @@
+@plugin "daisyui";
+@source "./";
+
+@theme {
+  --color-green-50: oklch(0.9486 0.1825 119.51);
+  --color-green-100: oklch(0.9441 0.1981 120.1);
+  --color-green-200: oklch(0.9367 0.2192 121.47);
+  --color-green-300: oklch(0.9204 0.2253 122.81);
+  --color-green-400: oklch(0.8049 0.196782 122.6906);
+  --color-green-500: oklch(0.6851 0.167169 122.524);
+  --color-green-600: oklch(0.5122 0.124363 122.0835);
+  --color-green-700: oklch(0.3229 0.0774 120.92);
+  --color-green-800: oklch(0.2825 0.0675 120.6);
+  --color-green-900: oklch(0.2406 0.0572 120.14);
+  --color-green-950: oklch(0.1935 0.045 117.79);
+}
+
+@theme {
+  --color-gray-50: oklch(0.9607 0.0017 247.84);
+  --color-gray-100: oklch(0.9121 0.0046 258.33);
+  --color-gray-200: oklch(0.8232 0.0103 267.34);
+  --color-gray-300: oklch(0.7403 0.0154 264.47);
+  --color-gray-400: oklch(0.6461 0.0206 265.91);
+  --color-gray-500: oklch(0.551 0.0234 264.36);
+  --color-gray-600: oklch(0.4735 0.0193 262.67);
+  --color-gray-700: oklch(0.3901 0.0161 266.51);
+  --color-gray-800: oklch(0.2962 0.01 260.71);
+  --color-gray-900: oklch(0.2004 0.0062 271.1);
+  --color-gray-950: oklch(0.1553 0.0042 285.9);
+}
+
+@theme {
+  --color-primary: var(--color-green-500);
+  --color-primary-50: var(--color-green-50);
+  --color-primary-100: var(--color-green-100);
+  --color-primary-200: var(--color-green-200);
+  --color-primary-300: var(--color-green-300);
+  --color-primary-400: var(--color-green-400);
+  --color-primary-500: var(--color-green-500);
+  --color-primary-600: var(--color-green-600);
+  --color-primary-700: var(--color-green-700);
+  --color-primary-800: var(--color-green-800);
+  --color-primary-900: var(--color-green-900);
+  --color-primary-950: var(--color-green-950);
+}
+
+@import "tailwindcss";

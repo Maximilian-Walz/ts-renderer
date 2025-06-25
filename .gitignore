@@ -1,3 +1,20 @@
-node_modules
-dist
-.VSCodeCounter
+# Node modules
+**/node_modules/
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+
+# Build outputs
+**/dist/
+**/.turbo/
+
+# IDE
+.vscode/
+*.log
+.DS_Store
+
+# Yarn v3 PnP (optional)
+.pnp.*

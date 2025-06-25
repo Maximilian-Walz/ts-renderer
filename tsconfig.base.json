@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@my/engine": ["packages/engine/src"],
+      "@my/cool-game": ["packages/cool-game/src"],
+      "@my/editor": ["packages/editor/src"],
+      "@game-entry": ["packages/editor/src"]
+    }
+  }
+}

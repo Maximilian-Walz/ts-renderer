@@ -1,0 +1,44 @@
+import { SceneId } from "@my/engine"
+import { createContext, ReactElement, useContext, useEffect, useState } from "react"
+import { useEditor } from "./EditorProvider"
+
+const SelectedSceneIdContext = createContext<string | undefined>(undefined)
+const SetSelectedSceneIdContext = createContext<(entityId: SceneId) => void>(() => {})
+
+type Props = {
+  children: ReactElement[] | ReactElement
+}
+
+export function SceneSelctionProvider({ children }: Props) {
+  const [selectedSceneId, setSelectedSceneId] = useState<SceneId | undefined>(undefined)
+
+  const editor = useEditor()!
+
+  useEffect(() => {
+    if (selectedSceneId != undefined) {
+      editor.loadGameScene(selectedSceneId)
+    }
+  }, [selectedSceneId])
+
+  return (
+    <SelectedSceneIdContext.Provider value={selectedSceneId}>
+      <SetSelectedSceneIdContext.Provider value={setSelectedSceneId}>{children}</SetSelectedSceneIdContext.Provider>
+    </SelectedSceneIdContext.Provider>
+  )
+}
+
+export function useSelectedSceneId() {
+  return useContext(SelectedSceneIdContext)
+}
+
+export function useSetSelectedSceneId() {
+  return useContext(SetSelectedSceneIdContext)
+}
+
+export function useSelectedScene() {
+  const editor = useEditor()!
+  const selectedSceneId = useSelectedSceneId()
+  if (selectedSceneId != undefined) {
+    return editor.game.engine.sceneManager.getScene(selectedSceneId)
+  }
+}

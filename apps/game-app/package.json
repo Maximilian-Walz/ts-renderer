@@ -1,0 +1,26 @@
+{
+  "name": "game-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:editor": "VITE_GAME_ENTRY=editor/src vite",
+    "dev:cool-game": "VITE_GAME_ENTRY=cool-game/src vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@my/cool-game": "*",
+    "@my/editor": "*"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "latest",
+    "@types/node": "latest",
+    "daisyui": "latest",
+    "tailwindcss": "latest",
+    "typescript": "latest",
+    "vite": "^6.0.0",
+    "vite-plugin-glsl": "latest"
+  }
+}

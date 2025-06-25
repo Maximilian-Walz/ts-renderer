@@ -1,0 +1,29 @@
+{
+  "name": "@my/editor",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@my/cool-game": "*",
+    "@my/engine": "*",
+    "@uidotdev/usehooks": "latest",
+    "gltf-loader-ts": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-icons": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@webgpu/types": "latest",
+    "daisyui": "latest",
+    "postcss": "latest",
+    "tailwindcss": "latest",
+    "typescript": "latest"
+  }
+}
