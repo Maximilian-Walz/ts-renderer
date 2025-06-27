@@ -1,12 +1,12 @@
 import { SceneId } from "@my/engine"
-import { createContext, ReactElement, useContext, useEffect, useState } from "react"
+import { createContext, ReactNode, useContext, useEffect, useState } from "react"
 import { useEditor } from "./EditorProvider"
 
 const SelectedSceneIdContext = createContext<string | undefined>(undefined)
 const SetSelectedSceneIdContext = createContext<(entityId: SceneId) => void>(() => {})
 
 type Props = {
-  children: ReactElement[] | ReactElement
+  children: ReactNode[] | ReactNode
 }
 
 export function SceneSelctionProvider({ children }: Props) {

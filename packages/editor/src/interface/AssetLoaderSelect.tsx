@@ -1,47 +1,38 @@
 import { AssetLoader } from "@my/engine"
-import React from "react"
+import { useEffect, useState } from "react"
 
 type Props<T extends AssetLoader<any>> = {
+  label: string
+  primitiveId?: any
   currentAssetLoader: T
   selectableAssetLoaders: Map<string, T>
+  setAssetLoader: (loader: T) => void
 }
 
 export function AssetLoaderSelect<T extends AssetLoader<any>>({
+  label,
+  primitiveId,
   currentAssetLoader,
   selectableAssetLoaders,
+  setAssetLoader,
 }: Props<T>) {
-  /*return (
-    <div className="dropdown">
-      <div tabIndex={0} role="button" className="btn m-1">
-        {currentAssetLoader.displayName}
-      </div>
-      <ul tabIndex={0} className="z-1 menu dropdown-content w-52 rounded-box bg-base-100 p-2 shadow-sm">
-        {Object.entries(selectableAssetLoaders).map(([id, assetLoader]) => (
-          <li>{assetLoader}</li>
-        ))}
-      </ul>
-    </div>
+  const [selectedLoader, setSelectedLoader] = useState<string>(currentAssetLoader.id)
 
-  )*/
+  useEffect(() => {
+    setAssetLoader(selectableAssetLoaders.get(selectedLoader)!)
+  }, [selectedLoader])
+
+  const id = `${primitiveId}-${currentAssetLoader.displayName}`
   return (
-    <div>
-      <button className="btn" popoverTarget="popover-1" style={{ anchorName: "--anchor-1" } as React.CSSProperties}>
-        Button
-      </button>
-
-      <ul
-        className="menu dropdown rounded-box bg-base-100 w-52 shadow-sm"
-        popover="auto"
-        id="popover-1"
-        style={{ positionAnchor: "--anchor-1" } as React.CSSProperties}
-      >
-        <li>
-          <a>Item 1</a>
-        </li>
-        <li>
-          <a>Item 2</a>
-        </li>
-      </ul>
-    </div>
+    <label className="select select-xs">
+      <span className="label">{label}</span>
+      <select value={selectedLoader} onChange={(event) => setSelectedLoader(event.target.value)}>
+        {Array.from(selectableAssetLoaders.keys()).map((identifier) => (
+          <option value={identifier} key={`${identifier}-selector`} className="text-sm">
+            {identifier}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }

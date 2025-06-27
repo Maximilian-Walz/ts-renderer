@@ -1,3 +1,4 @@
+import { LuTrees } from "react-icons/lu"
 import { useGameSceneManager } from "../state/EditorProvider"
 import { useSelectedSceneId, useSetSelectedSceneId } from "../state/SceneSelectionProvider"
 
@@ -12,12 +13,11 @@ export function SceneSelect() {
         <button
           key={scene.sceneId}
           className={`${
-            scene.sceneId == selectedSceneId
-              ? "bg-primary-500 text-gray-800 hover:bg-primary-400"
-              : "text-gray-200 hover:bg-gray-700"
-          } btn btn-ghost btn-xs rounded-full pl-1 pr-2 text-sm`}
+            scene.sceneId == selectedSceneId ? "btn-ghost text-primary" : "btn-ghost text-base-content/60 "
+          } btn btn-xs rounded-lg pl-1 pr-2 text-sm hover:btn-primary hover:bg-base-content/0`}
           onClick={() => setSelectedSceneId(scene.sceneId)}
         >
+          <LuTrees />
           {scene.sceneId}
         </button>
       ))}

@@ -29,14 +29,14 @@ export function BottomPanel() {
   return (
     <div className="flex grow flex-col">
       <div className="row flex justify-between">
-        <div className="m-1 text-sm">Log</div>
-        <button className="m-1" onClick={() => clear()}>
+        <div className="m-1 text-sm font-semibold">Log</div>
+        <button className="m-1 cursor-pointer hover:text-primary" onClick={() => clear()}>
           <LuListX />
         </button>
       </div>
       <ul ref={scrollRef} className="grow overflow-y-scroll">
         {queue.map((item, i) => (
-          <li className="p-0.5 text-sm text-gray-500" key={i}>
+          <li className="p-0.5 text-sm text-base-content/60" key={i}>
             {item}
           </li>
         ))}

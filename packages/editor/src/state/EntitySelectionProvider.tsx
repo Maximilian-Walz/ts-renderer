@@ -1,13 +1,13 @@
 import { EntityId } from "@my/engine"
-import { createContext, ReactElement, useContext, useEffect, useState } from "react"
+import { createContext, ReactNode, useContext, useEffect, useState } from "react"
 import { useEditor } from "./EditorProvider"
 import { useSelectedScene } from "./SceneSelectionProvider"
 
 const SelectedEntityIdContext = createContext<EntityId | undefined>(undefined)
-const SetSelectedEntityIdContext = createContext<(entityId: EntityId) => void>(() => {})
+const SetSelectedEntityIdContext = createContext<(entityId?: EntityId) => void>(() => {})
 
 type Props = {
-  children: ReactElement[] | ReactElement
+  children: ReactNode[] | ReactNode
 }
 
 export function EntitySelctionProvider({ children }: Props) {

@@ -1,7 +1,7 @@
 import { Editor } from "./Editor"
 
-export function createGame(rootDiv: HTMLDivElement) {
-  return new Editor(rootDiv)
+export function createGame() {
+  return new Editor()
 }
 
 export * from "./Editor"

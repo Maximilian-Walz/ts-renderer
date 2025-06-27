@@ -1,19 +1,20 @@
 import { GPUDataInterface } from "../../GPUDataInterface"
 import { GPUTextureData } from "../../systems/RendererSystem"
-import { AssetLoader } from "./AssetLoader"
+import { AssetLoader, AssetLoaderId } from "./AssetLoader"
 
 export type TextureData = ImageBitmap | HTMLImageElement
 
 export class TextureAssetLoader extends AssetLoader<GPUTextureData> {
   private textureData: TextureData
 
-  constructor(gpuDataInterface: GPUDataInterface, textureData: TextureData, displayName?: string) {
-    super(gpuDataInterface, displayName)
+  constructor(gpuDataInterface: GPUDataInterface, id: AssetLoaderId, textureData: TextureData, displayName?: string) {
+    super(gpuDataInterface, id, displayName)
     this.textureData = textureData
   }
 
   public static async fromPath(
     gpuDataInterface: GPUDataInterface,
+    id: AssetLoaderId,
     path: string,
     displayName?: string
   ): Promise<TextureAssetLoader> {
@@ -21,6 +22,7 @@ export class TextureAssetLoader extends AssetLoader<GPUTextureData> {
     const blob = await res.blob()
     return new TextureAssetLoader(
       gpuDataInterface,
+      id,
       await createImageBitmap(blob, { colorSpaceConversion: "none" }),
       displayName
     )

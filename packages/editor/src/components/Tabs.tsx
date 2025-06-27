@@ -1,4 +1,4 @@
-import React, { ReactElement } from "react"
+import React, { ReactNode } from "react"
 
 type Props = {
   tabs: Tab[]
@@ -9,7 +9,7 @@ type Props = {
 export type Tab = {
   id: string
   displayName: string
-  content: ReactElement
+  content: ReactNode
 }
 
 export function Tabs({ tabs, className, tabStyle }: Props) {

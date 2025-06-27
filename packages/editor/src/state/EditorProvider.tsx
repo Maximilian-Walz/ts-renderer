@@ -1,11 +1,11 @@
-import { createContext, ReactElement, useContext } from "react"
+import { createContext, ReactNode, useContext } from "react"
 import { Editor } from "../../../../packages/editor/src/Editor"
 
 const EditorContext = createContext<Editor | undefined>(undefined)
 
 type Props = {
   editor: Editor
-  children: ReactElement[] | ReactElement
+  children: ReactNode[] | ReactNode
 }
 
 export function EditorProvider({ editor, children }: Props) {

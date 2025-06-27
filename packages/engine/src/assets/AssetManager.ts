@@ -1,5 +1,5 @@
 import { GPUDataInterface } from "../GPUDataInterface"
-import { AssetLoader } from "./loaders/AssetLoader"
+import { AssetLoader, AssetLoaderId } from "./loaders/AssetLoader"
 import { BufferAssetLoader } from "./loaders/BufferAssetLoader"
 import { MaterialAssetLoader } from "./loaders/MaterialAssetLoader"
 import { MeshAssetLoader } from "./loaders/MeshAssetLoader"
@@ -13,11 +13,11 @@ import normalImage from "../../assets/textures/1x1_default_normal.png"
 import whiteImage from "../../assets/textures/1x1_white.png"
 import errorImage from "../../assets/textures/error.png"
 
-const defaultTexturesInfo: { identifier: string; image: string }[] = [
-  { identifier: "error", image: errorImage },
-  { identifier: "1x1_white", image: whiteImage },
-  { identifier: "1x1_black", image: blackImage },
-  { identifier: "1x1_default_normal", image: normalImage },
+const defaultTexturesInfo: { id: AssetLoaderId; image: string }[] = [
+  { id: "error", image: errorImage },
+  { id: "1x1_white", image: whiteImage },
+  { id: "1x1_black", image: blackImage },
+  { id: "1x1_default_normal", image: normalImage },
 ]
 
 export enum AssetType {
@@ -30,10 +30,10 @@ export enum AssetType {
 export class AssetManager {
   private gpuDataInterface: GPUDataInterface
 
-  private textureAssetLoaders: Map<string, TextureAssetLoader> = new Map()
-  private meshAssetLoaders: Map<string, MeshAssetLoader> = new Map()
-  private materialAssetLoaders: Map<string, MaterialAssetLoader<any>> = new Map()
-  private bufferAssetLoaders: Map<string, BufferAssetLoader> = new Map()
+  private textureAssetLoaders: Map<AssetLoaderId, TextureAssetLoader> = new Map()
+  private meshAssetLoaders: Map<AssetLoaderId, MeshAssetLoader> = new Map()
+  private materialAssetLoaders: Map<AssetLoaderId, MaterialAssetLoader<any>> = new Map()
+  private bufferAssetLoaders: Map<AssetLoaderId, BufferAssetLoader> = new Map()
 
   constructor(gpuDataInterface: GPUDataInterface) {
     this.gpuDataInterface = gpuDataInterface
@@ -41,8 +41,8 @@ export class AssetManager {
 
   public async loadDefaultAssets() {
     await Promise.all(
-      defaultTexturesInfo.map(({ identifier, image }) =>
-        this.addTextureFromPath(identifier, image).then(() => this.getTextureLoader(identifier).registerUsage())
+      defaultTexturesInfo.map(({ id, image }) =>
+        this.addTextureFromPath(id, image).then(() => this.getTextureLoader(id).registerUsage())
       )
     )
     this.addMaterial(
@@ -55,52 +55,52 @@ export class AssetManager {
 
   private getAssetLoader<LoaderType extends AssetLoader<any>>(
     assetLoaders: Map<string, LoaderType>,
-    identifier: string
+    id: AssetLoaderId
   ): LoaderType {
-    if (!assetLoaders.has(identifier)) {
-      console.warn(`No according asset loaded with identifier '${identifier}'`)
+    if (!assetLoaders.has(id)) {
+      console.warn(`No according asset loaded with identifier '${id}'`)
       return assetLoaders.get("error")!
     }
-    const loader = assetLoaders.get(identifier)!
+    const loader = assetLoaders.get(id)!
     loader.registerUsage()
     return loader
   }
 
-  public addTexture(identifier: string, textureData: TextureData, displayName?: string) {
-    const loader = new TextureAssetLoader(this.gpuDataInterface, textureData, displayName)
-    this.textureAssetLoaders.set(identifier, loader)
+  public addTexture(id: AssetLoaderId, textureData: TextureData, displayName?: string) {
+    const loader = new TextureAssetLoader(this.gpuDataInterface, id, textureData, displayName)
+    this.textureAssetLoaders.set(id, loader)
   }
 
-  public async addTextureFromPath(identifier: string, path: string, displayName?: string) {
-    const loader = await TextureAssetLoader.fromPath(this.gpuDataInterface, path, displayName)
-    this.textureAssetLoaders.set(identifier, loader)
+  public async addTextureFromPath(id: string, path: string, displayName?: string) {
+    const loader = await TextureAssetLoader.fromPath(this.gpuDataInterface, id, path, displayName)
+    this.textureAssetLoaders.set(id, loader)
   }
 
-  public getTextureLoader(identifier: string): TextureAssetLoader {
-    return this.getAssetLoader(this.textureAssetLoaders, identifier)
+  public getTextureLoader(id: AssetLoaderId): TextureAssetLoader {
+    return this.getAssetLoader(this.textureAssetLoaders, id)
   }
 
   public addMaterial<T extends MaterialProps>(
-    identifier: string,
+    id: AssetLoaderId,
     MaterialCreator: MaterialCreator<T>,
     materialProps: T,
     displayName?: string
   ) {
-    const loader = new MaterialAssetLoader(this.gpuDataInterface, MaterialCreator, materialProps, displayName)
-    this.materialAssetLoaders.set(identifier, loader)
+    const loader = new MaterialAssetLoader(this.gpuDataInterface, id, MaterialCreator, materialProps, displayName)
+    this.materialAssetLoaders.set(id, loader)
   }
 
-  public getMaterialLoader(identifier: string): MaterialAssetLoader<any> {
-    return this.getAssetLoader(this.materialAssetLoaders, identifier)
+  public getMaterialLoader(id: string): MaterialAssetLoader<any> {
+    return this.getAssetLoader(this.materialAssetLoaders, id)
   }
 
   public getMaterialLoaders(): Map<string, MaterialAssetLoader<any>> {
     return this.materialAssetLoaders
   }
 
-  public addMesh(identifier: string, mesh: Mesh, displayName?: string) {
-    const loader = new MeshAssetLoader(this.gpuDataInterface, mesh, displayName)
-    this.meshAssetLoaders.set(identifier, loader)
+  public addMesh(id: AssetLoaderId, mesh: Mesh, displayName?: string) {
+    const loader = new MeshAssetLoader(this.gpuDataInterface, id, mesh, displayName)
+    this.meshAssetLoaders.set(id, loader)
   }
 
   public getMeshLoader(identifier: string): MeshAssetLoader {
@@ -111,12 +111,12 @@ export class AssetManager {
     return this.meshAssetLoaders
   }
 
-  public addBuffer(identifier: string, buffer: Uint8Array, usage: GPUBufferUsageFlags, displayName?: string) {
-    const loader = new BufferAssetLoader(this.gpuDataInterface, buffer, usage, displayName)
-    this.bufferAssetLoaders.set(identifier, loader)
+  public addBuffer(id: AssetLoaderId, buffer: Uint8Array, usage: GPUBufferUsageFlags, displayName?: string) {
+    const loader = new BufferAssetLoader(this.gpuDataInterface, id, buffer, usage, displayName)
+    this.bufferAssetLoaders.set(id, loader)
   }
 
-  public getBufferLoader(identifier: string): BufferAssetLoader {
-    return this.getAssetLoader(this.bufferAssetLoaders, identifier)
+  public getBufferLoader(id: AssetLoaderId): BufferAssetLoader {
+    return this.getAssetLoader(this.bufferAssetLoaders, id)
   }
 }

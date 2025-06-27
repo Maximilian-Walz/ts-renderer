@@ -17,7 +17,7 @@ export function Viewport() {
 
   return (
     <div className="flex grow">
-      <div className="basis-2/12">
+      <div className="basis-2/12 flex grow">
         <LeftPanel />
       </div>
       <div className="flex grow basis-7/12 flex-col">
@@ -26,7 +26,7 @@ export function Viewport() {
           <BottomPanel />
         </div>
       </div>
-      <div className="flex grow basis-3/12 flex-col">
+      <div className="flex grow basis-3/12">
         <RightPanel />
       </div>
     </div>

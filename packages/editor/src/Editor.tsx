@@ -42,8 +42,16 @@ export class Editor extends Game {
   public activeCameraEntityId: number | undefined
   public activeEntity: Entity | undefined
 
+  public override initCanvas(rootDiv: HTMLDivElement): void {
+    createRoot(rootDiv).render(<EditorInterface editor={this} />)
+  }
+
   protected async afterInit() {
-    createRoot(this.rootDiv).render(<EditorInterface editor={this} />)
+    this.engine.eventManger.emit({ type: "log", message: "Loading Game" })
+    this.game = new CoolGame()
+    this.game.init(undefined, this.device).then(() => {
+      this.engine.eventManger.emit({ type: "log", message: "Game loaded" })
+    })
     await Promise.all(
       staticTextures.map(async ({ identifier, path }) => {
         await this.engine.assetManager.addTextureFromPath(identifier, path, identifier)
@@ -54,11 +62,7 @@ export class Editor extends Game {
   }
 
   public onGameDivInitialized(gameDiv: HTMLDivElement) {
-    this.engine.eventManger.emit({ type: "log", message: "Loading Game" })
-    this.game = new CoolGame(gameDiv)
-    this.game.init(this.device).then(() => {
-      this.engine.eventManger.emit({ type: "log", message: "Game loaded" })
-    })
+    this.game.initCanvas(gameDiv)
   }
 
   public setEditorRenderTarget(canvas: HTMLCanvasElement) {

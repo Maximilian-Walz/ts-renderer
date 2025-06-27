@@ -14,21 +14,25 @@ export function MeshRendererViewer({ entity }: Props) {
     return null
   }
 
-  const assetManager = useEditor()?.engine.assetManager
+  const assetManager = useEditor()?.game.engine.assetManager
 
   return (
     <ComponentViewer title="Mesh Renderer" icon={<LuBox />} contentKey={entity.entityId}>
       {meshRenderer.primitives.map((primitive, index) => (
-        <div key={index}>
-          <div>Mesh</div>
+        <div key={index} className="flex flex-col space-y-2">
           <AssetLoaderSelect<MeshAssetLoader>
+            label="Mesh"
+            primitiveId={index}
             currentAssetLoader={primitive.meshLoader}
             selectableAssetLoaders={assetManager?.getMeshLoaders()!}
+            setAssetLoader={(loader) => (primitive.meshLoader = loader)}
           />
-          <div>Material</div>
           <AssetLoaderSelect<MaterialAssetLoader<any>>
+            label="Material"
+            primitiveId={index}
             currentAssetLoader={primitive.materialLoader}
             selectableAssetLoaders={assetManager?.getMaterialLoaders()!}
+            setAssetLoader={(loader) => (primitive.materialLoader = loader)}
           />
         </div>
       ))}

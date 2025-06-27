@@ -1,6 +1,9 @@
-import { GPUDataInterface } from '../../GPUDataInterface'
+import { GPUDataInterface } from "../../GPUDataInterface"
+
+export type AssetLoaderId = string
 
 export abstract class AssetLoader<GPUAssetType> {
+  public id: AssetLoaderId
   public displayName?: string
 
   protected gpuDataInterface: GPUDataInterface
@@ -8,7 +11,8 @@ export abstract class AssetLoader<GPUAssetType> {
   private isLoaded: boolean = false
   private usages: number = 0
 
-  constructor(gpuDataInterface: GPUDataInterface, displayName?: string) {
+  constructor(gpuDataInterface: GPUDataInterface, id: AssetLoaderId, displayName?: string) {
+    this.id = id
     this.gpuDataInterface = gpuDataInterface
     this.displayName = displayName
   }

@@ -148,7 +148,7 @@ export function NumberInput({
   }, [])
 
   return (
-    <div className="form-control indicator join join-horizontal self-end" ref={numberInputRef}>
+    <div className="form-control indicator input input-xs join join-horizontal self-end" ref={numberInputRef}>
       {!labelContained && <span className="label-text inline self-center pr-3">{label}</span>}
       {!valid && (
         <span className="badge indicator-item badge-error">
@@ -157,10 +157,10 @@ export function NumberInput({
           </div>
         </span>
       )}
-      <div className="join join-horizontal mr-auto bg-gray-700" ref={inputRef}>
+      <div className="join join-horizontal mr-auto" ref={inputRef}>
         <button
           tabIndex={-1}
-          className="btn btn-xs self-center rounded-r-none border-none bg-inherit px-1 hover:bg-gray-600"
+          className="btn btn-xs self-center rounded-r-none border-none bg-inherit px-1"
           style={{ visibility: hovering ? "visible" : "hidden" }}
           onClick={(event) => handleStep(event, -step)}
         >
@@ -172,7 +172,7 @@ export function NumberInput({
           )}
           <input
             type="text"
-            className={`input input-xs self-center rounded-none border-none bg-inherit pr-1 align-top hover:cursor-ew-resize hover:bg-gray-600 focus:outline-none ${
+            className={`input input-xs self-center rounded-none border-none bg-inherit pr-1 align-top hover:cursor-ew-resize focus:outline-none ${
               editing && "text-start"
             } ${!editing && (labelContained ? "text-end" : "text-center")}`}
             value={value}
@@ -189,7 +189,7 @@ export function NumberInput({
         </div>
         <button
           tabIndex={-1}
-          className="btn btn-xs rounded-l-none border-none bg-inherit px-1 hover:bg-gray-600"
+          className="btn btn-xs rounded-l-none border-none bg-inherit px-1"
           style={{ visibility: hovering ? "visible" : "hidden" }}
           onClick={(event) => handleStep(event, step)}
         >

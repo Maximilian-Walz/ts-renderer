@@ -20,7 +20,7 @@ export function EditorInterface({ editor }: Props) {
     <EditorProvider editor={editor}>
       <SceneSelctionProvider>
         <EntitySelctionProvider>
-          <div className="h-full w-full overflow-hidden bg-gray-900">
+          <div className="h-full w-full overflow-hidden bg-base-100" data-theme="custom">
             <div className="flex h-full grow flex-col">
               <Tabs tabs={tabs} />
             </div>

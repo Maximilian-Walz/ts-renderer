@@ -1,11 +1,11 @@
-import { ReactElement } from "react"
+import { ReactNode } from "react"
 import { NumberInput } from "./NumberInput"
 
 type Props = {
   label: string
   initialValue: any[]
   targetValue: any
-  icon?: ReactElement
+  icon?: ReactNode
   minValue?: number
   maxValue?: number
 }

@@ -1,10 +1,10 @@
-import { GPUDataInterface } from '../../GPUDataInterface'
-import { Mesh } from '../Mesh'
-import { AssetLoader } from './AssetLoader'
+import { GPUDataInterface } from "../../GPUDataInterface"
+import { Mesh } from "../Mesh"
+import { AssetLoader, AssetLoaderId } from "./AssetLoader"
 
 export class MeshAssetLoader extends AssetLoader<Mesh> {
-  constructor(gpuDataInterface: GPUDataInterface, meshData: Mesh, displayName?: string) {
-    super(gpuDataInterface, displayName)
+  constructor(gpuDataInterface: GPUDataInterface, id: AssetLoaderId, meshData: Mesh, displayName?: string) {
+    super(gpuDataInterface, id, displayName)
     this.gpuAssetData = meshData
   }
 

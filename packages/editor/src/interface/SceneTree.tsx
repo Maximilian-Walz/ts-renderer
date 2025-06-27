@@ -1,11 +1,11 @@
 import { CameraComponent, Entity, HierarchyComponent, LightComponent, MeshRendererComponent } from "@my/engine"
-import { ReactElement, useState } from "react"
-import { LuAxis3D, LuBox, LuCamera, LuLightbulb } from "react-icons/lu"
+import { ReactNode, useState } from "react"
+import { LuAxis3D, LuBox, LuCamera, LuInfo, LuLightbulb } from "react-icons/lu"
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from "react-icons/md"
 import { useSelectedEntityId, useSetSelectedEntityId } from "../state/EntitySelectionProvider"
 import { useSelectedScene } from "../state/SceneSelectionProvider"
 
-function getIcon(entity: Entity): ReactElement {
+function getIcon(entity: Entity): ReactNode {
   if (entity.hasComponent(CameraComponent)) return <LuCamera />
   else if (entity.hasComponent(LightComponent)) return <LuLightbulb />
   else if (entity.hasComponent(MeshRendererComponent)) return <LuBox />
@@ -39,12 +39,15 @@ function Node({ entity, children }: NodeProps) {
           {expanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowRight />}
         </button>
         <button
-          onClick={() => setSelectedEntityId(entity.entityId)}
-          className={`btn btn-ghost btn-xs content-center rounded-full pl-1 pr-2 text-sm ${
-            isActive ? "bg-primary-500 text-gray-800 hover:bg-primary-400" : "hover:bg-gray-700"
-          }`}
+          onClick={(event) => {
+            event.stopPropagation()
+            setSelectedEntityId(entity.entityId)
+          }}
+          className={`${
+            isActive ? "btn-ghost text-primary" : "btn-ghost text-base-content/60 "
+          } btn btn-xs rounded-lg pl-1 pr-2 text-sm hover:btn-primary hover:bg-base-content/0`}
         >
-          <div className={`rounded-full p-1 ${isActive ? "text-gray-800" : "text-primary-500"}`}>{icon}</div>
+          <div className={`rounded-full p-1 `}>{icon}</div>
           {entity.entityId}
         </button>
       </div>
@@ -63,9 +66,16 @@ function Node({ entity, children }: NodeProps) {
 }
 
 export function SceneTree() {
+  const deselect = useSetSelectedEntityId()
   const scene = useSelectedScene()
   if (scene == undefined) {
-    return <div>No scene selected</div>
+    return (
+      <div className="grow">
+        <div className="alert text-xs alert-soft p-2 alert-info">
+          <LuInfo /> No scene selected
+        </div>
+      </div>
+    )
   }
 
   const roots = scene
@@ -74,7 +84,7 @@ export function SceneTree() {
     .filter((hierarchy) => hierarchy.parentId == undefined)
 
   return (
-    <div className="rounded-xl">
+    <div className="rounded-xl" onClick={() => deselect(undefined)}>
       {roots.map((rootHierarchy, index) => (
         <Node key={index} entity={rootHierarchy.entity} children={rootHierarchy.children} />
       ))}
