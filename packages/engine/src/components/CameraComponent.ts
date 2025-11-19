@@ -1,7 +1,6 @@
-import { mat4, Mat4 } from 'wgpu-matrix'
-import { ComponentType } from '.'
-import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
-import { BindGroupDataComponent } from './Component'
+import { mat4, Mat4 } from "wgpu-matrix"
+import { BufferBindGroupData } from "../rendering/bind-group-data/BufferBindGroupData"
+import { BindGroupDataComponent } from "./Component"
 
 export enum CameraType {
   PERSPECTIVE,
@@ -31,14 +30,6 @@ export type CameraProps = {
 export class CameraComponent extends BindGroupDataComponent<BufferBindGroupData, CameraProps> {
   invViewProjection?: Mat4
 
-  get type(): ComponentType {
-    return CameraComponent.getType()
-  }
-
-  public static override getType(): ComponentType {
-    return ComponentType.CAMERA
-  }
-
   public override createBindGroupData(device: GPUDevice): BufferBindGroupData {
     return new BufferBindGroupData(device, 256)
   }
@@ -52,7 +43,8 @@ export class CameraComponent extends BindGroupDataComponent<BufferBindGroupData,
     switch (this.props.cameraType) {
       case CameraType.PERSPECTIVE:
         data = this.projectionData as PerspectiveData
-        if (this.useCanvasAspect && (!cavasWidth || !canvasHeight)) throw Error('Camera is canvas constrained but no canvas width or height is provided.')
+        if (this.useCanvasAspect && (!cavasWidth || !canvasHeight))
+          throw Error("Camera is canvas constrained but no canvas width or height is provided.")
         const aspect = this.useCanvasAspect ? cavasWidth! / canvasHeight! : data.aspect
         return mat4.perspective(data.fov, aspect, this.zNear, this.zFar)
       case CameraType.ORTHOGRAPHIC:

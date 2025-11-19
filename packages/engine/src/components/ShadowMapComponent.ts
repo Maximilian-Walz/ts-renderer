@@ -1,20 +1,11 @@
-import { ComponentType } from '.'
-import { ShadowMapBindGroupData } from '../rendering/bind-group-data/ShadowMapBindGroupData'
-import { BindGroupDataComponent } from './Component'
+import { ShadowMapBindGroupData } from "../rendering/bind-group-data/ShadowMapBindGroupData"
+import { BindGroupDataComponent } from "./Component"
 
 export type ShadowMapProps = {
   size: number
 }
 
 export class ShadowMapComponent extends BindGroupDataComponent<ShadowMapBindGroupData, ShadowMapProps> {
-  get type(): ComponentType {
-    return ShadowMapComponent.getType()
-  }
-
-  public static override getType(): ComponentType {
-    return ComponentType.SHADOW_MAP
-  }
-
   public createBindGroupData(device: GPUDevice): ShadowMapBindGroupData {
     return new ShadowMapBindGroupData(device, this.props.size)
   }

@@ -99,6 +99,8 @@ export class RendererSystem {
       this.canvas.height = currentHeight
     }
 
+    // scene.query("transform").forEach((e) => e.getComponent("transform"))...
+
     scene.getComponents([ComponentType.TRANSFORM]).forEach(({ transform }) => {
       this.gpuDataInterface.writeTransformBuffer(transform as TransformComponent)
     })

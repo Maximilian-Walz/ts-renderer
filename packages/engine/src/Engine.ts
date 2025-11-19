@@ -92,6 +92,10 @@ export class Engine {
 
   public reloadScene() {
     const activeScene = this.sceneManager.getActiveScene()
+
+    const result = activeScene.query("transform", "hierarchy")
+
+
     const hierarchiesData = activeScene.getComponents([
       ComponentType.TRANSFORM,
       ComponentType.HIERARCHY,

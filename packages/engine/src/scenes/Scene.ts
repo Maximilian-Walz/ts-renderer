@@ -1,10 +1,8 @@
-import { Component, ComponentType, HierarchyProps, TransformProps } from '../components'
-import { Entity, EntityId } from './Entity'
+import { HierarchyProps, TransformProps } from "../components"
+import { ComponentMap } from "../components/ComponentTypes"
+import { Entity, EntityId } from "./Entity"
 
 export type SceneId = string
-
-export type ComponentRecord = Partial<Record<ComponentType, Component<any> | undefined>>
-export type ComponentQueryResult = ComponentRecord[]
 
 export class Scene {
   public readonly sceneId: SceneId
@@ -48,20 +46,7 @@ export class Scene {
     return entity
   }
 
-  public getComponents(componentTypes: ComponentType[]): ComponentQueryResult {
-    const result: ComponentQueryResult = []
-    this.entities.forEach((entity) => {
-      let record: ComponentRecord = {}
-      Object.keys(ComponentType).forEach(
-        (type) => (record[ComponentType[type as keyof typeof ComponentType]] = entity.getComponentFromTypeOrUndefined(ComponentType[type as keyof typeof ComponentType]))
-      )
-
-      const containsAll = componentTypes.every((type) => record[type] != undefined)
-      if (containsAll) {
-        result.push(record)
-      }
-    })
-
-    return result
+  public query<T extends (keyof ComponentMap)[]>(...types: T): Entity[] {
+    return [...this.getEntities()].filter((entity) => types.every((type) => entity.hasComponent(type)))
   }
 }

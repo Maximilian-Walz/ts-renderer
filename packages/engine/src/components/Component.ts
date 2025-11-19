@@ -1,8 +1,10 @@
-import { ComponentType } from '.'
-import { BindGroupData } from '../rendering/bind-group-data/BindGroupData'
-import { Entity } from '../scenes/Entity'
+import { BindGroupData } from "../rendering/bind-group-data/BindGroupData"
+import { Entity } from "../scenes/Entity"
 
-export type ComponentClass<T extends Component<any>> = (new (...args: ConstructorParameters<typeof Component<any>>) => T) & typeof Component<any>
+export type ComponentClass<T extends Component<any>> = (new (
+  ...args: ConstructorParameters<typeof Component<any>>
+) => T) &
+  typeof Component<any>
 
 export abstract class Component<Props> {
   public readonly entity: Entity
@@ -12,12 +14,6 @@ export abstract class Component<Props> {
     this.entity = entity
     this.props = props
   }
-
-  public static getType(): ComponentType {
-    throw Error('Method not implemented! Use derived class')
-  }
-
-  abstract get type(): ComponentType
 
   public onCreate(_props: Props): void {}
 
@@ -32,7 +28,7 @@ export abstract class BindGroupDataComponent<T extends BindGroupData, Props> ext
   public abstract createBindGroupData(device: GPUDevice): T
 
   public static getBindGroupLayout(_device: GPUDevice): GPUBindGroupLayout {
-    throw Error('Method not implemented! Use derived class')
+    throw Error("Method not implemented! Use derived class")
   }
 
   public getOrCreateBindGroupData(device: GPUDevice): T {

@@ -1,7 +1,6 @@
-import { Mat4, Quat, Vec3, mat4, quat, vec3 } from 'wgpu-matrix'
-import { ComponentType } from '.'
-import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
-import { BindGroupDataComponent } from './Component'
+import { Mat4, Quat, Vec3, mat4, quat, vec3 } from "wgpu-matrix"
+import { BufferBindGroupData } from "../rendering/bind-group-data/BufferBindGroupData"
+import { BindGroupDataComponent } from "./Component"
 
 export type TransformProps = {
   position?: Vec3
@@ -15,18 +14,10 @@ export class TransformComponent extends BindGroupDataComponent<BufferBindGroupDa
   public rotation: Quat = quat.identity()
   public scale: Vec3 = vec3.fromValues(1, 1, 1)
 
-  get type(): ComponentType {
-    return TransformComponent.getType()
-  }
-
   public override onCreate(props: TransformProps) {
     props.position && vec3.copy(props.position, this.position)
     props.rotation && quat.copy(props.rotation, this.rotation)
     props.scale && vec3.copy(props.scale, this.scale)
-  }
-
-  public static override getType(): ComponentType {
-    return ComponentType.TRANSFORM
   }
 
   public createBindGroupData(device: GPUDevice): BufferBindGroupData {

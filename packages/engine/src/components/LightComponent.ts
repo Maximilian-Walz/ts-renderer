@@ -1,7 +1,6 @@
-import { Mat4, mat4, vec3, Vec3, vec4 } from 'wgpu-matrix'
-import { ComponentType } from '.'
-import { BufferBindGroupData } from '../rendering/bind-group-data/BufferBindGroupData'
-import { BindGroupDataComponent } from './Component'
+import { Mat4, mat4, vec3, Vec3, vec4 } from "wgpu-matrix"
+import { BufferBindGroupData } from "../rendering/bind-group-data/BufferBindGroupData"
+import { BindGroupDataComponent } from "./Component"
 
 export enum LightType {
   SUN,
@@ -18,16 +17,8 @@ export type LightProps = {
 export class LightComponent extends BindGroupDataComponent<BufferBindGroupData, LightProps> {
   public color: Vec3 = vec3.fromValues(1, 1, 1)
 
-  get type(): ComponentType {
-    return LightComponent.getType()
-  }
-
   public override onCreate(props: LightProps): void {
     props.color && vec3.copy(props.color, this.color)
-  }
-
-  public static override getType(): ComponentType {
-    return ComponentType.LIGHT
   }
 
   public override createBindGroupData(device: GPUDevice): BufferBindGroupData {
